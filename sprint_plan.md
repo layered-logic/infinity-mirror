@@ -14,6 +14,7 @@
 ### Week 1 (Mar 30 – Apr 4): Competitive Landscape & Stakeholders
 - **Market Analysis:** Who is selling LED art? What are the price points and "vibes" (Etsy handmade vs. high-end gallery vs. Amazon commodity)?
 - **HCDE Task: Stakeholder Mapping.** Beyond the buyer — who interacts with this product? Housemates, gift recipients, installers, the waste stream at end-of-life. Map every stakeholder and their relationship to the product.
+- **LLC Setup:** Apply for EIN (IRS online, immediate). Open business bank account. Draft single-member operating agreement. File BOI Report with FinCEN (required within 90 days of formation — **deadline ~Jun 21**).
 - **Engineering:** Select specific ESP32 module; confirm pinout for level-shifter (5V Neopixel logic). Set up dev board for functional prototyping.
 
 ### Week 2 (Apr 7 – Apr 11): Pricing & The Sustainability Audit
@@ -62,7 +63,7 @@
 
 ### Week 8 (May 19 – May 23): Sustainability Deep Dive & Legal
 - **Venture Task:** Finalize the Repairability Manual — an actual PDF or web page that tells a user how to replace a burnt-out LED, swap a controller, or troubleshoot connectivity.
-- **Business:** Set Terms of Service and Warranty policy. Balance pro-consumer values with business liability. Define return/refund policy.
+- **Business:** Set Terms of Service and Warranty policy. Balance pro-consumer values with business liability. Define return/refund policy. Verify all LLC compliance filings are current (see LLC Compliance Checklist below). *(Note: LLC entity formation completed pre-quarter on Mar 23 — ToS/warranty/compliance are the remaining legal items.)*
 - **Engineering:** App ↔ hardware integration. Mobile app communicating with ESP32 over BLE/Wi-Fi.
 
 ### Week 9 (May 26 – May 30): Marketing Storytelling & Assets
@@ -102,6 +103,14 @@ This is explicitly scoped as "what comes after June 12" — explored during Week
 
 ---
 
+## Pre-Quarter Progress
+| Date | Event |
+|------|-------|
+| Mar 21 | Sprint planning, repo setup, GitHub org created |
+| Mar 23 | **LLC Certificate of Formation filed** — legal entity established for the venture |
+
+---
+
 ## Key Dates & Deadlines
 | Date | Event |
 |------|-------|
@@ -121,3 +130,24 @@ This is explicitly scoped as "what comes after June 12" — explored during Week
 | 6 | PCBs arrive, solder & validate |
 | 7–8 | Firmware hardening, app integration |
 | 9–11 | Pre-production build, golden sample |
+
+---
+
+## LLC Compliance Checklist
+Tasks required after filing the Certificate of Formation. Items marked with a week target are integrated into the sprint plan above.
+
+### Immediate (Week 1)
+- [ ] **EIN** — Apply via IRS online (irs.gov) once Certificate of Formation is confirmed. Free, takes 5 minutes, issued immediately. Required for business banking, tax filings, and hiring.
+- [ ] **Business bank account** — Open a dedicated account under the LLC + EIN. Keeps personal and business finances separated (critical for maintaining LLC liability protection).
+- [ ] **Operating agreement** — Draft and sign a single-member operating agreement. Not always required by state law, but strongly recommended — it documents ownership structure, profit distribution, and decision-making authority. Protects the LLC's legal standing.
+
+### Within 90 Days of Formation (~by Jun 21)
+- [ ] **BOI Report (Beneficial Ownership Information)** — File with FinCEN at boiefiling.fincen.gov. Required by the Corporate Transparency Act for most new LLCs. Reports who owns/controls the company. Free to file, but **penalties for non-compliance are steep** ($591/day). Needs: legal name of LLC, EIN, each beneficial owner's full name, DOB, address, and a government-issued ID image.
+
+### Ongoing / Annual
+- [ ] **State annual report** — Check your state's Secretary of State website for filing requirements, deadlines, and fees. Some states require this annually, others biennially.
+- [ ] **Registered agent** — Confirm you have a registered agent on file (can be yourself at a physical address, or a registered agent service). Required to maintain good standing.
+- [ ] **Business license** — Check city/county requirements. Selling physical products (especially online) may require a general business license and/or sales tax permit.
+- [ ] **Sales tax permit** — If selling taxable goods (physical products), register with your state's Department of Revenue. Needed before first sale on Etsy/Shopify.
+- [ ] **Estimated quarterly taxes** — As an LLC, income passes through to your personal return. If you expect to owe >$1,000 in taxes, IRS expects quarterly estimated payments (Form 1040-ES). Deadlines: Apr 15, Jun 15, Sep 15, Jan 15.
+- [ ] **Bookkeeping** — Track all income and expenses from day one. A simple spreadsheet works to start; consider Wave or QuickBooks Self-Employed as volume grows.
