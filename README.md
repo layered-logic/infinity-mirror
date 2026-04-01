@@ -41,6 +41,7 @@ This isn't just a build log. Every design decision is grounded in **human-center
 
 ```
 ├── sprint_plan.md          # 11-week development sprint (Spring 2026)
+├── sprint_log.md           # Progress tracker (done / in-progress / blocked)
 ├── hardware/               # Schematics, PCB layouts, BOM
 ├── firmware/               # ESP32 firmware (Wi-Fi, BLE, LED control)
 ├── app/                    # Mobile app (color/pattern control, custom orders)
