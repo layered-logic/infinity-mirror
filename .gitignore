@@ -1,0 +1,5 @@
+# Sensitive business documents — never commit
+business/
+
+# Claude Code local config
+.claude/

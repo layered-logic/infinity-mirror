@@ -108,6 +108,7 @@ This is explicitly scoped as "what comes after June 12" — explored during Week
 |------|-------|
 | Mar 21 | Sprint planning, repo setup, GitHub org created |
 | Mar 23 | **LLC Certificate of Formation filed** — legal entity established for the venture |
+| Apr 2 | **EIN received** (41-5282028). Operating agreement outline drafted. Pricing calculator MVP built (`tools/pricing/`). |
 
 ---
 
@@ -137,9 +138,9 @@ This is explicitly scoped as "what comes after June 12" — explored during Week
 Tasks required after filing the Certificate of Formation. Items marked with a week target are integrated into the sprint plan above.
 
 ### Immediate (Week 1)
-- [ ] **EIN** — Apply via IRS online (irs.gov) once Certificate of Formation is confirmed. Free, takes 5 minutes, issued immediately. Required for business banking, tax filings, and hiring.
+- [x] **EIN** — Apply via IRS online (irs.gov) once Certificate of Formation is confirmed. Free, takes 5 minutes, issued immediately. Required for business banking, tax filings, and hiring.
 - [ ] **Business bank account** — Open a dedicated account under the LLC + EIN. Keeps personal and business finances separated (critical for maintaining LLC liability protection).
-- [ ] **Operating agreement** — Draft and sign a single-member operating agreement. Not always required by state law, but strongly recommended — it documents ownership structure, profit distribution, and decision-making authority. Protects the LLC's legal standing.
+- [ ] **Operating agreement** — Draft and sign a single-member operating agreement. Not always required by state law, but strongly recommended — it documents ownership structure, profit distribution, and decision-making authority. Protects the LLC's legal standing. *(Outline drafted Apr 2 with Schedule A capital contributions — needs finalization and signature.)*
 
 ### Within 90 Days of Formation (~by Jun 21)
 - [ ] **BOI Report (Beneficial Ownership Information)** — File with FinCEN at boiefiling.fincen.gov. Required by the Corporate Transparency Act for most new LLCs. Reports who owns/controls the company. Free to file, but **penalties for non-compliance are steep** ($591/day). Needs: legal name of LLC, EIN, each beneficial owner's full name, DOB, address, and a government-issued ID image.

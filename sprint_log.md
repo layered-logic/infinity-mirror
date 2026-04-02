@@ -10,8 +10,13 @@ fuzzy-matches these against `sprint_plan.md` to determine remaining work.
 
 ### Done
 - [x] LLC Certificate of Formation filed (Mar 23, pre-quarter)
+- [x] EIN received from IRS (Apr 2) — 41-5282028
+- [x] Operating agreement outline drafted with full Schedule A capital contribution schedule (Apr 2)
+- [x] Pricing calculator MVP built — Streamlit dashboard with dynamic BOM, size scaling, tier/platform selection, and margin analysis (`tools/pricing/`) (Apr 2)
 
 ### In Progress
+- [ ] Operating agreement — needs to be finalized and signed
+- [ ] Business bank account — requires EIN (now available) and signed operating agreement
 
 ### Blocked
 
