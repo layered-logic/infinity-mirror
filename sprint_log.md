@@ -13,10 +13,12 @@ fuzzy-matches these against `sprint_plan.md` to determine remaining work.
 - [x] EIN received from IRS (Apr 2) — 41-5282028
 - [x] Operating agreement outline drafted with full Schedule A capital contribution schedule (Apr 2)
 - [x] Pricing calculator MVP built — Streamlit dashboard with dynamic BOM, size scaling, tier/platform selection, and margin analysis (`tools/pricing/`) (Apr 2)
+- [x] Stakeholder mapping exercise completed (Apr 2) — 45-min coached sprint with Gemini acting as investor/board member. Produced comprehensive 5-phase stakeholder map covering 24 stakeholders across Creation, Distribution, Acquisition, Lived Experience, and Support/Legacy. Formalized as `docs/stakeholder-map.md`.
 
 ### In Progress
 - [ ] Operating agreement — needs to be finalized and signed
 - [ ] Business bank account — requires EIN (now available) and signed operating agreement
+- [ ] Market analysis — competitive landscape research (LED art pricing, channels, positioning)
 
 ### Blocked
 
