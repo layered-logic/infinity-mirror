@@ -19,7 +19,8 @@ fuzzy-matches these against `sprint_plan.md` to determine remaining work.
 
 ### In Progress
 - [ ] Business bank account — requires signed operating agreement (now complete)
-- [ ] Market analysis — competitive landscape research (LED art pricing, channels, positioning)
+
+- [x] Market analysis — competitive landscape research completed (Apr 6). Cross-platform analysis of 30+ listings across Etsy, Amazon, Pinterest, and commercial signage vendors. Produced `docs/Market Analysis Report.md`. Key findings: market is bifurcated into 4 segments (Bespoke Luxury $800–$5k+, B2B Branding $250–$1.2k, Sensory/Therapy $230–$4.3k, Lifestyle/Gaming $40–$250). The $50–$120 bracket has 1,900+ Etsy listings — saturation risk if industrial design doesn't signal $200+ value. Matter/Thread protocol fragmentation flagged as a product risk for wi-fi-only devices. Repairability legislation (EU + WA/CA) is both a compliance requirement and a differentiator. FCC Part 15 compliance noted for LED driver EMI.
 
 ### Blocked
 
