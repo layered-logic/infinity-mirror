@@ -20,7 +20,7 @@ fuzzy-matches these against `sprint_plan.md` to determine remaining work.
 ### In Progress
 
 ### Done (continued)
-- [x] Business bank account application submitted (Apr 9). NAICS 335129 (Other Lighting Equipment Manufacturing), calendar fiscal year (12/31), established 03/2026.
+- [x] Business bank account application submitted (Apr 9) and approved (Apr 14). NAICS 335129 (Other Lighting Equipment Manufacturing), calendar fiscal year (12/31), established 03/2026.
 
 - [x] Market analysis — competitive landscape research completed (Apr 6). Cross-platform analysis of 30+ listings across Etsy, Amazon, Pinterest, and commercial signage vendors. Produced `docs/Market Analysis Report.md`. Key findings: market is bifurcated into 4 segments (Bespoke Luxury $800–$5k+, B2B Branding $250–$1.2k, Sensory/Therapy $230–$4.3k, Lifestyle/Gaming $40–$250). The $50–$120 bracket has 1,900+ Etsy listings — saturation risk if industrial design doesn't signal $200+ value. Matter/Thread protocol fragmentation flagged as a product risk for wi-fi-only devices. Repairability legislation (EU + WA/CA) is both a compliance requirement and a differentiator. FCC Part 15 compliance noted for LED driver EMI.
 
@@ -46,6 +46,12 @@ fuzzy-matches these against `sprint_plan.md` to determine remaining work.
 ## Week 3 (Apr 14 – Apr 18): Operations & Critical Path
 
 ### Done
+- [x] Factory operations planning completed (Apr 14). Full made-to-order workflow mapped in an external Claude session. Produced three artifacts in `Assembly_docs/`:
+  - `LED_Mirror_Project_Brief.md` — full context summary of all decisions made
+  - `LED_Mirror_Station_Details.csv` — 20-station production line detail (tools, fixtures, consumables, inputs/outputs, QC criteria per station)
+  - `LED_Mirror_Assembly_Calculator.xlsx` — per-unit time calculator with 3 sheets: Time Standards, Unit Calculator, Batch Planner
+
+  Key decisions: 3 parallel production lanes (Frame, Mirrors, Electronics) feeding final assembly; batch-by-operation strategy (not one-unit-start-to-finish); milled mirror channels (not spacer layup); pre-test LED strips at receiving, not mid-build; print a full week of 3D parts in one overnight run; physical traveler card per unit through all 20 stations. Garage workshop layout defined: wood dust zone on one end, electronics bench on the other, pack & ship fully isolated. Phase 1 tooling list finalized (Hakko FX-888D, Dewalt 12" sliding miter saw, 7" wet tile saw, Dewalt 1-3/4hp router, bench PSU, Fluke 115). Solder operations flagged as first bottleneck at scale (two per unit: LED connector and controller PCB — first outsource candidate).
 
 ### In Progress
 
