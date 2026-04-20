@@ -120,31 +120,30 @@ This becomes a long-term product thesis, not just a copy word. It also creates a
 - **Humor:** TBD — likely dry and sparing, never cheeky
 - **Technical depth:** hide the ESP32/WS2812B jargon in public copy. Specs live on a "technical details" page that the Spec-Head can dig for, not on the hero. The headline is never "ESP32-powered."
 
-### Tagline Direction
+### Tagline — Decision (Apr 20)
 
-Poetic, evocative, about transformation — not feature-descriptive.
+**Product-line tagline (infinity mirror):** *"Light that layers."*
 
-**Working candidates (Bill's proposed):**
-- *"Hidden depth."*
-- *"Changing what it means to display."*
+**The move — tagline as motif, not fixed string.** The `"[X] that layers"` pattern becomes a parent-brand device. Each product line or service arm gets its own noun, but inherits the cadence:
 
-**Characteristics the tagline should have:**
-- Two to six words ideally
-- Works for the whole product family (not just mirrors — also Nixie clocks, future LED/display products)
-- Speaks to *experience* and *transformation*, not *features*
-- Quiet confidence — doesn't sell, reveals
-- Pairs well with "by Layered Logic" as an endorsement
+| Arm / line | Tagline |
+|---|---|
+| Infinity mirror line | *"Light that layers."* |
+| Consulting practice (future) | *"Data that layers."* (working; pattern-confirming) |
+| Nixie clock line (future) | *"Time that layers."* (working) |
+| Future LED/display products | `"[X] that layers."` — choose the noun per product |
 
-**Additional candidates to consider:**
-- *"Light that layers."*
-- *"Depth, made visible."*
-- *"Every surface, a display."*
-- *"Objects that look back."*
-- *"Layered light."*
-- *"In between the glass."*
-- *"Not shown — revealed."*
+This does three useful things at once:
+1. Every product/service reads as "by Layered Logic" without saying it — the *cadence* is the endorsement
+2. The tagline family explains the parent-brand name retroactively — "Layered Logic" becomes self-evident once you've heard two of these
+3. Product-line differentiation happens in the *noun*, not a whole new tagline — lightweight to extend
 
-Commit to one after the visual identity is further along — a tagline locked now might clash with the final visual grammar.
+**Usage rules:**
+- Always the lowercase, declarative form. No exclamation, no capitalization for drama.
+- Set in Neue Haas Grotesk ExtraLight Italic at display size — the italic *is* the brand voice.
+- Pairs with `by Layered Logic` set in Berkeley Mono, when endorsement is needed.
+
+**Parent-brand tagline (Layered Logic itself):** deferred — let the product lines prove the cadence first, then back-formulate a parent line if one is still needed.
 
 ---
 
@@ -184,39 +183,31 @@ Candidate desaturations (to explore as swatches in `assets/brand/color/`):
 
 **Pairing:** looks strong against greyscale. Secondary/tertiary palette direction TBD (see Question Q7 below).
 
-### Typography
+### Typography — Decision (Apr 20)
 
-**Decisions (Apr 20):**
+Neue Haas Grotesk ExtraLight Italic is the default display and body voice. Berkeley Mono is the technical accent. No serif.
 
-Neue Haas Grotesk is the primary workhorse; mono is the technical accent. No serif (per research agent — would push the brand into "editorial magazine" territory and away from "ambient").
+**The inversion:** in this system, *italic is default and upright is emphasis* — the opposite of most typographic systems. This is the novelty move. Upright weights aren't forbidden; they're deployed deliberately to create a gear-shift moment.
 
-**Open decision (surfaced by research):** should display/headline type stay italic, or go upright?
+| Role | Face | Weight | Posture |
+|---|---|---|---|
+| Body, subtitles, most UI | Neue Haas Grotesk Text | ExtraLight | **Italic (default)** |
+| Display / headlines | Neue Haas Grotesk Display | ExtraLight or Light | **Italic (default)** |
+| Marked emphasis *inside* italic text | Neue Haas Grotesk Text | ExtraLight or Medium | Upright (the emphasis cue) |
+| Section-level "straight alignment" moments | Neue Haas Grotesk Text | Medium or Bold | Upright, left-aligned, blocky — used sparingly to break the flow and re-engage the reader |
+| Technical callouts | **Berkeley Mono** | Regular | Upright (always) |
+| H3 / small heads (product UI, dense screens) | Neue Haas Grotesk Text | Medium | Upright permitted for legibility where italic gets tiring |
 
-Two system options:
+**Why Berkeley Mono (not JetBrains Mono, not ABC Diatype Mono):**
+- Berkeley Mono has the most characterful drawing without becoming decorative
+- ABC Diatype Mono was close but its "R" has a small squiggle/tail that draws the eye — wrong for a brand that prizes restraint
+- JetBrains is excellent and free but slightly generic in this lineup
 
-**Option A — Monotype with upright display (safer, more structured):**
-| Role | Face | Weight |
-|---|---|---|
-| Body, subtitles, most UI | Neue Haas Grotesk Text | ExtraLight Italic |
-| H1 / H2 / large display | Neue Haas Grotesk Display | Bold or Black (upright) |
-| H3 / H4 / smaller heads | Neue Haas Grotesk Text | Medium (upright) |
-| Technical callouts | Mono (TBD) | Regular |
+**Reading rhythm this produces:** flowing italic for narrative and product copy (ambient, living), punctuated by upright Berkeley Mono for any technical/measurement moment (serial numbers, versions, coordinates, BOM IDs). The upright mono becomes the "anchor of stability" Felix Faire's work calls for — the hard outline against the soft gradient.
 
-**Option B — Italic-throughout (more distinctive, more "Intrinsic/Felix Faire"):**
-| Role | Face | Weight |
-|---|---|---|
-| Body, subtitles | Neue Haas Grotesk Text | ExtraLight Italic |
-| H1 / H2 / display | Neue Haas Grotesk Display | Bold Italic or Black Italic |
-| H3 / H4 / smaller heads | Neue Haas Grotesk Text | Medium Italic |
-| Technical callouts | Mono (TBD) | Regular (the *only* upright type in the system) |
+**When to use a *straight-aligned upright block* as a device:** a section that needs to snap the reader to attention — "Specs," "Repair Guide," "What's in the box" — can be set upright to signal a tonal shift from the italic narrative voice into the functional voice. The gear-shift is the engagement mechanism.
 
-The italic-throughout system is rarer and more signature — it makes the *mono callouts the visual anchor of stability* in an otherwise flowing landscape. That matches the "hard outlines against soft gradient" grammar. Option A is more conventional and easier to execute in product UI where strong hierarchy matters.
-
-**Leaning:** Option B for marketing/brand work, Option A or a hybrid for product UI (app screens, in-product text where upright weights are just more legible for dense interactive content). Decide per surface, not globally.
-
-**Mono finalist:** TBD — Berkeley Mono (paid, characterful), JetBrains Mono (free, excellent), ABC Diatype Mono (paid, most editorial). Recommend test-setting all three in "LL-001 / 6×6 / REV-A / 2026" to decide.
-
-**Licensing note:** Neue Haas Grotesk is commercial (Commercial Type). Purchase before any public-facing use. Document in `assets/brand/type/LICENSE.md`.
+**Licensing note:** Neue Haas Grotesk is commercial (Commercial Type). Berkeley Mono is commercial (Berkeley Graphics). Purchase both before any public-facing use. Document in `assets/brand/type/LICENSE.md`.
 
 ### Moodboard References
 
@@ -259,8 +250,8 @@ From the common grammar across all five references — adopted as core brand mov
 - No warm-neutral-only palette (single cream-base in light mode is fine; magazine-beige is not)
 - No multi-hue rainbows
 - No heavy 3D renders
-- No sans beyond Neue Haas + one mono
-- No upright non-italic display voice — *open decision, see Typography above*
+- No sans beyond Neue Haas Grotesk + Berkeley Mono
+- No making italic "special" — italic is default, upright is emphasis. Treating italic as the rare-case is the default behavior this system rejects.
 
 ### Layout & Motion Direction
 
@@ -280,9 +271,11 @@ Open design decisions that fall out of this:
 
 ---
 
-## 6. Palette Direction — Q7 Analysis
+## 6. Palette — Decision (Apr 20)
 
-Split between **Option B (LED spectrum duotone)** and **Option C (editorial warm counterweight)**. Full pros/cons, then a hybrid proposal.
+**Locked: Hybrid.** See swatch at [assets/brand/color/palette-hybrid-recommended.svg](../assets/brand/color/palette-hybrid-recommended.svg).
+
+Options B (pure LED spectrum) and C (pure editorial warm) were considered and rejected in favor of the layered system below, which takes the restraint of C for structural use and the saturation of B for moments of light/motion only. The analyses of each pure option are preserved below for reference.
 
 ### Option B — LED Spectrum Duotone
 
@@ -316,7 +309,7 @@ Violet + warm cream base (`~#F4EFE6`) + deep near-black (`~#0E0D10`). No other s
 - Less generative potential for gradients (violet-to-cream-to-near-black is limited palette for bloom work)
 - May feel static against references that lean kinetic
 
-### Hybrid (Recommended)
+### Hybrid (Locked)
 
 Use both, but for different roles. Most references (IBM Quantum especially) operate this way.
 
@@ -345,11 +338,14 @@ Per-product-line accent (future, Tier 3):
 
 **Key rule:** saturated colors only show up inside *gradient blooms* and *motion*. Static UI and typography use the editorial layer (near-black, cream, mid grey, violet deep). This is the discipline that keeps the brand from collapsing into Govee.
 
-**Mockup swatches:** to be produced in `assets/brand/color/` as SVG swatch files so they render inline in docs and can be eyedropped. Three files — one per option — will go there next.
+**Swatch files (in `assets/brand/color/`):**
+- [palette-hybrid-recommended.svg](../assets/brand/color/palette-hybrid-recommended.svg) — **LOCKED**
+- [palette-option-b-led-spectrum.svg](../assets/brand/color/palette-option-b-led-spectrum.svg) — reference only
+- [palette-option-c-editorial-warm.svg](../assets/brand/color/palette-option-c-editorial-warm.svg) — reference only
 
 ## 7. Logo Direction
 
-**Concept (Bill, Apr 20):** Two nested "L"s.
+**Concept (Bill, Apr 20):** Two nested "L"s. **Bill is developing this independently in P5.js** — work lives in a separate GitHub repo (link pending). Generative/code-driven mark exploration, not static vector sketches.
 
 The name "Layered Logic" is literal — it references:
 - Layers of 3D printing (manufacturing process)
@@ -359,18 +355,19 @@ The name "Layered Logic" is literal — it references:
 
 A nested-L mark puts the layering *in the mark itself*. Each L is a layer; the nesting is the logic.
 
-**Directions to explore (to mock up in `assets/brand/logo/`):**
-- **Concentric nested Ls** — one L inside another, sharing the baseline corner. Reads as two enclosures.
-- **Offset-stack Ls** — two Ls stacked with a small offset, suggesting depth/parallax/layering. Might work well as an animated mark where the offset grows on hover.
-- **Mirrored Ls** — one L mirrored against the other, forming a closed or near-closed shape. Could echo the infinity-mirror product literally — two mirrored geometries implying infinite nesting.
-- **Thin wireframe Ls** — 1px stroke geometry, no fills. Matches the "wireframe over bloom" visual device.
-- **Monogram LL → ligature** — the two Ls fused into a single glyph-like mark. Most compact, most abstract.
+**Status:** logo exploration is happening in P5.js — under active, not-yet-finalized development. Bill will share the repo link when he's ready for feedback. Until then, no parallel static sketches are being produced here — this doc captures only the constraints any candidate mark will need to satisfy.
 
-**Logo system considerations (not just a single mark):**
-- Should work as a favicon at 16×16 (extreme constraint)
-- Should work etched into a physical product (monochrome, high contrast)
-- Should work over a gradient bloom (mask or solid variant)
+**Logo system constraints (any P5 candidate will be tested against these):**
+- Works as a favicon at 16×16 (extreme constraint)
+- Works etched into a physical product (monochrome, high contrast)
+- Works over a gradient bloom (mask or solid variant)
+- Has a static-export path — the mark must have a canonical frozen state for use in print, etching, laser, and small-format product application, even if the "live" mark is generative
 - Needs both wordmark (`layered logic`, set in Neue Haas Grotesk) and standalone mark versions
+
+**Generative-mark implications (if the P5 work becomes the primary mark):**
+- Aligns strongly with the references — Intrinsic, IBM Quantum, Field.io all use generative brand systems
+- Requires a "reference frame" — one canonical still of the generative mark that becomes the legal/printable logo
+- Opens an animated-logo path for the website hero (the motion *is* the mark)
 
 ## 8. What "Layered Logic" Means
 
@@ -401,20 +398,26 @@ Bill's etymology (captured verbatim, Apr 20):
 - §8 Etymology — Bill's "layers" meaning captured
 - Companion research doc: [brand-research-notes.md](brand-research-notes.md) with full reference analysis
 
-**Open decisions (need Bill's call):**
-- Typography: Option A (upright display) vs Option B (italic throughout) vs per-surface hybrid
-- Palette: confirm hybrid, or lean hard toward pure B or pure C
-- Mono finalist: Berkeley Mono / JetBrains Mono / ABC Diatype Mono
-- Tagline: "Hidden depth" / "Changing what it means to display" / other
-- Logo direction: which of the 5 nested-L variants to prototype
+**Decisions locked (Apr 20, second pass):**
+- Typography: **ExtraLight Italic as default, upright as emphasis** (the inversion). Berkeley Mono for technical accent.
+- Palette: **Hybrid** (three-tier system: structural/editorial + brand anchor + glow spectrum)
+- Mono finalist: **Berkeley Mono** (ABC Diatype's "R" tail was a no-go; JetBrains felt generic next to Berkeley)
+- Tagline: ***"Light that layers."*** for the infinity mirror line; `"[X] that layers."` as a parent-brand motif extending to other products and services
+
+**Still open:**
+- §1 Positioning statement — needs Bill's final edit pass
+- Logo direction — Bill is developing in P5.js; repo link pending. No parallel sketches being produced here.
 - Mini-brand naming (Tier 2) — deferred until visual identity lands
+- Parent-brand tagline (Layered Logic umbrella) — deferred; let product-line cadence prove itself first
 
 **Next concrete work:**
-- [ ] Produce 3 SVG palette swatches in `assets/brand/color/` — Option B, Option C, Hybrid
+- [x] Produce 3 SVG palette swatches in `assets/brand/color/`
+- [ ] Fix overlapping text in palette-hybrid-recommended.svg (done Apr 20 2nd pass)
 - [ ] Save reference images to `assets/moodboards/`
-- [ ] Type specimen mockup — test "LL-001 / 6×6 / REV-A / 2026" in the 3 mono candidates
-- [ ] First logo sketches — 5 nested-L directions
+- [ ] Type specimen mockup — Berkeley Mono "LL-001 / 6×6 / REV-A / 2026" + Neue Haas Grotesk ExtraLight Italic "Light that layers." on dark and light grounds
+- [ ] Berkeley Mono + Neue Haas Grotesk license purchase (before any public use)
 - [ ] Right-to-Repair philosophy doc (inherits voice from §4)
+- [ ] Review Bill's P5 logo work when repo link is shared
 
 ---
 
