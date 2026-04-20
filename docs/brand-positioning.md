@@ -345,7 +345,24 @@ Per-product-line accent (future, Tier 3):
 
 ## 7. Logo Direction
 
-**Concept (Bill, Apr 20):** Two nested "L"s. **Bill is developing this independently in P5.js** — work lives in a separate GitHub repo (link pending). Generative/code-driven mark exploration, not static vector sketches.
+**Concept (Bill, Apr 20):** Two nested "L"s, generative/code-driven in P5.js.
+
+**Repo:** [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — active WIP, not finalized.
+
+**First-pass review (Apr 20, parked for later — out of scope this sprint):**
+
+What's working:
+- `angleDeg = 86°` puts the mark in the same posture as the italic-default type system — system-level alignment
+- Histogram-on-a-path with `barSteps = 5` quantization lands in the Field.io / IBM Quantum "measured sublime" grammar (not generic waveform)
+- Mouse reactivity earns the "Living" adjective from §3 — the mark responds to presence
+- Two nested Ls + bars radiating = "layered" literalized three times over
+
+Open items to return to (not now):
+1. **Color** — current `(66,10,255)` / `(50,20,255)` skew indigo-blue; brand is `#BF00FF`/`#A020D0` violet. Decide: deliberate split, or pull the mark into locked palette?
+2. **Define a canonical rest pose** — the static "mouse far away" state becomes the frozen PNG for print/etch/favicon. Right now `S`-key exports whatever the current frame is; need a defined reference pose.
+3. **Favicon variant** — 16×16 won't hold two Ls + gap. Simplified single-L or fused ligature needed.
+4. **`ampScale = 0.5` on horizontal arm** — deliberate asymmetry or balance hack? Document either way.
+5. Optional: add violet bloom layer behind the Ls for web hero — activates §5 devices #1 and #4 for free.
 
 The name "Layered Logic" is literal — it references:
 - Layers of 3D printing (manufacturing process)
