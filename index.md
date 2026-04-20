@@ -17,11 +17,18 @@ tags: [moc, home]
 
 **Phase 2 begins — Interaction Design & Branding.** Week 4 focus: brand identity, right-to-repair, user interviews, ESP32 firmware kickoff.
 
-Active working docs:
-- [Brand Positioning Worksheet](docs/brand-positioning.md) — product-line name, voice, visual direction
-- *(pending)* Right-to-Repair Philosophy — HCDE artifact
+**Brand track — substantially locked (Apr 20):**
+- [Brand Positioning Worksheet](docs/brand-positioning.md) — three-tier architecture, audience priority, voice, typography inversion (italic default), Berkeley Mono, hybrid palette, *"Light that layers"* tagline motif
+- [Brand Research Notes](docs/brand-research-notes.md) — five moodboard references analyzed, five signature visual devices distilled
+- [Palette swatches](assets/brand/color/) — B (reference), C (reference), Hybrid (locked)
+- Logo P5.js repo at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — reviewed, parked until Bill reopens
+
+**Still to do this week:**
+- *(pending)* Right-to-Repair Philosophy — HCDE artifact (inherits voice from brand §4)
 - *(pending)* User Repair Guide — customer-facing doc
 - *(pending)* User interview script + contact list
+- *(pending)* Type specimen — Berkeley Mono + Neue Haas Grotesk ExtraLight Italic in-situ
+- *(pending)* Moodboard reference images → `assets/moodboards/`
 
 Deferred from Week 3:
 - PCB schematic update and production order — unblocked by 5 test boards in hand; not critical path (see [project_pcb_status memory](../../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md))
@@ -100,7 +107,8 @@ Deferred from Week 3:
 - Sales tax permit — needed before first Etsy/Shopify sale
 
 **Product / design**
-- Brand architecture: monolithic, endorsed sub-brand, or standalone? (see [Brand Positioning §0](docs/brand-positioning.md))
+- ~~Brand architecture: monolithic, endorsed sub-brand, or standalone?~~ — **Resolved Apr 20:** three-tier (Layered Logic → product mini-brand → product lines), with consulting arm also under the parent. See [Brand Positioning §0](docs/brand-positioning.md).
+- Mini-brand name (Tier 2) — deferred until visual identity lands
 - Coffee shop SLA + space negotiation model — awaiting user interviews
 - Gift-recipient "First 5 Minutes" unboxing flow
 

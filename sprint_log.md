@@ -70,8 +70,29 @@ fuzzy-matches these against [sprint_plan.md](sprint_plan.md) to determine remain
 ## Week 4 (Apr 21 – Apr 25): Brand Identity & Repairability
 
 ### Done
+- [x] Brand positioning worksheet drafted and substantially locked (Apr 20). Full 9-section worksheet produced as [docs/brand-positioning.md](docs/brand-positioning.md). Decisions locked:
+  - **Architecture:** three-tier (Layered Logic parent → product mini-brand → product lines; consulting practice also lives under the Layered Logic umbrella)
+  - **Audience priority:** Interior Curator > Vibe-Seeker >> Spec-Head with "tech disappears" founding principle
+  - **Five adjectives:** Ambient, Considered, Quiet, Crafted, Living
+  - **Voice:** first-person "I" while solo-founder; transition to "we" as team grows
+  - **Typography:** Neue Haas Grotesk ExtraLight Italic as *default posture* with upright reserved for emphasis and gear-shift moments. Berkeley Mono as technical accent (ABC Diatype rejected for its "R" tail; JetBrains deprioritized)
+  - **Palette:** Hybrid three-tier — structural/editorial layer (near-black `#0B0A0F`, warm cream `#F4EFE6`, mid grey `#8A8A8E`, violet deep `#2E0D3F`) + brand anchor (Violet Signal `#A020D0`, Violet Reference `#BF00FF`) + glow spectrum restricted to gradients/motion (Violet→Cyan, Violet→Pink)
+  - **Tagline:** *"Light that layers."* for the infinity mirror line; `"[X] that layers."` as parent-brand motif extending to other product lines and the consulting arm (*"data that layers"*)
+  - Companion research doc [docs/brand-research-notes.md](docs/brand-research-notes.md) analyzes five moodboard references (Paris Electronic Week, SPRING/LAVA, Intrinsic/Pentagram + Felix Faire, IBM Quantum/Field.io) and distills five signature visual devices
+  - Still open: §1 positioning sentence final edit, mini-brand name (Tier 2, deferred)
+
+- [x] Palette swatches produced (Apr 20) as SVGs in [assets/brand/color/](assets/brand/color/): Option B (LED spectrum, reference), Option C (editorial warm, reference), and Hybrid (locked). Hybrid swatch includes in-situ dark/light mode previews with italic tagline and mono callout.
+
+- [x] Repository restructured as an Obsidian vault (Apr 20). YAML frontmatter + `## Related` cross-linking added across README, sprint_plan, sprint_log, all `docs/` content. MOC established at [index.md](index.md) as the home note. Standard markdown links (not wikilinks) chosen for GitHub compatibility.
+
+- [x] Design assets folder scaffolded (Apr 20) at [assets/](assets/) with subfolders for brand (color/logo/type/tokens), moodboards, product-photos, icons, figma, source-files. Conventions documented in [assets/README.md](assets/README.md).
+
+- [x] Layered Logic logo P5.js repo reviewed (Apr 20). Bill is developing the nested-L mark independently at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — mouse-reactive histogram bars on two nested L paths with Gaussian quantization and corner-blending. First-pass review captured in [brand-positioning §7](docs/brand-positioning.md) with 5 parked items (color unification with brand palette, canonical rest pose, favicon variant, horizontal-arm asymmetry, optional violet bloom layer). Logo work is out of scope this sprint — parked until Bill reopens the track.
 
 ### In Progress
+- Right-to-Repair philosophy doc — inherits voice from brand positioning §4
+- User Repair Guide — customer-facing
+- User interview script + contact list
 
 ### Blocked
 
