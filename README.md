@@ -1,3 +1,10 @@
+---
+title: Infinity Mirror — Project README
+type: overview
+status: active
+tags: [readme, overview]
+---
+
 # Infinity Mirror
 
 ### A Human-Centered Design Engineering Venture by [Layered Logic](https://github.com/layered-logic)
@@ -99,6 +106,17 @@ The independent study takes these building blocks and asks: *What would it take 
 ## License
 
 TBD
+
+---
+
+## Navigating This Repo
+
+- [**index.md**](index.md) — Map of Content / home note (start here for any session)
+- [Sprint Plan](sprint_plan.md) · [Sprint Log](sprint_log.md) — 11-week plan and progress
+- [docs/](docs/) — HCDE artifacts, business, engineering, meeting logs
+- [Assembly_docs/](Assembly_docs/) — production-line ops
+- [assets/](assets/) — design assets (logo, color, type, photos, Figma exports)
+- [tools/](tools/) — internal utilities (pricing calculator)
 
 ---
 

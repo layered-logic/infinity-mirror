@@ -1,3 +1,13 @@
+---
+title: ESP32 Module Comparison
+type: engineering
+phase: 1
+week: 1
+date: 2026-04-06
+status: complete
+tags: [engineering, esp32, hardware, research]
+---
+
 # ESP32 Module Comparison
 
 All Espressif production modules — current recommended-for-new-design variants only (legacy WROOM-32/32D omitted).
@@ -154,3 +164,12 @@ Prices are LCSC single-unit (cheapest legitimate source) and Mouser/DigiKey sing
 ---
 
 *Sources: Espressif official datasheets; LCSC, DigiKey, Mouser listings; espboards.dev SoC comparison; Espressif FCC/CE certification page.*
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [ESP32 Module Shortlist](esp32-module-shortlist.md) — narrowed set with final selection
+- [BOM Breakdown](bom-breakdown-basic-6x6.md) — module cost feeds the BOM
+- [Sprint Plan](../sprint_plan.md) — engineering timeline

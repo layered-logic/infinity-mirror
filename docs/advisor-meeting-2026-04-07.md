@@ -1,3 +1,13 @@
+---
+title: Advisor Meeting — April 7, 2026
+type: meeting-log
+phase: 1
+week: 2
+date: 2026-04-07
+status: complete
+tags: [meeting, advisor]
+---
+
 # Advisor Meeting — April 7, 2026
 **Project:** Layered Logic / Infinity Mirror Venture
 **Student:** William White (Bill)
@@ -109,4 +119,12 @@ The sprint plan includes Kickstarter readiness as a Week 11 deliverable — asse
 All project documentation, sprint plan, and code are tracked at:
 `https://github.com/layered-logic/infinity-mirror`
 
-Sprint plan: `sprint_plan.md` | Progress log: `sprint_log.md`
+Sprint plan: [sprint_plan.md](../sprint_plan.md) | Progress log: [sprint_log.md](../sprint_log.md)
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Advisor Meeting — Apr 14](advisor-meeting-2026-04-14.md) — next week's follow-up
+- [Stakeholder Map](stakeholder-map.md) · [Market Analysis Report](Market%20Analysis%20Report.md) — Week 1 deliverables discussed

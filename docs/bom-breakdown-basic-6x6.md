@@ -1,3 +1,13 @@
+---
+title: BOM Breakdown — Basic 6×6 Infinity Mirror
+type: business
+phase: 1
+week: 2
+date: 2026-04-09
+status: complete
+tags: [bom, cost, pricing, finance]
+---
+
 # BOM Breakdown — Basic 6×6 Infinity Mirror
 **Layered Logic — Spring 2026 | Week 2 Deliverable**
 *Volume tiers: 1 / 50 / 100 / 1,000 units*
@@ -183,3 +193,14 @@ Touch pad is a copper pour on the PCB (no additional component). Senses through 
 
 *Last updated: 2026-04-09*
 *Source data: `Business/pricing_config.yaml`, `Business/infinity mirror pricing - Spent(as of 2_22).csv`, `Business/infinity mirror pricing - cost estimates.csv`, direct hardware measurements, JLCPCB/LCSC pricing (Apr 2026).*
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Market Analysis Report](Market%20Analysis%20Report.md) — pricing tier rationale and saturation risk
+- [Sustainability Audit](sustainability-audit.md) — material hotspots that drive variable cost
+- [Stakeholder Map](stakeholder-map.md) — Self-Buyer archetype purchasing context
+- [Pricing Calculator](../tools/pricing/) — Streamlit dashboard operationalizing this analysis
+- [Sprint Plan](../sprint_plan.md)

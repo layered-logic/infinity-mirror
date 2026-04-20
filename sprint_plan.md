@@ -1,3 +1,11 @@
+---
+title: Spring 2026 Sprint Plan
+type: planning
+quarter: Spring 2026
+status: active
+tags: [sprint, plan, milestones]
+---
+
 # Infinity Mirror — Spring 2026 Sprint Plan
 ## Human-Centered Design Engineering Venture
 **Quarter:** March 30 – June 12, 2026 (11 Weeks)
@@ -152,3 +160,13 @@ Tasks required after filing the Certificate of Formation. Items marked with a we
 - [ ] **Sales tax permit** — If selling taxable goods (physical products), register with your state's Department of Revenue. Needed before first sale on Etsy/Shopify.
 - [ ] **Estimated quarterly taxes** — As an LLC, income passes through to your personal return. If you expect to owe >$1,000 in taxes, IRS expects quarterly estimated payments (Form 1040-ES). Deadlines: Apr 15, Jun 15, Sep 15, Jan 15.
 - [ ] **Bookkeeping** — Track all income and expenses from day one. A simple spreadsheet works to start; consider Wave or QuickBooks Self-Employed as volume grows.
+
+---
+
+## Related
+
+- [Index / MOC](index.md) — vault home
+- [Sprint Log](sprint_log.md) — progress tracker this plan is measured against
+- [Stakeholder Map](docs/stakeholder-map.md) — who the venture is designed around
+- [Market Analysis Report](docs/Market%20Analysis%20Report.md) — market positioning the plan is built on
+- [Advisor Meeting — Apr 14](docs/advisor-meeting-2026-04-14.md) — most recent Milestone 1 review

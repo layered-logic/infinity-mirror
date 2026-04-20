@@ -1,3 +1,13 @@
+---
+title: ESP32 Module Shortlist
+type: engineering
+phase: 1
+week: 1
+date: 2026-04-06
+status: complete
+tags: [engineering, esp32, hardware, decision]
+---
+
 # ESP32 Module Shortlist — Strengths & Weaknesses
 *Filtered for: small, cheap, available, Wi-Fi + BLE. Zigbee noted where applicable.*
 
@@ -146,3 +156,12 @@ Rationale: best combination of small footprint, lowest cost (~$2 LCSC), strong a
 | ESP32-S2-MINI-1 | No Bluetooth at all — not viable for BLE app pairing |
 | ESP32-S3-WROOM-1 / MINI-1 | AI acceleration, higher cost — more module than needed here |
 | All -U antenna variants | Same silicon as their PCB-antenna counterparts; only relevant if your enclosure blocks the onboard antenna |
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [ESP32 Module Comparison](esp32-module-comparison.md) — full-field comparison this shortlist was drawn from
+- [BOM Breakdown](bom-breakdown-basic-6x6.md) — where the ~$2 module cost lands
+- [Sprint Plan](../sprint_plan.md)

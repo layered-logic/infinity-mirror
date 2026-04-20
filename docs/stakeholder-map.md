@@ -1,3 +1,13 @@
+---
+title: Stakeholder Map
+type: hcde-artifact
+phase: 1
+week: 1
+date: 2026-04-02
+status: complete
+tags: [hcde, stakeholders, research]
+---
+
 # Stakeholder Map — Layered Logic Infinity Mirror
 
 **Prepared by:** William White, Founder & Lead Designer
@@ -386,6 +396,17 @@ These questions emerged from the stakeholder mapping exercise and will guide pri
 ---
 
 *This document is a living artifact of the HCDE Independent Study. It will be updated as stakeholder relationships are validated through primary research and as the product moves from prototype to pre-production.*
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Market Analysis Report](Market%20Analysis%20Report.md) — segment and competitor context
+- [Sustainability Audit](sustainability-audit.md) — end-of-life stakeholder analysis
+- [BOM Breakdown](bom-breakdown-basic-6x6.md) — cost structure referenced by Self-Buyer pricing
+- [Brand Positioning](brand-positioning.md) — audience ranking draws from §3 archetypes here
+- [Sprint Plan](../sprint_plan.md)
 
 ---
 

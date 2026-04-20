@@ -1,3 +1,13 @@
+---
+title: Market Analysis Report
+type: research
+phase: 1
+week: 1
+date: 2026-04-06
+status: complete
+tags: [market, competitive, research]
+---
+
 # Market Analysis Report: The Infinity Mirror Venture
 **Date:** April 6, 2026  
 **Subject:** High-Rigor Assessment of Bespoke Infinity Mirrors & Illuminated Art Markets
@@ -94,3 +104,14 @@ A cross-platform scrub of Etsy and Amazon reveals over **1,900 listings** for "I
 * **Westminster Tech:** Architectural-scale interactive sensory walls.
 * **TFH Special Needs:** Cause-and-effect learning infinity mirrors.
 * **Experia USA:** Full-scale Snoezelen-certified sensory room mirrors.
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Stakeholder Map](stakeholder-map.md) — customer archetypes (§3) cite this report's segments
+- [BOM Breakdown](bom-breakdown-basic-6x6.md) — pricing strategy responds to the $50–120 saturation risk flagged here
+- [Brand Positioning](brand-positioning.md) — positioning builds on the market bifurcation
+- [Sustainability Audit](sustainability-audit.md) — right-to-repair legislation flagged here, validated there
+- [Sprint Plan](../sprint_plan.md)

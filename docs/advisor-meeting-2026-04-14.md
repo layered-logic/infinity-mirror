@@ -1,3 +1,13 @@
+---
+title: Advisor Meeting — April 14, 2026
+type: meeting-log
+phase: 1
+week: 3
+date: 2026-04-14
+status: complete
+tags: [meeting, advisor, milestone-1]
+---
+
 # Advisor Meeting — April 14, 2026
 **Project:** Layered Logic / Infinity Mirror Venture
 **Student:** William White (Bill)
@@ -100,3 +110,12 @@ Packaging is still an open line item — no dimensions, no insert design, no sup
 | **May 9** | Milestone 2 — Brand + app UI + hardware validated |
 | **May 30** | Milestone 3 — Go-to-market ready + golden sample |
 | **Jun 12** | Milestone 4 — Portfolio complete + venture readiness |
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Advisor Meeting — Apr 7](advisor-meeting-2026-04-07.md) — previous meeting
+- [Sustainability Audit](sustainability-audit.md) · [BOM Breakdown](bom-breakdown-basic-6x6.md) — Week 2 deliverables reviewed
+- Assembly docs: [Station Details](../Assembly_docs/LED_Mirror_Station_Details.csv), [Time Calculator](../Assembly_docs/LED_Mirror_Assembly_Calculator.xlsx) — Week 3 ops planning artifacts

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" font-family="ui-monospace, Menlo, monospace">
+  <rect width="1200" height="560" fill="#0B0A0F"/>
+  <text x="40" y="50" font-size="22" fill="#F4EFE6" font-family="Georgia, serif" font-style="italic">Palette Option C — Editorial Warm</text>
+  <text x="40" y="78" font-size="12" fill="#8A8A8E">violet + warm cream + deep near-black · maximum restraint · exactly one saturated color</text>
+
+  <g transform="translate(40,120)">
+    <rect width="150" height="180" fill="#BF00FF"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#BF00FF</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Violet Reference · bloom only</text>
+  </g>
+  <g transform="translate(210,120)">
+    <rect width="150" height="180" fill="#A020D0"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#A020D0</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Violet Signal · primary UI</text>
+  </g>
+  <g transform="translate(380,120)">
+    <rect width="150" height="180" fill="#2E0D3F"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#2E0D3F</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Violet Deep · type on cream</text>
+  </g>
+  <g transform="translate(550,120)">
+    <rect width="150" height="180" fill="#F4EFE6"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#F4EFE6</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Warm Cream · light-mode base</text>
+  </g>
+  <g transform="translate(720,120)">
+    <rect width="150" height="180" fill="#8A8A8E"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#8A8A8E</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Mid Grey · secondary type, rules</text>
+  </g>
+  <g transform="translate(890,120)">
+    <rect width="150" height="180" fill="#0B0A0F" stroke="#8A8A8E" stroke-width="1"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#0B0A0F</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Near-Black · dark ground</text>
+  </g>
+
+  <g transform="translate(40,370)">
+    <rect width="540" height="120" fill="#0B0A0F" stroke="#8A8A8E" stroke-width="1"/>
+    <text x="20" y="40" font-size="14" fill="#F4EFE6" font-family="Georgia, serif" font-style="italic">I make light that layers.</text>
+    <text x="20" y="90" font-size="10" fill="#A020D0">LL-001 / 6×6 / REV-A / 2026</text>
+  </g>
+  <g transform="translate(600,370)">
+    <rect width="540" height="120" fill="#F4EFE6"/>
+    <text x="20" y="40" font-size="14" fill="#2E0D3F" font-family="Georgia, serif" font-style="italic">I make light that layers.</text>
+    <text x="20" y="90" font-size="10" fill="#A020D0">LL-001 / 6×6 / REV-A / 2026</text>
+  </g>
+
+  <text x="40" y="530" font-size="10" fill="#8A8A8E">Risk: less dynamic potential for gradients and product-line differentiation. Reward: maximum restraint; aligns cleanly with "quiet" and "considered."</text>
+</svg>

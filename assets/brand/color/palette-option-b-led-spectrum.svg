@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" font-family="ui-monospace, Menlo, monospace">
+  <rect width="1200" height="560" fill="#0B0A0F"/>
+  <text x="40" y="50" font-size="22" fill="#F4EFE6" font-family="Georgia, serif" font-style="italic">Palette Option B — LED Spectrum</text>
+  <text x="40" y="78" font-size="12" fill="#8A8A8E">violet anchor + sibling glow colors for per-product-line differentiation</text>
+
+  <g transform="translate(40,120)">
+    <rect width="150" height="180" fill="#BF00FF"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#BF00FF</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Violet Reference · anchor</text>
+  </g>
+  <g transform="translate(210,120)">
+    <rect width="150" height="180" fill="#A020D0"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#A020D0</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Violet Signal · primary UI</text>
+  </g>
+  <g transform="translate(380,120)">
+    <rect width="150" height="180" fill="#7DD3FC"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#7DD3FC</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Electric Cyan · panel line</text>
+  </g>
+  <g transform="translate(550,120)">
+    <rect width="150" height="180" fill="#F472B6"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#F472B6</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Soft Pink · secondary glow</text>
+  </g>
+  <g transform="translate(720,120)">
+    <rect width="150" height="180" fill="#FFB84D"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#FFB84D</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Nixie Amber · clock line</text>
+  </g>
+  <g transform="translate(890,120)">
+    <rect width="150" height="180" fill="#0B0A0F" stroke="#8A8A8E" stroke-width="1"/>
+    <text x="0" y="205" font-size="12" fill="#F4EFE6">#0B0A0F</text>
+    <text x="0" y="222" font-size="10" fill="#8A8A8E">Near-Black · dark ground</text>
+  </g>
+
+  <g transform="translate(40,370)">
+    <rect width="1120" height="120" fill="url(#bgrad)"/>
+    <text x="20" y="40" font-size="14" fill="#F4EFE6" font-style="italic">Violet → Cyan bloom (primary gradient device)</text>
+    <text x="20" y="90" font-size="11" fill="#8A8A8E">use inside gradient blooms and motion only — never as flat UI fill</text>
+  </g>
+  <defs>
+    <linearGradient id="bgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#BF00FF"/>
+      <stop offset="100%" stop-color="#7DD3FC"/>
+    </linearGradient>
+  </defs>
+
+  <text x="40" y="530" font-size="10" fill="#8A8A8E">Risk: looks like Govee/Nanoleaf if handled without restraint. Reward: product lines differentiate via color without adding types.</text>
+</svg>

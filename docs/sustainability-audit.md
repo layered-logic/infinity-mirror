@@ -1,3 +1,13 @@
+---
+title: Sustainability Audit — Infinity Mirror v1.0
+type: hcde-artifact
+phase: 1
+week: 2
+date: 2026-04-09
+status: complete
+tags: [hcde, sustainability, lifecycle, environmental]
+---
+
 # Sustainability Audit — Infinity Mirror v1.0
 **HCDE Independent Study — Spring 2026**
 *Lifecycle analysis covering all seven product lifecycle stages.*
@@ -257,3 +267,14 @@ The following specific decisions come directly out of this analysis:
 
 *Last updated: 2026-04-09*
 *Data sources: direct measurement (Home Assistant smart plug, 6,368 samples), manufacturer specs (WS2812B datasheet), published material intensity factors (PMMA ~3.5 kg CO2/kg, PETG ~3.5 kg CO2/kg, FR4 PCB ~6 kg CO2/kg, dimensional lumber ~0.4 kg CO2/kg).*
+
+---
+
+## Related
+
+- [Index / MOC](../index.md)
+- [Stakeholder Map](stakeholder-map.md) — end-of-life stakeholder context
+- [BOM Breakdown](bom-breakdown-basic-6x6.md) — material costs that embodied-carbon hotspots map to
+- [Market Analysis Report](Market%20Analysis%20Report.md) — right-to-repair legislation context (EU + WA/CA)
+- Right-to-Repair Philosophy *(pending)* — values doc this audit feeds into
+- [Sprint Plan](../sprint_plan.md)
