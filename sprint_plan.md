@@ -54,7 +54,7 @@ tags: [sprint, plan, milestones]
   - **Works out of the box with no required smart-home connection.** Smart-home integration is opt-in polish, not a gate on basic product function.
   - **App is the pattern editor.** Default patterns ship with firmware; users create and modify patterns through the app.
   - **Configurable LED count** — shipping product is the 6×6 (32 LEDs); the 12×12 (66 LEDs) is a test prototype used for firmware development, not a product SKU.
-  - **Default color updates to locked brand palette** (Violet Signal `#A020D0` expected, confirm Wed).
+  - **Default color updates to locked brand palette** (Indigo Signal `#3214FF` — palette shifted to indigo Apr 21, confirmed).
   - **Closed-binary firmware** with self-hosted OTA + reflash-service backstop (per right-to-repair philosophy §3, §4).
 
   Parked for Wed Apr 23 architecture block: language/framework choice, provisioning UX pattern, smart-home integration path (ESP32-C6 Zigbee/Thread/Matter native vs. ESP32-C3 + individual integrations — not solving Wed, just flagging), OTA signed-binary architecture, app protocol.
@@ -181,4 +181,4 @@ Tasks required after filing the Certificate of Formation. Items marked with a we
 - [Sprint Log](sprint_log.md) — progress tracker this plan is measured against
 - [Stakeholder Map](docs/stakeholder-map.md) — who the venture is designed around
 - [Market Analysis Report](docs/Market%20Analysis%20Report.md) — market positioning the plan is built on
-- [Advisor Meeting — Apr 14](docs/advisor-meeting-2026-04-14.md) — most recent Milestone 1 review
+- [Advisor Meeting — Apr 21](docs/Advisor-Meetings/advisor-meeting-2026-04-21.md) — most recent Milestone 1 review

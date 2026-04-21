@@ -114,4 +114,5 @@ A cross-platform scrub of Etsy and Amazon reveals over **1,900 listings** for "I
 - [BOM Breakdown](bom-breakdown-basic-6x6.md) — pricing strategy responds to the $50–120 saturation risk flagged here
 - [Brand Positioning](brand-positioning.md) — positioning builds on the market bifurcation
 - [Sustainability Audit](sustainability-audit.md) — right-to-repair legislation flagged here, validated there
+- [Right-to-Repair Philosophy](right-to-repair-philosophy.md) — the pro-consumer posture response to §3.E regulatory context
 - [Sprint Plan](../sprint_plan.md)

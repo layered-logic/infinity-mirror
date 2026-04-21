@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" font-family="ui-monospace, Menlo, monospace">
-  <rect width="1200" height="760" fill="#0B0A0F"/>
+  <rect width="1200" height="820" fill="#0B0A0F"/>
   <text x="40" y="50" font-size="22" fill="#F4EFE6" font-family="Georgia, serif" font-style="italic">Palette — Hybrid (Recommended)</text>
-  <text x="40" y="78" font-size="12" fill="#8A8A8E">editorial neutrals for structure · violet anchor everywhere · glow spectrum restricted to gradient blooms and motion</text>
+  <text x="40" y="78" font-size="12" fill="#8A8A8E">editorial neutrals for structure · indigo anchor everywhere · glow spectrum restricted to gradient blooms and motion</text>
 
-  <text x="40" y="120" font-size="11" fill="#A020D0">STRUCTURAL / EDITORIAL — flat UI and type</text>
+  <text x="40" y="120" font-size="11" fill="#F4EFE6">STRUCTURAL / EDITORIAL — flat UI and type</text>
   <g transform="translate(40,140)">
     <rect width="130" height="140" fill="#0B0A0F" stroke="#8A8A8E" stroke-width="1"/>
     <text x="0" y="165" font-size="11" fill="#F4EFE6">#0B0A0F</text>
@@ -20,65 +20,70 @@
     <text x="0" y="180" font-size="10" fill="#8A8A8E">Mid Grey · secondary</text>
   </g>
   <g transform="translate(475,140)">
-    <rect width="130" height="140" fill="#2E0D3F"/>
-    <text x="0" y="165" font-size="11" fill="#F4EFE6">#2E0D3F</text>
-    <text x="0" y="180" font-size="10" fill="#8A8A8E">Violet Deep · emphasis</text>
+    <rect width="130" height="140" fill="#150A4A"/>
+    <text x="0" y="165" font-size="11" fill="#F4EFE6">#150A4A</text>
+    <text x="0" y="180" font-size="10" fill="#8A8A8E">Indigo Deep · emphasis</text>
   </g>
 
-  <text x="40" y="355" font-size="11" fill="#A020D0">BRAND ANCHOR — present everywhere</text>
+  <text x="40" y="355" font-size="11" fill="#F4EFE6">BRAND ANCHOR — present everywhere</text>
   <g transform="translate(40,375)">
-    <rect width="130" height="140" fill="#A020D0"/>
-    <text x="0" y="165" font-size="11" fill="#F4EFE6">#A020D0</text>
-    <text x="0" y="180" font-size="10" fill="#8A8A8E">Violet Signal · UI accent</text>
+    <rect width="130" height="140" fill="#3214FF"/>
+    <text x="0" y="165" font-size="11" fill="#F4EFE6">#3214FF</text>
+    <text x="0" y="180" font-size="10" fill="#8A8A8E">Indigo Signal · UI accent</text>
   </g>
   <g transform="translate(185,375)">
-    <rect width="130" height="140" fill="#BF00FF"/>
-    <text x="0" y="165" font-size="11" fill="#F4EFE6">#BF00FF</text>
-    <text x="0" y="180" font-size="10" fill="#8A8A8E">Violet Reference · bloom</text>
+    <rect width="130" height="140" fill="#4A25FF"/>
+    <text x="0" y="165" font-size="11" fill="#F4EFE6">#4A25FF</text>
+    <text x="0" y="180" font-size="10" fill="#8A8A8E">Indigo Reference · bloom</text>
+  </g>
+  <g transform="translate(330,375)">
+    <rect width="130" height="140" fill="#4F3FB0"/>
+    <text x="0" y="165" font-size="11" fill="#F4EFE6">#4F3FB0</text>
+    <text x="0" y="180" font-size="10" fill="#8A8A8E">Indigo Stone · large areas</text>
   </g>
 
-  <text x="40" y="590" font-size="11" fill="#A020D0">GLOW SPECTRUM — gradients and motion only, never flat UI</text>
+  <text x="40" y="590" font-size="11" fill="#F4EFE6">GLOW SPECTRUM — gradients and motion only, never flat UI</text>
   <g transform="translate(40,610)">
     <rect width="540" height="80" fill="url(#vcyan)"/>
-    <text x="20" y="30" font-size="12" fill="#F4EFE6" font-style="italic">Violet → Cyan</text>
-    <text x="20" y="65" font-size="10" fill="#F4EFE6">#BF00FF → #7DD3FC — primary bloom</text>
+    <text x="20" y="30" font-size="12" fill="#F4EFE6" font-style="italic">Indigo → Cyan</text>
+    <text x="20" y="65" font-size="10" fill="#F4EFE6">#4A25FF → #7DD3FC — primary bloom</text>
   </g>
   <g transform="translate(600,610)">
     <rect width="540" height="80" fill="url(#vpink)"/>
-    <text x="20" y="30" font-size="12" fill="#F4EFE6" font-style="italic">Violet → Pink</text>
-    <text x="20" y="65" font-size="10" fill="#F4EFE6">#BF00FF → #F472B6 — secondary bloom</text>
+    <text x="20" y="30" font-size="12" fill="#F4EFE6" font-style="italic">Indigo → Pink</text>
+    <text x="20" y="65" font-size="10" fill="#F4EFE6">#4A25FF → #F472B6 — secondary bloom (passes through violet midtone)</text>
   </g>
 
-  <text x="40" y="725" font-size="11" fill="#A020D0">IN SITU — dark + light preview</text>
+  <text x="40" y="725" font-size="11" fill="#F4EFE6">IN SITU — dark + light preview</text>
   <g transform="translate(40,745)">
     <rect width="540" height="60" fill="#0B0A0F" stroke="#8A8A8E" stroke-width="1"/>
     <rect x="20" y="10" width="200" height="40" fill="url(#blob)" opacity="0.9"/>
     <text x="240" y="28" font-size="12" fill="#F4EFE6" font-family="Georgia, serif" font-style="italic">I make light that layers.</text>
-    <text x="240" y="48" font-size="9" fill="#A020D0">LL-001 / 6×6 / REV-A / 2026</text>
+    <text x="240" y="48" font-size="9" fill="#8E7FFF">LL-001 / 6×6 / REV-A / 2026</text>
   </g>
   <g transform="translate(600,745)">
     <rect width="540" height="60" fill="#F4EFE6"/>
     <rect x="20" y="10" width="200" height="40" fill="url(#blobLight)" opacity="0.6"/>
-    <text x="240" y="28" font-size="12" fill="#2E0D3F" font-family="Georgia, serif" font-style="italic">I make light that layers.</text>
-    <text x="240" y="48" font-size="9" fill="#A020D0">LL-001 / 6×6 / REV-A / 2026</text>
+    <text x="240" y="28" font-size="12" fill="#150A4A" font-family="Georgia, serif" font-style="italic">I make light that layers.</text>
+    <text x="240" y="48" font-size="9" fill="#3214FF">LL-001 / 6×6 / REV-A / 2026</text>
   </g>
 
   <defs>
     <linearGradient id="vcyan" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#BF00FF"/>
+      <stop offset="0%" stop-color="#4A25FF"/>
       <stop offset="100%" stop-color="#7DD3FC"/>
     </linearGradient>
     <linearGradient id="vpink" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#BF00FF"/>
+      <stop offset="0%" stop-color="#4A25FF"/>
       <stop offset="100%" stop-color="#F472B6"/>
     </linearGradient>
     <radialGradient id="blob" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#BF00FF" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#BF00FF" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#4A25FF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#4A25FF" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="blobLight" cx="50%" cy="50%" r="60%">
-      <stop offset="0%" stop-color="#BF00FF" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#BF00FF" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#4A25FF" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#4A25FF" stop-opacity="0"/>
     </radialGradient>
   </defs>
 </svg>

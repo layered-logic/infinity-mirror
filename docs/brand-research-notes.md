@@ -26,7 +26,7 @@ Companion doc to [Brand Positioning](brand-positioning.md). This file holds the 
 - **Motion / pattern:** Kaleidoscopic mirrored imagery, lens-flare photography, gradient meshes that read as "color leaking."
 - **Signature device:** Kaleidoscopic symmetry of electronic/light photography set against flat type blocks — soft luminous chaos pinned by rigid typographic frames.
 - **Pull:** The "light bleed pinned under a hard type lockup" move.
-- **Avoid:** Loud rainbow palette — Bill's violet anchor gets diluted if we chase CMYK chaos.
+- **Avoid:** Loud rainbow palette — Bill's indigo anchor gets diluted if we chase CMYK chaos.
 
 ## Reference 2 — SPRING Performing Arts Festival (LAVA)
 
@@ -50,7 +50,7 @@ Companion doc to [Brand Positioning](brand-positioning.md). This file holds the 
 - **Motion / pattern:** Restrained in identity; motion lives in the generative work by Felix Faire.
 - **Signature device:** The pairing of warm neutral type against deep technical imagery — humanist voice on engineering substrate.
 - **Pull:** The disciplined two-type system + near-black + one accent restraint.
-- **Avoid:** The warm-neutral palette — Layered Logic's system is violet, not parchment.
+- **Avoid:** The warm-neutral palette — Layered Logic's system is indigo, not parchment.
 
 ## Reference 4 — Intrinsic (Felix Faire generative visuals)
 
@@ -74,7 +74,7 @@ Companion doc to [Brand Positioning](brand-positioning.md). This file holds the 
 - **Motion / pattern:** Flowing ribbon-like gradients representing qubit states — smooth, volumetric, photographic, but *always* diagrammed on top of with crisp mono labels and thin rules.
 - **Signature device:** The "annotated sublime" — a beautiful fluid gradient form treated like a specimen, with mono captions and tick marks pinning it down.
 - **Pull:** The annotation layer — mono labels, tick marks, thin rules that turn a soft gradient into a "measured" object.
-- **Avoid:** IBM blue — Layered Logic's anchor is violet.
+- **Avoid:** IBM blue — Layered Logic's anchor is indigo (cooler and more saturated than IBM's signature blue; the distinction matters).
 
 ---
 
@@ -89,20 +89,20 @@ Companion doc to [Brand Positioning](brand-positioning.md). This file holds the 
 
 **A credible Layered Logic identity** would be:
 - Dark-mode ground `~#0B0A0F` (not pure black)
-- A single violet `#BF00FF` gradient bloom as the recurring "hero" element (varying in scale, never in hue)
+- A single indigo `#4A25FF` gradient bloom as the recurring "hero" element (varying in scale, never in hue)
 - Neue Haas Grotesk ExtraLight Italic for first-person voice at display size
 - A mono (JetBrains Mono / Berkeley Mono / IBM Plex Mono) for every technical moment — serial numbers, coordinates, BOM IDs, timestamps
-- A 1px violet or white rule system that frames the bloom like a measurement
+- A 1px indigo or white rule system that frames the bloom like a measurement
 
 ---
 
 ## Five Concrete Visual Devices to Adopt
 
-1. **Violet bloom behind ExtraLight Italic display type.** A single soft `#BF00FF` radial gradient, ~40% of canvas, sits behind a left-aligned italic "I" statement. Type is at full opacity; bloom is blurred 80–120px. No other color.
+1. **Indigo bloom behind ExtraLight Italic display type.** A single soft `#4A25FF` radial gradient, ~40% of canvas, sits behind a left-aligned italic "I" statement. Type is at full opacity; bloom is blurred 80–120px. No other color.
 2. **Mono tick-mark frame.** Thin 1px white rules with mono labels (e.g., `LL-001 / 6x6 / REV-A / 2026`) at the four edges of every key image — IBM Quantum's annotation move, applied to product photography.
-3. **Wireframe over bloom for product reveals.** A 1px violet wireframe of the mirror (exploded axonometric) floats over a volumetric violet bloom — Felix Faire's move, executed in 2D vector so it stays cheap to produce.
-4. **The soft-shape container.** LAVA's color-field blob, recolored to a violet-to-black gradient, used as a recurring crop mask for photography and a container for short-form copy. Always soft-edged; type that sits on it is always sharp.
-5. **Overprint moments, sparingly.** One borrowed Diplomatie move: let the violet bloom pass *through* a mono caption so the caption inverts where it overlaps the bloom — a single permitted "collision" per composition, signaling the product is light-based.
+3. **Wireframe over bloom for product reveals.** A 1px indigo wireframe of the mirror (exploded axonometric) floats over a volumetric indigo bloom — Felix Faire's move, executed in 2D vector so it stays cheap to produce.
+4. **The soft-shape container.** LAVA's color-field blob, recolored to an indigo-to-black gradient, used as a recurring crop mask for photography and a container for short-form copy. Always soft-edged; type that sits on it is always sharp.
+5. **Overprint moments, sparingly.** One borrowed Diplomatie move: let the indigo bloom pass *through* a mono caption so the caption inverts where it overlaps the bloom — a single permitted "collision" per composition, signaling the product is light-based.
 
 ## Anti-Moves
 
@@ -119,4 +119,6 @@ Companion doc to [Brand Positioning](brand-positioning.md). This file holds the 
 
 - [Index / MOC](../index.md)
 - [Brand Positioning](brand-positioning.md) — decisions this research informs
-- `assets/moodboards/` — image captures of references (to be added)
+- [Typography Decisions](typography-decisions.md) — IBM Quantum's Plex Mono and Intrinsic's two-type restraint feed directly into the NHG + Berkeley Mono choice
+- [Logo Spec](../assets/brand/logo/logo-spec.md) — Intrinsic / IBM Quantum / Field.io generative systems are the precedent for the P5-driven logo
+- [Moodboards index](../assets/moodboards/README.md) — links + summaries for the five references analyzed here

@@ -129,5 +129,6 @@ So: if you're holding one of these mirrors and something on this page reads as a
 - [Sustainability Audit](sustainability-audit.md) — lifecycle evidence behind the repair claims (Stage 6)
 - [Market Analysis Report](Market%20Analysis%20Report.md) — regulatory context (§3.E Repairability Liability)
 - [Stakeholder Map](stakeholder-map.md) — end-of-life and repair stakeholders this philosophy is written for
+- [Firmware Architecture Scoping](firmware-architecture-scoping.md) — where the closed-binary + self-hosted OTA + reflash-service commitments get technical definition
 - User Repair Guide *(pending — Week 4 → Week 8 final)* — the practical how-to companion
 - [Sprint Plan](../sprint_plan.md) — Week 4 deliverables

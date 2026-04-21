@@ -404,6 +404,7 @@ These questions emerged from the stakeholder mapping exercise and will guide pri
 - [Index / MOC](../index.md)
 - [Market Analysis Report](Market%20Analysis%20Report.md) — segment and competitor context
 - [Sustainability Audit](sustainability-audit.md) — end-of-life stakeholder analysis
+- [Right-to-Repair Philosophy](right-to-repair-philosophy.md) — operationalizes the end-of-life and repair stakeholders mapped here
 - [BOM Breakdown](bom-breakdown-basic-6x6.md) — cost structure referenced by Self-Buyer pricing
 - [Brand Positioning](brand-positioning.md) — audience ranking draws from §3 archetypes here
 - [Sprint Plan](../sprint_plan.md)

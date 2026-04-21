@@ -163,5 +163,6 @@ Rationale: best combination of small footprint, lowest cost (~$2 LCSC), strong a
 
 - [Index / MOC](../index.md)
 - [ESP32 Module Comparison](esp32-module-comparison.md) — full-field comparison this shortlist was drawn from
+- [Firmware Architecture Scoping](firmware-architecture-scoping.md) — firmware decisions targeting the C3-MINI-1 selected here
 - [BOM Breakdown](bom-breakdown-basic-6x6.md) — where the ~$2 module cost lands
 - [Sprint Plan](../sprint_plan.md)

@@ -171,5 +171,6 @@ Prices are LCSC single-unit (cheapest legitimate source) and Mouser/DigiKey sing
 
 - [Index / MOC](../index.md)
 - [ESP32 Module Shortlist](esp32-module-shortlist.md) — narrowed set with final selection
+- [Firmware Architecture Scoping](firmware-architecture-scoping.md) — firmware decisions building on the C3-MINI-1 selection (and C6 as potential SKU variant)
 - [BOM Breakdown](bom-breakdown-basic-6x6.md) — module cost feeds the BOM
 - [Sprint Plan](../sprint_plan.md) — engineering timeline

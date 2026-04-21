@@ -55,7 +55,7 @@ All three ship together as a system. The mobile app is the main user-facing surf
 1. **Standalone out-of-box.** The product must work fully without any smart-home connection. Smart-home integration is opt-in polish, never a gate on basic function. A buyer who never opens the app and never touches their Wi-Fi should still get a working mirror with sensible defaults.
 2. **App is the pattern editor.** The firmware ships with a handful of default patterns and runs a generic pattern interpreter. Users create and modify their own patterns through the app; the app pushes pattern definitions to the device. This matches the "Living" adjective from [brand positioning §3](brand-positioning.md#3-brand-personality--five-adjectives) — the product is dynamic, adaptive, user-shaped.
 3. **Configurable LED count.** The shipping product is the 6×6 (32 LEDs). The 12×12 unit (66 LEDs) is a firmware test prototype — used for development and scale testing, not for sale. Firmware must accept the count as a config value, not a hardcoded constant.
-4. **Brand-palette default state.** The prototype's default-on color `(0.6, 0.0, 1.0)` = `#9900FF` is close to brand but not exact. New default: **Violet Signal `#A020D0`** at 80% brightness (confirm Wed). Every power-on returns the unit to this state.
+4. **Brand-palette default state.** The prototype's default-on color `(0.6, 0.0, 1.0)` = `#9900FF` is close to brand but not exact. New default: **Indigo Signal `#3214FF`** at 80% brightness (palette shifted to indigo Apr 21; confirmed). Every power-on returns the unit to this state.
 5. **Closed-binary firmware, self-hosted OTA, reflash-service backstop.** Per right-to-repair philosophy §3 and §4. The firmware source is not public; the hardware (schematic, BOM, versioned PCBs) is. An owner with a dead board sends it to me for reflash; an owner with a bricked firmware pulls an OTA update. I'll revisit source escrow if the business EOLs.
 
 ---
@@ -136,7 +136,7 @@ The new firmware must at minimum match what the prototype already does. Baseline
 - [ ] Wi-Fi connectivity with stored credentials
 - [ ] OTA firmware update path (self-hosted, not ESPHome)
 - [ ] Button input on GPIO9, active-low with pullup
-- [ ] Single-click: toggle on/off, default state = brand violet at 80% brightness
+- [ ] Single-click: toggle on/off, default state = Indigo Signal `#3214FF` at 80% brightness
 - [ ] Double-click: cycle through effects when on; turn on to default when off
 - [ ] At least the 5 prototype effects: Rainbow, Color Wipe, Twinkle, Scanner, Random Twinkle (or better)
 
@@ -160,7 +160,7 @@ End of Wednesday, we should have:
 - [ ] A documented posture on smart-home integration that doesn't box us in (§5.3)
 - [ ] A picked OTA architecture (§5.4)
 - [ ] A picked app protocol stack (§5.5)
-- [ ] Confirmed default color hex (`#A020D0` or other)
+- [x] Confirmed default color hex (`#3214FF` — Indigo Signal; confirmed Apr 21 with palette shift)
 - [ ] A short working repo scaffold at `Firmware/ESP32/` for the new firmware (`main.c`/`main.cpp`/`src/main.rs`, whatever §5.1 lands on) — first commit is "scaffold + blink," not working features
 
 We do **not** need feature parity with the prototype by end of day. That's the following two weeks' work.

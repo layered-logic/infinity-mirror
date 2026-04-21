@@ -1,0 +1,116 @@
+esphome:
+  name: esphome-web-b2332c
+  friendly_name: Infinity Lamp
+  min_version: 2025.9.0
+  name_add_mac_suffix: false
+
+esp32:
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+logger:
+api:
+ota:
+- platform: esphome
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+light:
+  - platform: esp32_rmt_led_strip
+    name: "Neopixel Bar"
+    id: bar
+    chipset: ws2812
+    pin: GPIO8
+    num_leds: 66
+    rgb_order: GRB
+    default_transition_length: 250ms
+
+    # Force purple 80% every time the light turns on
+    on_turn_on:
+      then:
+        - light.turn_on:
+            id: bar
+            brightness: 0.8
+            red: 0.6
+            green: 0.0
+            blue: 1.0
+
+    effects:
+      - addressable_rainbow:
+          name: Rainbow
+      - addressable_color_wipe:
+          name: Color Wipe
+          add_led_interval: 200ms
+      - addressable_twinkle:
+          name: Twinkle
+      - addressable_scan:
+          name: Scanner
+      - addressable_random_twinkle:
+          name: Random Twinkle
+
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          // no-op
+
+binary_sensor:
+  - platform: gpio
+    id: mode_button
+    name: "Bar Button"
+    pin:
+      number: GPIO9
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+
+    on_multi_click:
+      # SINGLE CLICK — toggle with purple 80% brightness default
+      - timing:
+          - ON for at most 300ms
+          - OFF for at least 200ms
+        then:
+          - if:
+              condition:
+                light.is_off: bar
+              then:
+                - light.turn_on:
+                    id: bar
+                    brightness: 0.8
+                    red: 0.6
+                    green: 0.0
+                    blue: 1.0
+              else:
+                - light.turn_off: bar
+
+      # DOUBLE CLICK — cycle effects, with default color if turning on
+      - timing:
+          - ON for at most 300ms
+          - OFF for at most 300ms
+          - ON for at most 300ms
+          - OFF for at least 200ms
+        then:
+          - if:
+              condition:
+                light.is_on: bar
+              then:
+                - lambda: |-
+                    static int idx = 0;
+                    const char* effects[] = {
+                      "Random Twinkle","Rainbow","Color Wipe","Twinkle","Scanner"
+                    };
+                    idx = (idx + 1) % (sizeof(effects)/sizeof(effects[0]));
+                    auto call = id(bar).turn_on();
+                    call.set_effect(effects[idx]);
+                    call.perform();
+              else:
+                - light.turn_on:
+                    id: bar
+                    brightness: 0.8
+                    red: 0.6
+                    green: 0.0
+                    blue: 1.0

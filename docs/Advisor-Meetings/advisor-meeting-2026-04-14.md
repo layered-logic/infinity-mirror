@@ -115,7 +115,7 @@ Packaging is still an open line item — no dimensions, no insert design, no sup
 
 ## Related
 
-- [Index / MOC](../index.md)
+- [Index / MOC](index.md)
 - [Advisor Meeting — Apr 7](advisor-meeting-2026-04-07.md) — previous meeting
 - [Sustainability Audit](sustainability-audit.md) · [BOM Breakdown](bom-breakdown-basic-6x6.md) — Week 2 deliverables reviewed
-- Assembly docs: [Station Details](../Assembly_docs/LED_Mirror_Station_Details.csv), [Time Calculator](../Assembly_docs/LED_Mirror_Assembly_Calculator.xlsx) — Week 3 ops planning artifacts
+- Assembly docs: [Station Details](LED_Mirror_Station_Details.csv), [Time Calculator](LED_Mirror_Assembly_Calculator.xlsx) — Week 3 ops planning artifacts

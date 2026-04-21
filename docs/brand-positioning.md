@@ -161,33 +161,35 @@ This does three useful things at once:
 
 **Dual-mode with system-preference default.**
 
-- **Dark mode (primary identity):** techier, nerdier, Teenage Engineering-adjacent vibe. Near-black backgrounds, violet glow accents, generous negative space.
-- **Light mode:** approachable home-goods vibe, closer to Crate & Barrel / interior-design editorial. Cream or off-white base, deep violet accents connecting back to the parent brand.
-- The violet motif connects the two modes — it's what says "Layered Logic" regardless of which mode the viewer is in.
+- **Dark mode (primary identity):** techier, nerdier, Teenage Engineering-adjacent vibe. Near-black backgrounds, indigo glow accents, generous negative space.
+- **Light mode:** approachable home-goods vibe, closer to Crate & Barrel / interior-design editorial. Cream or off-white base, deep indigo accents connecting back to the parent brand.
+- The indigo motif connects the two modes — it's what says "Layered Logic" regardless of which mode the viewer is in.
 - Default behavior on website/app: detect `prefers-color-scheme` and serve the user's system preference. Manual override available.
 
 **Hypothesis to test (future user research):** technical / design-literate users will self-select into dark mode at higher rates; home/lifestyle buyers will trend light. If true, this gives the brand a natural self-segmenting audience experience without us having to ask who they are. *(Add to user-research sprint, Weeks 4–5.)*
 
 ### Color Anchor
 
-**Violet** (user calls it violet, not magenta) at `#BF00FF` as an anchor / motif across the **Layered Logic parent brand**, not just the product mini-brand. Slightly desaturated in practice.
+**Indigo** at `#4A25FF` as an anchor / motif across the **Layered Logic parent brand**, not just the product mini-brand. Cool, electric, engineering-coded — distinct from the magenta-violet region it originally drifted into. The shift to indigo (Apr 21) also aligns the palette with the live P5 logo sketch, which was already rendering indigo values.
 
-Candidate desaturations (to explore as swatches in `assets/brand/color/`):
+Ladder (swatches in [assets/brand/color/](../assets/brand/color/)):
 
-| Name (working) | Hex | Use |
+| Name | Hex | Use |
 |---|---|---|
-| Violet Reference | `#BF00FF` | Glow / pure reference — probably too hot for large areas |
-| Violet Signal | `#A020D0` | ~70% sat — still electric, less aggressive; accent on dark mode |
-| Violet Stone | `#8E3EB0` | ~55% sat — dusty electric violet, works at scale |
-| Violet Deep | `#4A1065` | Near-black violet for text/backgrounds in dark mode |
+| Indigo Reference | `#4A25FF` | Glow / pure reference — matches outer logo L; too hot for large flat areas |
+| Indigo Signal | `#3214FF` | Paired accent — matches inner logo L; primary UI accent on dark mode |
+| Indigo Stone | `#4F3FB0` | ~55% sat — dusty indigo, works at scale, large fills |
+| Indigo Deep | `#150A4A` | Near-black indigo for text/backgrounds in dark mode |
+
+**Note on the shift:** the earlier "Violet Reference/Signal/Stone/Deep" ladder (`#BF00FF`, `#A020D0`, `#8E3EB0`, `#4A1065`) was retired Apr 21 when the magenta cast read too pink in rendered artifacts. The replacement ladder keeps the same four-rung structure (reference → signal → stone → deep) but anchors it in indigo.
 
 **Pairing:** looks strong against greyscale. Secondary/tertiary palette direction TBD (see Question Q7 below).
 
 ### Typography — Decision (Apr 20)
 
-Neue Haas Grotesk ExtraLight Italic is the default display and body voice. Berkeley Mono is the technical accent. No serif.
+**Faces:** Neue Haas Grotesk (display + body) · Berkeley Mono (technical accent) · No serif.
 
-**The inversion:** in this system, *italic is default and upright is emphasis* — the opposite of most typographic systems. This is the novelty move. Upright weights aren't forbidden; they're deployed deliberately to create a gear-shift moment.
+**The inversion:** *italic is default; upright is emphasis* — the opposite of most typographic systems. This is the signature move.
 
 | Role | Face | Weight | Posture |
 |---|---|---|---|
@@ -198,16 +200,11 @@ Neue Haas Grotesk ExtraLight Italic is the default display and body voice. Berke
 | Technical callouts | **Berkeley Mono** | Regular | Upright (always) |
 | H3 / small heads (product UI, dense screens) | Neue Haas Grotesk Text | Medium | Upright permitted for legibility where italic gets tiring |
 
-**Why Berkeley Mono (not JetBrains Mono, not ABC Diatype Mono):**
-- Berkeley Mono has the most characterful drawing without becoming decorative
-- ABC Diatype Mono was close but its "R" has a small squiggle/tail that draws the eye — wrong for a brand that prizes restraint
-- JetBrains is excellent and free but slightly generic in this lineup
+**Reading rhythm this produces:** flowing italic for narrative and product copy (ambient, living), punctuated by upright Berkeley Mono for any technical/measurement moment (serial numbers, versions, coordinates, BOM IDs). The mono is the "anchor of stability" — the hard outline against the soft gradient.
 
-**Reading rhythm this produces:** flowing italic for narrative and product copy (ambient, living), punctuated by upright Berkeley Mono for any technical/measurement moment (serial numbers, versions, coordinates, BOM IDs). The upright mono becomes the "anchor of stability" Felix Faire's work calls for — the hard outline against the soft gradient.
+**Licensing note:** Neue Haas Grotesk (Commercial Type) and Berkeley Mono (Berkeley Graphics) are both commercial. Purchase both before any public-facing use. Records tracked at [assets/brand/type/LICENSE.md](../assets/brand/type/LICENSE.md).
 
-**When to use a *straight-aligned upright block* as a device:** a section that needs to snap the reader to attention — "Specs," "Repair Guide," "What's in the box" — can be set upright to signal a tonal shift from the italic narrative voice into the functional voice. The gear-shift is the engagement mechanism.
-
-**Licensing note:** Neue Haas Grotesk is commercial (Commercial Type). Berkeley Mono is commercial (Berkeley Graphics). Purchase both before any public-facing use. Document in `assets/brand/type/LICENSE.md`.
+> **Full rationale** — why Neue Haas Grotesk (not Inter/GT America/Söhne), why Berkeley Mono (not JetBrains/Plex/Diatype Mono), why italic-default, and what it costs: see **[Typography Decisions](typography-decisions.md)**.
 
 ### Moodboard References
 
@@ -238,11 +235,11 @@ The meta-taste: **structured editorial typography + kinetic color/pattern surfac
 
 From the common grammar across all five references — adopted as core brand moves:
 
-1. **Violet bloom behind ExtraLight Italic display type.** A single soft `#BF00FF` radial gradient (~40% canvas, blurred 80–120px) behind left-aligned italic "I" statements. Type at full opacity, bloom out-of-focus. No other color.
+1. **Indigo bloom behind ExtraLight Italic display type.** A single soft `#4A25FF` radial gradient (~40% canvas, blurred 80–120px) behind left-aligned italic "I" statements. Type at full opacity, bloom out-of-focus. No other color.
 2. **Mono tick-mark frame.** Thin 1px white rules with mono labels — e.g. `LL-001 / 6×6 / REV-A / 2026` — at the edges of key images. Annotation-as-branding (IBM Quantum move).
-3. **Wireframe over bloom for product reveals.** 1px violet wireframe of the product (exploded axonometric) floating over a volumetric violet bloom. Executed as 2D vector so it's cheap to produce — no render farm required (Felix Faire move, simplified).
-4. **Soft-shape container.** An amorphous violet-to-black gradient blob as recurring crop mask for photography or container for short-form copy. Always soft-edged, type on it always sharp (LAVA move, recolored).
-5. **Overprint collision, sparingly.** Violet bloom passes *through* a mono caption so the caption inverts where it overlaps. One permitted "collision" per composition. Signals the product is light-based (Diplomatie move, restrained).
+3. **Wireframe over bloom for product reveals.** 1px indigo wireframe of the product (exploded axonometric) floating over a volumetric indigo bloom. Executed as 2D vector so it's cheap to produce — no render farm required (Felix Faire move, simplified).
+4. **Soft-shape container.** An amorphous indigo-to-black gradient blob as recurring crop mask for photography or container for short-form copy. Always soft-edged, type on it always sharp (LAVA move, recolored).
+5. **Overprint collision, sparingly.** Indigo bloom passes *through* a mono caption so the caption inverts where it overlaps. One permitted "collision" per composition. Signals the product is light-based (Diplomatie move, restrained).
 
 ### Anti-Moves
 
@@ -276,6 +273,8 @@ Open design decisions that fall out of this:
 **Locked: Hybrid.** See swatch at [assets/brand/color/palette-hybrid-recommended.svg](../assets/brand/color/palette-hybrid-recommended.svg).
 
 Options B (pure LED spectrum) and C (pure editorial warm) were considered and rejected in favor of the layered system below, which takes the restraint of C for structural use and the saturation of B for moments of light/motion only. The analyses of each pure option are preserved below for reference.
+
+*(Options B and C below were written while the anchor was magenta-violet. Their structural arguments are preserved as-is; the anchor has since shifted to indigo `#4A25FF`. References to "violet" in these sections should be read as referring to the saturated brand anchor, whatever its current hue — both options are valid approaches regardless of anchor color.)*
 
 ### Option B — LED Spectrum Duotone
 
@@ -314,77 +313,49 @@ Violet + warm cream base (`~#F4EFE6`) + deep near-black (`~#0E0D10`). No other s
 Use both, but for different roles. Most references (IBM Quantum especially) operate this way.
 
 ```
-Layered Logic — Layered Palette (proposed)
+Layered Logic — Layered Palette (locked Apr 20, indigo-shift Apr 21)
 
 Structural / editorial layer (inherited from Option C):
   Near-black ground        #0B0A0F   — dark mode base
   Warm off-white           #F4EFE6   — light mode base, also used for type on dark
   Mid grey                 #8A8A8E   — secondary type, disabled states, rules
-  Violet Deep              #2E0D3F   — deep violet for text emphasis on cream, shadows
+  Indigo Deep              #150A4A   — deep indigo for text emphasis on cream, shadows
 
 Brand anchor (present everywhere, unmissable):
-  Violet Signal            #A020D0   — primary violet accent, UI
-  Violet Reference         #BF00FF   — pure violet, used only inside blooms/glows
+  Indigo Reference         #4A25FF   — pure indigo, used inside blooms/glows; outer logo L
+  Indigo Signal            #3214FF   — paired accent, primary UI accent on dark; inner logo L
+  Indigo Stone             #4F3FB0   — ~55% sat, dusty indigo for large fills
 
 Glow spectrum (Option B, restricted to gradients/blooms/motion — never flat UI):
-  Violet → Cyan            #BF00FF → #7DD3FC   — primary bloom gradient
-  Violet → Pink            #BF00FF → #F472B6   — secondary bloom (for softer moments)
+  Indigo → Cyan            #4A25FF → #7DD3FC   — primary bloom gradient
+  Indigo → Pink            #4A25FF → #F472B6   — secondary bloom (for softer moments, passes through violet midtone)
 
 Per-product-line accent (future, Tier 3):
-  Infinity Mirror line     Violet Signal       — inherits the parent anchor
+  Infinity Mirror line     Indigo Signal       — inherits the parent anchor
   Nixie Clock line         Warm amber          — TBD hex, chosen to be "the nixie color"
   Future display line      TBD                 — stays in the glow-spectrum family
 ```
 
-**Key rule:** saturated colors only show up inside *gradient blooms* and *motion*. Static UI and typography use the editorial layer (near-black, cream, mid grey, violet deep). This is the discipline that keeps the brand from collapsing into Govee.
+**Key rule:** saturated colors only show up inside *gradient blooms* and *motion*. Static UI and typography use the editorial layer (near-black, cream, mid grey, Indigo Deep). This is the discipline that keeps the brand from collapsing into Govee.
 
 **Swatch files (in `assets/brand/color/`):**
-- [palette-hybrid-recommended.svg](../assets/brand/color/palette-hybrid-recommended.svg) — **LOCKED**
-- [palette-option-b-led-spectrum.svg](../assets/brand/color/palette-option-b-led-spectrum.svg) — reference only
-- [palette-option-c-editorial-warm.svg](../assets/brand/color/palette-option-c-editorial-warm.svg) — reference only
+- [palette-hybrid-recommended.svg](../assets/brand/color/palette-hybrid-recommended.svg) — **LOCKED** (indigo-shifted Apr 21)
+- [palette-option-c-editorial-warm.svg](../assets/brand/color/palette-option-c-editorial-warm.svg) — reference only (rejected alternative, indigo-shifted Apr 21 to match current anchor)
+- *Option B swatch removed Apr 21 — the hybrid embeds Option B's glow-spectrum role directly in its "GLOW SPECTRUM" block, so a standalone Option B swatch is redundant.*
 
 ## 7. Logo Direction
 
-**Concept (Bill, Apr 20):** Two nested "L"s, generative/code-driven in P5.js.
+**Concept (Bill, Apr 20):** Two nested "L"s, generative/code-driven in P5.js, with histogram bars radiating from each L's path in response to mouse proximity. Canonical source: [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo).
 
-**Repo:** [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — active WIP, not finalized.
+**The name is literal** — Layered Logic references layers of 3D printing, layers of the mirror (frame → LED → acrylic → mirror coating → panel), layers of the design process, and layers of data/analysis. A nested-L mark puts the layering *in the mark itself*. Each L is a layer; the nesting is the logic.
 
-**First-pass review (Apr 20, parked for later — out of scope this sprint):**
+**System-level alignment:** `angleDeg = 86°` tilts the mark 4° off true vertical — the same posture as the italic-default type system from §5. Typography and logo share one posture.
 
-What's working:
-- `angleDeg = 86°` puts the mark in the same posture as the italic-default type system — system-level alignment
-- Histogram-on-a-path with `barSteps = 5` quantization lands in the Field.io / IBM Quantum "measured sublime" grammar (not generic waveform)
-- Mouse reactivity earns the "Living" adjective from §3 — the mark responds to presence
-- Two nested Ls + bars radiating = "layered" literalized three times over
+**Status (Apr 21):** logo spec, code annotations, and canonical rest-pose SVGs (dark, light, mono) are captured in [assets/brand/logo/](../assets/brand/logo/). Color alignment with the palette is resolved — outer L `#4A25FF`, inner L `#3214FF`, matching the locked Indigo Reference / Signal anchors. Logo refinement is otherwise scoped out-of-sprint for Spring 2026 — remaining parked items (favicon variant, `ampScale` decision, optional indigo bloom layer, P5 source sync) live in [logo-spec.md](../assets/brand/logo/logo-spec.md).
 
-Open items to return to (not now):
-1. **Color** — current `(66,10,255)` / `(50,20,255)` skew indigo-blue; brand is `#BF00FF`/`#A020D0` violet. Decide: deliberate split, or pull the mark into locked palette?
-2. **Define a canonical rest pose** — the static "mouse far away" state becomes the frozen PNG for print/etch/favicon. Right now `S`-key exports whatever the current frame is; need a defined reference pose.
-3. **Favicon variant** — 16×16 won't hold two Ls + gap. Simplified single-L or fused ligature needed.
-4. **`ampScale = 0.5` on horizontal arm** — deliberate asymmetry or balance hack? Document either way.
-5. Optional: add violet bloom layer behind the Ls for web hero — activates §5 devices #1 and #4 for free.
-
-The name "Layered Logic" is literal — it references:
-- Layers of 3D printing (manufacturing process)
-- Layers of the mirror (frame → LED → acrylic → mirror coating → front panel)
-- Layers of the design process (research → sketch → prototype → iterate → ship)
-- Layers of data/analysis (raw → cleaned → modeled → insight) — relevant to future consulting work
-
-A nested-L mark puts the layering *in the mark itself*. Each L is a layer; the nesting is the logic.
-
-**Status:** logo exploration is happening in P5.js — under active, not-yet-finalized development. Bill will share the repo link when he's ready for feedback. Until then, no parallel static sketches are being produced here — this doc captures only the constraints any candidate mark will need to satisfy.
-
-**Logo system constraints (any P5 candidate will be tested against these):**
-- Works as a favicon at 16×16 (extreme constraint)
-- Works etched into a physical product (monochrome, high contrast)
-- Works over a gradient bloom (mask or solid variant)
-- Has a static-export path — the mark must have a canonical frozen state for use in print, etching, laser, and small-format product application, even if the "live" mark is generative
-- Needs both wordmark (`layered logic`, set in Neue Haas Grotesk) and standalone mark versions
-
-**Generative-mark implications (if the P5 work becomes the primary mark):**
-- Aligns strongly with the references — Intrinsic, IBM Quantum, Field.io all use generative brand systems
-- Requires a "reference frame" — one canonical still of the generative mark that becomes the legal/printable logo
-- Opens an animated-logo path for the website hero (the motion *is* the mark)
+> **Full spec** — anatomy, constraints, usage rules, parked review items, and the code companion: see **[assets/brand/logo/logo-spec.md](../assets/brand/logo/logo-spec.md)**.
+> **Code notes** — parameter reference, architecture, dev recipes: see **[assets/brand/logo/logo-code-notes.md](../assets/brand/logo/logo-code-notes.md)**.
+> **Rest pose SVG** — deterministic canonical form: see **[assets/brand/logo/logo-primary-dark.svg](../assets/brand/logo/logo-primary-dark.svg)**.
 
 ## 8. What "Layered Logic" Means
 
@@ -449,6 +420,9 @@ Bill's etymology (captured verbatim, Apr 20):
 ## Related
 
 - [Index / MOC](../index.md)
+- [Brand Research Notes](brand-research-notes.md) — the five-reference analysis that informs §5 and §6
+- [Typography Decisions](typography-decisions.md) — full rationale for the italic-default move in §5
+- [Logo Spec](../assets/brand/logo/logo-spec.md) · [code notes](../assets/brand/logo/logo-code-notes.md) · [rest-pose SVG](../assets/brand/logo/logo-primary-dark.svg) — §7 expansion
 - [Stakeholder Map](stakeholder-map.md) — archetypes (§3.1) that Section 2 audience ranking draws from
 - [Market Analysis Report](Market%20Analysis%20Report.md) — 4-segment bifurcation positioning is built against
 - [Right-to-Repair Philosophy](right-to-repair-philosophy.md) — inherits voice/tone from this doc (§4)

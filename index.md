@@ -9,7 +9,7 @@ tags: [moc, home]
 
 > Home note. Start here for any session. Links fan out to every other doc.
 
-**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-20 · **Current week:** 4 of 11
+**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-21 · **Current week:** 4 of 11
 
 ---
 
@@ -20,16 +20,18 @@ tags: [moc, home]
 **Brand track — substantially locked (Apr 20):**
 - [Brand Positioning Worksheet](docs/brand-positioning.md) — three-tier architecture, audience priority, voice, typography inversion (italic default), Berkeley Mono, hybrid palette, *"Light that layers"* tagline motif
 - [Brand Research Notes](docs/brand-research-notes.md) — five moodboard references analyzed, five signature visual devices distilled
+- [Typography Decisions](docs/typography-decisions.md) — full rationale for italic-default, NHG + Berkeley Mono (Apr 21)
+- [Logo spec](assets/brand/logo/logo-spec.md) + [code notes](assets/brand/logo/logo-code-notes.md) + rest-pose SVGs ([dark](assets/brand/logo/logo-primary-dark.svg) · [light](assets/brand/logo/logo-primary-light.svg) · [mono](assets/brand/logo/logo-primary-mono.svg)) — local mirror of the P5 sketch at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo), color pulled into the locked palette (Apr 21)
 - [Palette swatches](assets/brand/color/) — B (reference), C (reference), Hybrid (locked)
-- Logo P5.js repo at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — reviewed, parked until Bill reopens
+- [Moodboards index](assets/moodboards/) — five references with links + summaries (captures pending)
 
 **Still to do this week:**
 - [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — HCDE artifact, values/voice draft complete (Apr 20) · inherits from brand §4
 - *(pending)* Failure-mode inventory — enumerated v1.0 failure modes with repair paths; feeds the Repair Guide
 - *(pending)* User Repair Guide — customer-facing doc
 - *(pending)* User interview script + contact list
-- *(pending)* Type specimen — Berkeley Mono + Neue Haas Grotesk ExtraLight Italic in-situ
-- *(pending)* Moodboard reference images → `assets/moodboards/`
+- *(pending)* Type specimen SVGs → [assets/brand/type/](assets/brand/type/) — Berkeley Mono + Neue Haas Grotesk ExtraLight Italic in-situ (rationale locked in [typography-decisions.md](docs/typography-decisions.md))
+- *(pending)* Moodboard reference image captures → [assets/moodboards/](assets/moodboards/) (links + summaries already indexed)
 - *(concept captured)* Packaging QR code laser-etched into cardboard — zero extra material; surfaces repair philosophy at unboxing
 
 **Wednesday (Apr 23) focus work day:**
@@ -55,6 +57,8 @@ Deferred from Week 3:
 - [Stakeholder Map](docs/stakeholder-map.md) — 24 stakeholders across 5 phases · *Week 1*
 - [Sustainability Audit](docs/sustainability-audit.md) — 7-stage lifecycle, power measurements · *Week 2*
 - [Brand Positioning](docs/brand-positioning.md) — product-line identity worksheet · *Week 4*
+- [Brand Research Notes](docs/brand-research-notes.md) — five-reference visual grammar analysis · *Week 4*
+- [Typography Decisions](docs/typography-decisions.md) — italic-default + Berkeley Mono rationale · *Week 4*
 - [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — pro-consumer values, repair commitments, honest limits · *Week 4*
 - *(pending)* User Repair Guide · *Week 4 → Week 8 final*
 - *(pending)* Service Blueprint · *Week 7*
@@ -85,11 +89,16 @@ Deferred from Week 3:
 ## Design Assets
 
 - [assets/](assets/) — logos, color, type, moodboards, product photos, Figma exports (see [assets/README.md](assets/README.md) for conventions)
+- [assets/brand/logo/](assets/brand/logo/) — [spec](assets/brand/logo/logo-spec.md) · [code notes](assets/brand/logo/logo-code-notes.md) · rest-pose SVGs ([dark](assets/brand/logo/logo-primary-dark.svg) / [light](assets/brand/logo/logo-primary-light.svg) / [mono](assets/brand/logo/logo-primary-mono.svg))
+- [assets/brand/type/](assets/brand/type/) — specimens and license (scaffolded, contents pending)
+- [assets/brand/color/](assets/brand/color/) — palette swatches (hybrid locked, B/C references)
+- [assets/moodboards/](assets/moodboards/) — five-reference index (image captures pending)
 
 ## Meeting Logs
 
-- [Advisor — Apr 7, 2026](docs/advisor-meeting-2026-04-07.md) — Week 1 check-in
-- [Advisor — Apr 14, 2026](docs/advisor-meeting-2026-04-14.md) — Week 2+3, Milestone 1 status
+- [Advisor — Apr 7, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-07.md) — Week 1 check-in
+- [Advisor — Apr 14, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-14.md) — Week 2+3, Milestone 1 status
+- [Advisor — Apr 21, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-21.md) — Week 4 kickoff, Milestone 1 close-out
 - [Session logs](docs/session-logs/) — working session records
 
 ---
