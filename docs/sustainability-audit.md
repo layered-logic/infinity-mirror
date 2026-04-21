@@ -276,5 +276,5 @@ The following specific decisions come directly out of this analysis:
 - [Stakeholder Map](stakeholder-map.md) — end-of-life stakeholder context
 - [BOM Breakdown](bom-breakdown-basic-6x6.md) — material costs that embodied-carbon hotspots map to
 - [Market Analysis Report](Market%20Analysis%20Report.md) — right-to-repair legislation context (EU + WA/CA)
-- Right-to-Repair Philosophy *(pending)* — values doc this audit feeds into
+- [Right-to-Repair Philosophy](right-to-repair-philosophy.md) — values doc this audit feeds into
 - [Sprint Plan](../sprint_plan.md)
