@@ -451,5 +451,5 @@ Bill's etymology (captured verbatim, Apr 20):
 - [Index / MOC](../index.md)
 - [Stakeholder Map](stakeholder-map.md) — archetypes (§3.1) that Section 2 audience ranking draws from
 - [Market Analysis Report](Market%20Analysis%20Report.md) — 4-segment bifurcation positioning is built against
-- Right-to-Repair Philosophy *(pending)* — inherits voice/tone from this doc
+- [Right-to-Repair Philosophy](right-to-repair-philosophy.md) — inherits voice/tone from this doc (§4)
 - [Sprint Plan](../sprint_plan.md) — Week 4 deliverables

@@ -90,9 +90,20 @@ fuzzy-matches these against [sprint_plan.md](sprint_plan.md) to determine remain
 - [x] Layered Logic logo P5.js repo reviewed (Apr 20). Bill is developing the nested-L mark independently at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — mouse-reactive histogram bars on two nested L paths with Gaussian quantization and corner-blending. First-pass review captured in [brand-positioning §7](docs/brand-positioning.md) with 5 parked items (color unification with brand palette, canonical rest pose, favicon variant, horizontal-arm asymmetry, optional violet bloom layer). Logo work is out of scope this sprint — parked until Bill reopens the track.
 
 ### In Progress
-- Right-to-Repair philosophy doc — inherits voice from brand positioning §4
+- Right-to-Repair philosophy doc — inherits voice from brand positioning §4 (draft complete Apr 20; STL/firmware commitments tightened Apr 20 — STLs on-request only, firmware closed binary with reflash service instead)
+- Failure-mode inventory — enumerated list of v1.0 failure modes and repair paths; scaffolds the User Repair Guide and pressure-tests the philosophy's "every failure has a service path" claim
 - User Repair Guide — customer-facing
 - User interview script + contact list
+- Packaging QR code — laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page
+
+### Scheduled — Wednesday Apr 23 focus work day
+- **BOI Report** filing with FinCEN — required within 90 days of LLC formation (deadline ~Jun 21). Needs: LLC legal name, EIN, beneficial owner DOB/address/gov-issued ID image. Free filing at boiefiling.fincen.gov.
+- **Sales tax permit** — register with WA Dept. of Revenue; required before first Etsy/Shopify sale.
+- **ESP32 firmware kickoff** — greenfield proprietary firmware rewrite. V0 prototype currently runs ESPHome (`Firmware/ESP32/prototype_ESPHome_Version.yaml`); prototype will be fully reflashed once the new firmware is ready. ESPHome YAML is a behavioral spec reference only (feature parity checklist), not a port source. Wed block uses [Firmware Architecture Scoping doc](docs/firmware-architecture-scoping.md) as the session driver — 5 architecture decisions staged (language/framework, provisioning UX, smart-home posture, OTA channel, app protocol) plus default-color hex confirmation and a minimal "blink" repo scaffold.
+
+### Apr 20 end-of-day
+- Firmware architecture scoping doc produced at [docs/firmware-architecture-scoping.md](docs/firmware-architecture-scoping.md). Locks 5 design principles (standalone out-of-box, app is pattern editor, configurable LED count, brand-palette default, closed-binary + self-hosted OTA) and stages 5 open decisions for Wed with options/tradeoffs for each. Also captures: feature-parity checklist extracted from the ESPHome YAML, success criteria for Wed, and explicit out-of-scope items (Matter/Thread SKU decision, app UI design, webapp stack, test harness).
+- Clarified product-line scope: 6×6 (32 LEDs) is the shipping product; 12×12 (66 LEDs) is a firmware test prototype only, not a second SKU. Sustainability audit + BOM remain 6×6-only.
 
 ### Blocked
 

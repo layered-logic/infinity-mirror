@@ -45,7 +45,19 @@ tags: [sprint, plan, milestones]
 - **Brand:** Finalize product name, logo, and visual language.
 - **HCDE Task: Right-to-Repair Documentation.** Draft the "User Repair Guide." If a wire breaks or an LED burns out, how does the user fix it? This is a core HCDE artifact that demonstrates pro-consumer values.
 - **User Research: Begin informal interviews** (3–5 people). Talk to target customers — what do they value in home decor? How do they feel about customization? What would they pay? Also begin conversations with local coffee shops to understand how they choose artists/makers to showcase.
-- **Engineering:** Begin basic ESP32 firmware on dev board (Wi-Fi provisioning, BLE).
+- **Engineering:** Begin ESP32 firmware work — greenfield proprietary firmware rewrite on the ESP32-C3, with a companion app to pair with it. The existing V0 prototype's ESPHome YAML (`Firmware/ESP32/prototype_ESPHome_Version.yaml`) serves as a behavioral spec reference — feature parity target, not a port source. Prototype board will be fully reflashed.
+
+**Wednesday (Apr 23) — Focus work day.** Compliance + engineering block:
+- **BOI Report** filing with FinCEN (boiefiling.fincen.gov) — required within 90 days of LLC formation (deadline ~Jun 21; doing early)
+- **Sales tax permit** — WA Dept. of Revenue registration, needed before first Etsy/Shopify sale
+- **ESP32 firmware kickoff** — greenfield rewrite across three components: proprietary firmware + webapp + mobile app. The V0 prototype's ESPHome YAML is a feature-parity checklist only, not a port source or a reference architecture. Design principles locked Apr 20:
+  - **Works out of the box with no required smart-home connection.** Smart-home integration is opt-in polish, not a gate on basic product function.
+  - **App is the pattern editor.** Default patterns ship with firmware; users create and modify patterns through the app.
+  - **Configurable LED count** — shipping product is the 6×6 (32 LEDs); the 12×12 (66 LEDs) is a test prototype used for firmware development, not a product SKU.
+  - **Default color updates to locked brand palette** (Violet Signal `#A020D0` expected, confirm Wed).
+  - **Closed-binary firmware** with self-hosted OTA + reflash-service backstop (per right-to-repair philosophy §3, §4).
+
+  Parked for Wed Apr 23 architecture block: language/framework choice, provisioning UX pattern, smart-home integration path (ESP32-C6 Zigbee/Thread/Matter native vs. ESP32-C3 + individual integrations — not solving Wed, just flagging), OTA signed-binary architecture, app protocol.
 
 ### Week 5 (Apr 28 – May 2): App UX/UI Design
 - **HCDE Task: Wireframes.** Design the app experience in Figma. How do users pick colors? Set schedules/timers? Request a custom design? Use the dev board to validate that planned features are technically feasible as you design.

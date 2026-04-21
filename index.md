@@ -24,11 +24,18 @@ tags: [moc, home]
 - Logo P5.js repo at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo) — reviewed, parked until Bill reopens
 
 **Still to do this week:**
-- *(pending)* Right-to-Repair Philosophy — HCDE artifact (inherits voice from brand §4)
+- [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — HCDE artifact, values/voice draft complete (Apr 20) · inherits from brand §4
+- *(pending)* Failure-mode inventory — enumerated v1.0 failure modes with repair paths; feeds the Repair Guide
 - *(pending)* User Repair Guide — customer-facing doc
 - *(pending)* User interview script + contact list
 - *(pending)* Type specimen — Berkeley Mono + Neue Haas Grotesk ExtraLight Italic in-situ
 - *(pending)* Moodboard reference images → `assets/moodboards/`
+- *(concept captured)* Packaging QR code laser-etched into cardboard — zero extra material; surfaces repair philosophy at unboxing
+
+**Wednesday (Apr 23) focus work day:**
+- *(scheduled)* BOI Report filing with FinCEN — legal compliance, 90-day clock
+- *(scheduled)* WA sales tax permit registration — needed before first sale
+- *(scheduled)* ESP32 firmware kickoff — driven by [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md); 5 decisions staged (framework, provisioning, smart-home posture, OTA, app protocol) + default color hex + minimal "blink" scaffold
 
 Deferred from Week 3:
 - PCB schematic update and production order — unblocked by 5 test boards in hand; not critical path (see [project_pcb_status memory](../../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md))
@@ -48,7 +55,7 @@ Deferred from Week 3:
 - [Stakeholder Map](docs/stakeholder-map.md) — 24 stakeholders across 5 phases · *Week 1*
 - [Sustainability Audit](docs/sustainability-audit.md) — 7-stage lifecycle, power measurements · *Week 2*
 - [Brand Positioning](docs/brand-positioning.md) — product-line identity worksheet · *Week 4*
-- *(pending)* Right-to-Repair Philosophy · *Week 4*
+- [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — pro-consumer values, repair commitments, honest limits · *Week 4*
 - *(pending)* User Repair Guide · *Week 4 → Week 8 final*
 - *(pending)* Service Blueprint · *Week 7*
 
@@ -64,6 +71,7 @@ Deferred from Week 3:
 
 - [ESP32 Module Comparison](docs/esp32-module-comparison.md) — full Espressif lineup review
 - [ESP32 Module Shortlist](docs/esp32-module-shortlist.md) — final selection (ESP32-C3-MINI-1)
+- [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md) — greenfield rewrite plan, Wed Apr 23 decision driver
 - *(pending)* Schematic update for ESP32-C3
 - *(pending)* KiCad PCB layout
 - *(pending)* Firmware — Wi-Fi/BLE provisioning
