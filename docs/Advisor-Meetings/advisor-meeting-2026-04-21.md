@@ -51,10 +51,14 @@ M1 is substantively complete. Competitive analysis, stakeholder map, pricing mod
 ## Open Questions
 
 **1. Brand scope overreach?** Three-tier architecture + parent-brand tagline motif + consulting arm — appropriate for an HCDE quarter on a single product, or premature over-architecting?
+- is it a studio/consultancy/fine art/mass market/ livelihood/ 
+	- where does the business lie, what's the vibe
 
 **2. Right-to-repair — HCDE differentiator vs. liability.** Published repair docs, on-request STLs, reflash service. How to think about the tradeoffs between supporting access and parts vs. IP and design protection?
 
-**3. User research rigor.** 3–5 informal interviews — defensible HCDE portfolio artifact, or should I budget for a structured protocol (script, recording, coded themes)? What would you want to see for this independent study?
+**3. User research rigor.** 3–5 informal interviews — defensible HCDE portfolio artifact, or should I budget for a structured protocol (script, recording, coded themes)? What would you want to see for this independent study?  - informal interviews okay -
+- user interactions
+- cafes: Fremont Coffee Co., Broadcast Coffee
 
 ---
 

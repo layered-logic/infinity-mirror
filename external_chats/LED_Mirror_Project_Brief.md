@@ -1,4 +1,19 @@
+---
+title: LED Mirror — Factory Operations Project Brief
+type: external-chat-log
+source: claude
+exported: 2026-04-14
+status: archived
+tags: [external-chat, claude, factory-operations, assembly, week-3]
+---
+
 # LED Mirror — Factory Operations Project Brief
+
+## Summary
+
+Summary brief produced from a full factory/assembly planning session (external Claude chat, Apr 14) covering the product's three sub-assemblies, 20-station production line, garage workshop layout, Phase 1 tooling list, and all key operational decisions. This brief plus the companion CSV and XLSX artifacts in `Assembly_docs/` were the basis for the Week 3 operations entry in [sprint_log.md](../sprint_log.md). Key decisions captured: 3 parallel production lanes (Frame / Mirrors / Electronics) feeding final assembly, batch-by-operation strategy, milled mirror channels (not spacer layup), and solder operations flagged as the first scale bottleneck / first outsource candidate.
+
+---
 
 > **Context:** This document summarizes a full factory/assembly planning session for an LED mirror product. It covers the product architecture, assembly flow, 20-station production line, garage workshop layout, tooling list, and all key operational decisions made. Use this as context for continuing work in Claude Code or any new session.
 
