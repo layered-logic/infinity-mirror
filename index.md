@@ -9,7 +9,7 @@ tags: [moc, home]
 
 > Home note. Start here for any session. Links fan out to every other doc.
 
-**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-21 · **Current week:** 4 of 11
+**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-22 · **Current week:** 4 of 11
 
 ---
 
@@ -34,10 +34,10 @@ tags: [moc, home]
 - *(pending)* Moodboard reference image captures → [assets/moodboards/](assets/moodboards/) (links + summaries already indexed)
 - *(concept captured)* Packaging QR code laser-etched into cardboard — zero extra material; surfaces repair philosophy at unboxing
 
-**Wednesday (Apr 23) focus work day:**
-- *(scheduled)* BOI Report filing with FinCEN — legal compliance, 90-day clock
-- *(scheduled)* WA sales tax permit registration — needed before first sale
-- *(scheduled)* ESP32 firmware kickoff — driven by [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md); 5 decisions staged (framework, provisioning, smart-home posture, OTA, app protocol) + default color hex + minimal "blink" scaffold
+**Wednesday (Apr 22) focus work day — complete:**
+- ✅ BOI Report — confirmed exempt under FinCEN interim final rule (US-domestic entity)
+- ✅ WA BLS registration filed — UBI issued, $90 paid, 0.471% Retailing + 0.484% Manufacturing B&O
+- ✅ ESP32 firmware architecture block — all 5 decisions locked in [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md); two-variant split (Pro + Pro+) with shared core; spec docs and repo scaffold below
 
 Deferred from Week 3:
 - PCB schematic update and production order — unblocked by 5 test boards in hand; not critical path (see [project_pcb_status memory](../../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md))
@@ -75,10 +75,17 @@ Deferred from Week 3:
 
 - [ESP32 Module Comparison](docs/esp32-module-comparison.md) — full Espressif lineup review
 - [ESP32 Module Shortlist](docs/esp32-module-shortlist.md) — final selection (ESP32-C3-MINI-1)
-- [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md) — greenfield rewrite plan, Wed Apr 23 decision driver
-- *(pending)* Schematic update for ESP32-C3
-- *(pending)* KiCad PCB layout
-- *(pending)* Firmware — Wi-Fi/BLE provisioning
+- [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md) — **locked Apr 22** — 5 architecture decisions + variant split + board parameterization
+- [Button Interface Design](docs/button-interface.md) — two-button model (primary + recessed), gesture grammar, state machine
+- [Firmware Spec](docs/firmware-spec.md) — component-level ESP32 firmware spec across both variants
+- [Firmware Security Model](docs/firmware-security.md) — signing, OTA, auth modes, telemetry, privacy
+- [Control Protocol Spec](docs/control-protocol-spec.md) — shared JSON wire protocol (BLE + WebSocket + HTTP)
+- [App Spec](docs/app-spec.md) — LL mobile app (iOS + Android)
+- [Webapp Spec](docs/webapp-spec.md) — device-hosted browser UI (+ V2 hosted plan)
+- [Firmware/v1/ scaffold](Firmware/v1/README.md) — greenfield ESP-IDF repo, blink-level bring-up
+- *(pending)* Schematic update for ESP32 production PCB
+- *(pending)* KiCad PCB layout (Pro + Pro+)
+- *(pending)* Firmware — real module implementations beyond scaffold
 
 ## Operations
 
@@ -119,9 +126,9 @@ Deferred from Week 3:
 *Pulled from across docs. Answer here or link to where they get answered.*
 
 **Business / legal**
-- BOI Report filing (~Jun 21 deadline) — not yet filed
+- ~~BOI Report filing~~ — **Resolved Apr 22:** US-domestic entities exempt under current FinCEN interim final rule. Recheck before Jun 21 in case of rule reversal.
 - Product liability insurance — cost/coverage research pending
-- Sales tax permit — needed before first Etsy/Shopify sale
+- ~~Sales tax permit~~ — **Resolved Apr 22:** WA BLS filed (Retailing + Manufacturing), UBI issued. Reseller permit follow-up after UBI confirmed (~10 biz days).
 
 **Product / design**
 - ~~Brand architecture: monolithic, endorsed sub-brand, or standalone?~~ — **Resolved Apr 20:** three-tier (Layered Logic → product mini-brand → product lines), with consulting arm also under the parent. See [Brand Positioning §0](docs/brand-positioning.md).
@@ -131,7 +138,9 @@ Deferred from Week 3:
 
 **Engineering**
 - ESP32 PCB BOM refresh (superseding STM8 analysis)
-- Matter/Thread support — second-SKU decision deferred to customer research
+- ~~Matter/Thread support — second-SKU decision deferred to customer research~~ — **Resolved Apr 22:** two firmware variants (Pro / Pro+) with Matter on Pro+ only; Pro+ SKU commitment vs demo-only remains open pending customer research
+- Pro+ shipping SKU decision — whether to ship or keep as demo-only
+- Final Matter commissioning gesture timing on recessed button (tentative 6s hold)
 - EMC testing lab engagement trigger for wireless version
 
 ---
