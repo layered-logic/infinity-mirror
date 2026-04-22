@@ -146,18 +146,19 @@ Who listens for state changes:
 ### 4.2 `pattern_interp/`
 
 - **Responsibility:** execute the currently-selected pattern, produce a frame buffer per tick.
-- **Pattern format:** declarative JSON-ish (see [control-protocol-spec §6](control-protocol-spec.md#6-pattern-definition-format)).
-- **Pattern table:** built-in + user-uploaded, keyed by `pattern_id`.
-- **Base color integration:** patterns reference `"base"` as a color token; interp substitutes current `base_color_rgb`.
-- **Self-palette patterns (Rainbow, Random Twinkle):** ignore `base_color_rgb` at render, but state still updates (per [button-interface §4.3](button-interface.md#43-base-color-cycle-single-press-semantics)).
-- **Built-in patterns for V1:** solid, color_wipe, twinkle, scanner, rainbow, random_twinkle, indigo_pulse (the pairing-mode cue), red_flash (factory-reset cue).
+- **Tick rate:** 20 Hz logical pattern state (see [pattern-dictionary §2.4](pattern-dictionary.md#24-tick-rate)). LED redraw may run higher.
+- **Pattern table:** 7 hardcoded C functions for V1, keyed by `pattern_id`. User-uploaded declarative patterns deferred to V2.
+- **Base color integration:** patterns reference `base_color_rgb` from state bus. Single-press advances this value; self-palette patterns ignore it visually but state still updates.
+- **Built-in patterns (V1):** see [pattern-dictionary §3](pattern-dictionary.md#3-patterns) — `solid`, `rainbow`, `scanner`, `spinner`, `random`, `breathing`, `twinkle`. Port 1:1 from [stm8_150mm.ino](../Firmware/STM8/stm8_150mm.ino).
+- **Internal-only patterns (not user-selectable):** `indigo_pulse` (pairing mode cue), `red_flash` (factory-reset cue). See [button-interface §7](button-interface.md#7-led-feedback-conventions).
+- **White-dimming rule:** apply WHITE_DIM_FACTOR = 217/255 when pattern=solid AND base color = white. See [pattern-dictionary §2.2](pattern-dictionary.md#22-white-only-dimming-rule).
 
 ### 4.3 `button/`
 
 - **Responsibility:** debounce + gesture recognition for both buttons.
 - **Inputs:** GPIO interrupts on `LL_PIN_BUTTON_PRIMARY` and `LL_PIN_BUTTON_RESET`.
 - **Outputs:** state-bus events.
-- **Gestures (primary):** single, double, triple, hold (500ms). Window for multi-press: 300ms after first press.
+- **Gestures (primary):** single, double, triple, hold (600ms). Window for multi-press: 200ms after release. Debounce: 20ms. Values inherited from the canonical STM8 implementation ([stm8_150mm.ino:18-21](../Firmware/STM8/stm8_150mm.ino)) — proven on shipping units, don't change without user testing.
 - **Gestures (recessed):** short-hold (3s) → `LL_EV_PROVISION_START`; long-hold (10s) → `LL_EV_FACTORY_RESET`. Release between thresholds fires the shorter action.
 - **LED feedback during recessed hold:** pattern_interp shifts to a "threshold cue" pattern (color shift at 3s mark, red flash at 10s) — see [button-interface §7](button-interface.md#7-led-feedback-conventions).
 

@@ -7,5 +7,9 @@ idf_component_register(
     SRCS "main.c"
     INCLUDE_DIRS "."
     REQUIRES
-        # core components — add as they come online
+        esp_event
+        state_bus
+        button
+        led_driver
+        pattern_interp
 )

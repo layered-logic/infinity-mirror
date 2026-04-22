@@ -1,0 +1,192 @@
+/*
+ * Unified state bus — single source of truth for device state.
+ *
+ * Concurrency model (firmware-spec.md §3):
+ *   - One dedicated esp_event loop, task pinned to core 0.
+ *   - Single writer: ll_state_t is only mutated by on_state_event(), which
+ *     runs on that loop's task. Publishers never touch ll_state_t directly.
+ *   - Readers (ll_state_bus_get) return a const pointer and race against
+ *     the writer by design — eventual consistency. Fields are small enough
+ *     that word-size reads are atomic on Xtensa/RISC-V; no locks.
+ *   - Publishers may call ll_state_bus_post() from any task or from an
+ *     ISR; ISR context is detected and routed through esp_event_isr_post_to.
+ *
+ * After an incoming LL_EV_* is applied, the handler re-dispatches
+ * LL_EV_STATE_CHANGED on the same loop so subscribers (pattern_interp,
+ * transport, nvs, matter_bridge) react without having to duplicate the
+ * apply logic.
+ */
+
+#include "state_bus.h"
+#include "state_bus_events.h"
+
+#include <string.h>
+
+#include "esp_err.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/portmacro.h"
+
+static const char *TAG = "state_bus";
+
+ESP_EVENT_DEFINE_BASE(LL_STATE_EVENT_BASE);
+
+static ll_state_t g_state;
+static esp_event_loop_handle_t g_loop;
+static bool g_initialized;
+
+static size_t payload_size_for(ll_event_t ev)
+{
+    switch (ev) {
+    case LL_EV_POWER_TOGGLE:    return sizeof(ll_ev_power_toggle_payload_t);
+    case LL_EV_BASE_COLOR:      return sizeof(ll_ev_base_color_payload_t);
+    case LL_EV_PATTERN_CHANGE:  return sizeof(ll_ev_pattern_change_payload_t);
+    case LL_EV_BRIGHTNESS:      return sizeof(ll_ev_brightness_payload_t);
+    case LL_EV_AUTH_MODE:       return sizeof(ll_ev_auth_mode_payload_t);
+    case LL_EV_TELEMETRY:       return sizeof(ll_ev_telemetry_payload_t);
+    case LL_EV_PROVISION_START:
+    case LL_EV_FACTORY_RESET:   return 0;
+    }
+    return 0;
+}
+
+static void apply_event(ll_event_t ev, const void *payload)
+{
+    switch (ev) {
+    case LL_EV_POWER_TOGGLE: {
+        const ll_ev_power_toggle_payload_t *p = payload;
+        g_state.on = p->on;
+        break;
+    }
+    case LL_EV_BASE_COLOR: {
+        const ll_ev_base_color_payload_t *p = payload;
+        g_state.base_color_rgb = p->rgb & 0x00FFFFFFu;
+        break;
+    }
+    case LL_EV_PATTERN_CHANGE: {
+        const ll_ev_pattern_change_payload_t *p = payload;
+        strncpy(g_state.pattern_id, p->id, sizeof(g_state.pattern_id) - 1);
+        g_state.pattern_id[sizeof(g_state.pattern_id) - 1] = '\0';
+        break;
+    }
+    case LL_EV_BRIGHTNESS: {
+        const ll_ev_brightness_payload_t *p = payload;
+        g_state.brightness = p->value;
+        break;
+    }
+    case LL_EV_AUTH_MODE: {
+        const ll_ev_auth_mode_payload_t *p = payload;
+        g_state.auth_mode = p->mode;
+        /* secret rotation is the auth/nvs module's job, not state_bus's. */
+        break;
+    }
+    case LL_EV_TELEMETRY: {
+        const ll_ev_telemetry_payload_t *p = payload;
+        g_state.telemetry_enabled = p->enabled;
+        break;
+    }
+    case LL_EV_PROVISION_START:
+    case LL_EV_FACTORY_RESET:
+        /* No ll_state_t mutation for these: they drive side effects in
+         * provisioning/ and nvs/. Subscribers still get the notify. */
+        break;
+    }
+}
+
+static void on_state_event(void *arg, esp_event_base_t base,
+                           int32_t id, void *data)
+{
+    (void)arg;
+    (void)base;
+
+    if (id >= LL_EV_STATE_CHANGED) {
+        /* Our own re-dispatch (LL_EV_STATE_CHANGED), or a transient
+         * event (LL_EV_RECESSED_HOLD_BEGIN/END) that rides the state-bus
+         * loop as a convenient fan-out channel but isn't a state mutation.
+         * Subscribers handle these; we don't. */
+        return;
+    }
+
+    ll_event_t ev = (ll_event_t)id;
+    apply_event(ev, data);
+
+    ll_state_changed_payload_t out = { .which = ev };
+    esp_err_t err = esp_event_post_to(g_loop, LL_STATE_EVENT_BASE,
+                                      LL_EV_STATE_CHANGED,
+                                      &out, sizeof(out), 0);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "re-dispatch of LL_EV_STATE_CHANGED failed: %s",
+                 esp_err_to_name(err));
+    }
+}
+
+void ll_state_bus_init(void)
+{
+    if (g_initialized) {
+        return;
+    }
+
+    g_state = (ll_state_t){
+        .on = false,
+        .pattern_id = "solid",
+        .base_color_rgb = 0x3214FFu,   /* Indigo Signal */
+        .brightness = 75,
+        .led_count = 32,               /* 6x6 shipping default; NVS overrides */
+        .auth_mode = LL_AUTH_OPEN,
+        .telemetry_enabled = false,
+    };
+
+    const esp_event_loop_args_t args = {
+        .queue_size = 16,
+        .task_name = "state_bus",
+        .task_priority = tskIDLE_PRIORITY + 5,
+        .task_stack_size = 4096,
+        .task_core_id = 0,
+    };
+    ESP_ERROR_CHECK(esp_event_loop_create(&args, &g_loop));
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
+        g_loop, LL_STATE_EVENT_BASE, ESP_EVENT_ANY_ID,
+        on_state_event, NULL, NULL));
+
+    g_initialized = true;
+    ESP_LOGI(TAG,
+             "init: on=%d pattern=%s color=#%06lX brightness=%u leds=%u",
+             (int)g_state.on, g_state.pattern_id,
+             (unsigned long)g_state.base_color_rgb,
+             (unsigned)g_state.brightness, (unsigned)g_state.led_count);
+}
+
+const ll_state_t *ll_state_bus_get(void)
+{
+    return &g_state;
+}
+
+void ll_state_bus_post(ll_event_t ev, const void *payload)
+{
+    const size_t sz = payload_size_for(ev);
+    esp_err_t err;
+
+    if (xPortInIsrContext()) {
+        BaseType_t yield = pdFALSE;
+        err = esp_event_isr_post_to(g_loop, LL_STATE_EVENT_BASE,
+                                    (int32_t)ev, payload, sz, &yield);
+        (void)err;  /* ISR path: no blocking log; drop silently on failure. */
+        if (yield == pdTRUE) {
+            portYIELD_FROM_ISR();
+        }
+    } else {
+        err = esp_event_post_to(g_loop, LL_STATE_EVENT_BASE,
+                                (int32_t)ev, payload, sz, 0);
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "post ev=%d failed: %s",
+                     (int)ev, esp_err_to_name(err));
+        }
+    }
+}
+
+esp_event_loop_handle_t ll_state_bus_get_loop(void)
+{
+    return g_loop;
+}

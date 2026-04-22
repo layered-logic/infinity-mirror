@@ -87,9 +87,9 @@ Single press (when on) advances a **base color** variable held in firmware. The 
 
 Wraps: step 17 → step 1. The cycle is independent of the brand palette. Brand palette informs the *default* state on boot; the spectrum cycle is the user's runtime control.
 
-**Interaction with patterns:** patterns fall into two categories.
-- *Base-color-using patterns* — Color Wipe, Twinkle, Scanner, solid. Single-press visibly changes the color.
-- *Self-palette patterns* — Rainbow, Random Twinkle, future multi-hue effects. Single-press still advances the base color in firmware state, but there's no visual change until the user switches to a base-color-using pattern.
+**Interaction with patterns:** patterns fall into two categories — see [pattern-dictionary §3](pattern-dictionary.md#3-patterns) for the full list.
+- *Base-color-using patterns* — Solid, Scanner, Spinner, Random, Breathing, Twinkle. Single-press visibly changes the color.
+- *Self-palette patterns* — Rainbow (and any future multi-hue effects). Single-press still advances the base color in firmware state, but there's no visual change until the user switches to a base-color-using pattern.
 
 This keeps intent sticky: "my base color is cyan" persists across pattern changes, even if the currently running pattern ignores it.
 
@@ -205,7 +205,8 @@ These cues need to be designed alongside the pattern library — they must be di
 
 ## 9. Out of Scope for This Doc
 
-- Pattern interpreter / pattern definition format (separate spec, downstream)
+- Pattern definitions (see [pattern-dictionary.md](pattern-dictionary.md))
+- Pattern interpreter internals (see [firmware-spec §4.2](firmware-spec.md#42-pattern_interp))
 - App UI for pattern creation (Week 5 wireframing)
 - Matter/Zigbee commissioning gesture details (revisited when C3→C6 decision is made)
 - Multi-button combos (none planned; documented here to confirm absence)

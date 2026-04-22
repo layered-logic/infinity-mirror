@@ -80,6 +80,8 @@ Deferred from Week 3:
 - [Firmware Spec](docs/firmware-spec.md) — component-level ESP32 firmware spec across both variants
 - [Firmware Security Model](docs/firmware-security.md) — signing, OTA, auth modes, telemetry, privacy
 - [Control Protocol Spec](docs/control-protocol-spec.md) — shared JSON wire protocol (BLE + WebSocket + HTTP)
+- [Pattern Dictionary](docs/pattern-dictionary.md) — **cross-firmware visual contract** — 7 patterns, 13 colors, tick cadence
+- [STM8 Basic Firmware Spec](Firmware/STM8/spec.md) — canonical reference implementation (shipping on Basic SKU)
 - [App Spec](docs/app-spec.md) — LL mobile app (iOS + Android)
 - [Webapp Spec](docs/webapp-spec.md) — device-hosted browser UI (+ V2 hosted plan)
 - [Firmware/v1/ scaffold](Firmware/v1/README.md) — greenfield ESP-IDF repo, blink-level bring-up

@@ -191,7 +191,17 @@ Partial updates via `set_state` — send only the fields changing. Device broadc
 
 ## 6. Pattern Definition Format
 
-Patterns are data, not code. Firmware ships with a fixed interpreter; uploaded patterns describe behavior declaratively.
+### 6.1 V1 — built-in patterns only
+
+V1 ships with 7 hardcoded patterns, fully defined in [pattern-dictionary.md](pattern-dictionary.md). Their IDs (wire format):
+
+`solid`, `rainbow`, `scanner`, `spinner`, `random`, `breathing`, `twinkle`
+
+`list_patterns` returns these with `builtin: true`. `upload_pattern` and `delete_pattern` return `error: "unsupported_in_v1"` until V2.
+
+### 6.2 V2 — declarative user-uploaded patterns (deferred)
+
+Shape (illustrative, not final):
 
 ```json
 {
@@ -206,9 +216,9 @@ Patterns are data, not code. Firmware ships with a fixed interpreter; uploaded p
 }
 ```
 
-Full grammar defined in a separate pattern-spec doc (out of scope here — deferred until firmware pattern interpreter is implemented). Fields above are illustrative for protocol shape, not the final grammar.
+Full grammar gets its own spec doc when the app's pattern-editor UI is designed. Deferred because no V1 client produces these — app doesn't exist yet.
 
-**Upload size limit:** 16KB per pattern (NVS budget). Larger patterns rejected with `error: "pattern_too_large"`.
+**Upload size limit (when V2 ships):** 16KB per pattern (NVS budget). Larger patterns rejected with `error: "pattern_too_large"`.
 
 ---
 
@@ -294,5 +304,6 @@ Minimal surface. Only used during provisioning or as fallback when Wi-Fi is unav
 - [Firmware Architecture Scoping §5.5](firmware-architecture-scoping.md#55-app--device-protocol) — source decision
 - [Firmware Security Model §5](firmware-security.md#5-local-authentication) — auth envelope details
 - [Firmware Spec](firmware-spec.md) — device-side implementation
+- [Pattern Dictionary](pattern-dictionary.md) — V1 pattern definitions (shared across firmwares)
 - [App Spec](app-spec.md) — mobile client implementation
 - [Webapp Spec](webapp-spec.md) — browser client implementation
