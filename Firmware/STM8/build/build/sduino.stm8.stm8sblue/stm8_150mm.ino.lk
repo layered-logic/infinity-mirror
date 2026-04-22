@@ -1,0 +1,17 @@
+-muwx
+-E C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/stm8_150mm.ino.elf
+-Y
+-I 0x0400
+-C 0x2000
+-b HOME = 0x8000
+-b DATA = 0x0001
+-b SSEG = 0xffffffff
+-k C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib
+-k C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30
+-k C:\Users\user\AppData\Local\Arduino15\packages\sduino\tools\sdcc\build.11242/lib/stm8
+-l C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+-l STM8S103
+-l stm8
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30\sketch\stm8_150mm.ino.cpp.rel
+
+-e

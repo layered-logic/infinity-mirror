@@ -1,0 +1,218 @@
+ASxxxx Linker V03.00 + NoICE + sdld,  page 1.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+.  .ABS.                            00000000    00000000 =           0. bytes (ABS,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     FFFFFFFF  s_SSEG                          
+     00000000  .__.ABS.                           
+     00000000  l_CABS                          
+     00000000  l_DABS                          
+     00000000  l__CODE                         
+     00000000  s_CABS                          
+     00000000  s_DABS                          
+     00000000  s__CODE                         
+     00000001  l_SSEG                          
+     00000001  s_DATA                          
+     00000003  l_GSFINAL                       
+     0000001D  l_INITIALIZED                   
+     0000001D  l_INITIALIZER                   
+     00000027  l_CONST                         
+     0000002E  l_GSINIT                        
+     0000006B  l_HOME                          
+     0000009B  l_DATA                          
+     0000009C  s_INITIALIZED                   
+     00000D58  l_CODE                          
+     00008000  s_HOME                          
+     0000806B  s_GSINIT                        
+     00008099  s_GSFINAL                       
+     0000809C  s_CONST                         
+     000080C3  s_INITIALIZER                   
+     000080E0  s_CODE                          
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+DATA                                00000001    0000009B =         155. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     00000068  _runSerialEvent                    main
+     00000069  _timer4_overflow_count             wiring_millis
+     0000006D  _timer4_millis                     wiring_millis
+     00000072  _rx_buffer                         HardwareSerial_c_1
+     00000086  _tx_buffer                         HardwareSerial_c_1
+     0000009A  _transmitting                      HardwareSerial_c_1
+     0000009B  _initialized                       HardwareSerial_c_1
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 3.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+INITIALIZED                         0000009C    0000001D =          29. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     0000009C  _dummy_variable                    stm8_150mm_ino
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 4.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+HOME                                00008000    0000006B =         107. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 5.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+GSINIT                              0000806B    0000002E =          46. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+GSFINAL                             00008099    00000003 =           3. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+CONST                               0000809C    00000027 =          39. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 8.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+INITIALIZER                         000080C3    0000001D =          29. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 9.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+CODE                                000080E0    00000D58 =        3416. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     000088F7  _setup                             stm8_150mm_ino
+     00008937  _loop                              stm8_150mm_ino
+     000089DE  _GPIO_Init                         stm8s_gpio_c_3
+     00008A53  _main                              main
+     00008A6C  _attachInterrupt                   WInterrupts
+     00008A7E  _detachInterrupt                   WInterrupts
+     00008A92  _EXTI_PORTA_IRQHandler             WInterrupts
+     00008A97  _EXTI_PORTB_IRQHandler             WInterrupts
+     00008A9C  _EXTI_PORTC_IRQHandler             WInterrupts
+     00008AA1  _EXTI_PORTD_IRQHandler             WInterrupts
+     00008AA6  _EXTI_PORTE_IRQHandler             WInterrupts
+     00008AAB  _TIM1_CAP_COM_IRQHandler           WInterrupts
+     00008AB0  _init                              wiring_init
+     00008B6F  _TIM1_DeInit                       stm8s_tim1_c_2
+     00008C08  _TIM2_DeInit                       stm8s_tim2_c_2
+     00008C61  __mulint                           
+     00008C7A  _TIM4_UPD_OVF_IRQHandler           wiring_millis
+     00008CA5  _millis                            wiring_millis
+     00008CAF  _TIM4_DeInit                       stm8s_tim4_c_2
+     00008CFA  _UART1_RX_IRQHandler               HardwareSerial_c_1
+     00008D10  _UART1_TX_IRQHandler               HardwareSerial_c_1
+     00008D44  _serialEvent                       weak_serialEvent
+     00008D45  _UART1_DeInit                      stm8s_uart1_c_2
+     00008D70  _initVariant                       weak_initVariant
+     00008D71  _GPIO_DeInit                       stm8s_gpio_c_2
+     00008D80  _CLK_HSIPrescalerConfig            stm8s_clk_c_14
+     00008D91  _ADC1_DeInit                       stm8s_adc1_c_2
+     00008DC2  _TIM1_TimeBaseInit                 stm8s_tim1_c_3
+     00008DF5  _TIM2_TimeBaseInit                 stm8s_tim2_c_3
+     00008E0E  __modsint                          
+     00008E24  __divsint                          
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 10.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+SSEG                                FFFFFFFF    00000001 =           1. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 11.
+
+Files Linked                              [ module(s) ]
+
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30\sketch\stm8_150mm.ino.cpp.rel
+                                          [ stm8_150mm_ino ]
+
+
+Libraries Linked                          [ object file ]
+
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_gpio.c-3.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ main.c.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ WInterrupts.c.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ wiring-init.c.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_tim1.c-2.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_tim2.c-2.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\tools\sdcc\build.11242/lib/stm8/stm8.lib
+                                          [ _mulint.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ wiring-millis.c.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_tim4.c-2.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ HardwareSerial.c-1.c.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ weak_serialEvent.c.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_uart1.c-2.rel ]
+C:\Users\user\AppData\Local\arduino\sketches\DB55312C1C459DB0890C604F9BAE5E30/..\..\cores\sduino_stm8_stm8sblue_11aa981b9b87c7124b6b1c04340eadc4\core.lib
+                                          [ weak_initVariant.c.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_gpio.c-2.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_clk.c-14.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_adc1.c-2.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_tim1.c-3.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\hardware\stm8\0.5.0/STM8S_StdPeriph_Driver/lib/STM8S103.lib
+                                          [ stm8s_tim2.c-3.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\tools\sdcc\build.11242/lib/stm8/stm8.lib
+                                          [ _modsint.rel ]
+C:\Users\user\AppData\Local\Arduino15\packages\sduino\tools\sdcc\build.11242/lib/stm8/stm8.lib
+                                          [ _divsint.rel ]
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 12.
+
+User Base Address Definitions
+
+HOME = 0x8000
+DATA = 0x0001
+SSEG = 0xffffffff
+
+
