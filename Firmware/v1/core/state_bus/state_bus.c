@@ -87,9 +87,15 @@ static void apply_event(ll_event_t ev, const void *payload)
         break;
     }
     case LL_EV_PROVISION_START:
+        /* No ll_state_t mutation: drives side effects in provisioning/.
+         * Subscribers still get the notify. */
+        break;
     case LL_EV_FACTORY_RESET:
-        /* No ll_state_t mutation for these: they drive side effects in
-         * provisioning/ and nvs/. Subscribers still get the notify. */
+        /* Reset settings in-memory to compiled defaults. The nvs subscriber
+         * will see LL_EV_STATE_CHANGED with which=LL_EV_FACTORY_RESET and
+         * erase the flash namespace instead of saving defaults back — so
+         * the absent blob survives reboot, not a written "defaults" blob. */
+        ll_state_defaults(&g_state);
         break;
     }
 }
@@ -121,21 +127,17 @@ static void on_state_event(void *arg, esp_event_base_t base,
     }
 }
 
-void ll_state_bus_init(void)
+void ll_state_bus_init(const ll_state_t *initial)
 {
     if (g_initialized) {
         return;
     }
 
-    g_state = (ll_state_t){
-        .on = false,
-        .pattern_id = "solid",
-        .base_color_rgb = 0x3214FFu,   /* Indigo Signal */
-        .brightness = 75,
-        .led_count = 32,               /* 6x6 shipping default; NVS overrides */
-        .auth_mode = LL_AUTH_OPEN,
-        .telemetry_enabled = false,
-    };
+    if (initial) {
+        g_state = *initial;
+    } else {
+        ll_state_defaults(&g_state);
+    }
 
     const esp_event_loop_args_t args = {
         .queue_size = 16,

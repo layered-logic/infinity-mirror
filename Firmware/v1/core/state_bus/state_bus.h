@@ -39,8 +39,22 @@ typedef enum {
     LL_EV_FACTORY_RESET,
 } ll_event_t;
 
-/* Scaffold-only stubs. Real signatures land when the event-loop task
- * implementation is written. */
-void ll_state_bus_init(void);
+/*
+ * Initialize the state-bus task and event loop.
+ *
+ * If `initial` is non-NULL, its contents are copied into the internal
+ * ll_state_t. Pass the value loaded from NVS here. If NULL, compiled
+ * defaults from ll_state_defaults() are used — suitable for first boot
+ * when NVS isn't available yet, or for unit tests.
+ */
+void ll_state_bus_init(const ll_state_t *initial);
+
 const ll_state_t *ll_state_bus_get(void);
 void ll_state_bus_post(ll_event_t ev, const void *payload);
+
+/*
+ * Write the compiled default state into *out. Used by nvs/ on first boot
+ * or schema mismatch. Separated from init so the defaults are a single
+ * source of truth regardless of how state_bus gets initialized.
+ */
+void ll_state_defaults(ll_state_t *out);

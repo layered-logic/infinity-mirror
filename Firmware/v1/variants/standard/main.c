@@ -1,9 +1,12 @@
 /*
  * Layered Logic Infinity Mirror — Standard variant (Pro).
  *
- * Wiring order matters: state_bus first (everyone subscribes to its loop),
- * then pattern_interp (registers handlers + brings up led_driver), then
- * button (starts posting events that the others now listen for).
+ * Wiring order matters:
+ *   1. nvs_init     — load persisted state (or defaults on first boot).
+ *   2. state_bus    — seed the bus with that state; everyone subscribes to its loop.
+ *   3. nvs_subscribe — start debounced save-on-change AFTER the bus exists.
+ *   4. pattern_interp — registers handlers + brings up led_driver.
+ *   5. button       — starts posting events that the others now listen for.
  */
 
 #include <stdio.h>
@@ -15,6 +18,7 @@
 
 #include "board.h"
 #include "button.h"
+#include "nvs.h"
 #include "pattern_interp.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
@@ -40,7 +44,13 @@ void app_main(void)
            LL_PIN_LED_DATA, LL_PIN_BUTTON_PRIMARY, LL_PIN_BUTTON_RESET);
     printf("Default LED count: %d\n", LL_LED_COUNT_DEFAULT);
 
-    ll_state_bus_init();
+    ll_state_t initial;
+    bool first_boot;
+    ESP_ERROR_CHECK(ll_nvs_init(&initial, &first_boot));
+
+    ll_state_bus_init(&initial);
+
+    ESP_ERROR_CHECK(ll_nvs_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),

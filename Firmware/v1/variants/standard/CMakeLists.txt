@@ -11,5 +11,6 @@ idf_component_register(
         state_bus
         button
         led_driver
+        nvs
         pattern_interp
 )
