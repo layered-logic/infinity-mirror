@@ -47,8 +47,8 @@ tags: [sprint, plan, milestones]
 - **User Research: Begin informal interviews** (3–5 people). Talk to target customers — what do they value in home decor? How do they feel about customization? What would they pay? Also begin conversations with local coffee shops to understand how they choose artists/makers to showcase.
 - **Engineering:** Begin ESP32 firmware work — greenfield proprietary firmware rewrite on the ESP32-C3, with a companion app to pair with it. The existing V0 prototype's ESPHome YAML (`Firmware/ESP32/prototype_ESPHome_Version.yaml`) serves as a behavioral spec reference — feature parity target, not a port source. Prototype board will be fully reflashed.
 
-**Wednesday (Apr 23) — Focus work day.** Compliance + engineering block:
-- **BOI Report** filing with FinCEN (boiefiling.fincen.gov) — required within 90 days of LLC formation (deadline ~Jun 21; doing early)
+**Wednesday (Apr 22) — Focus work day.** Compliance + engineering block:
+- ~~**BOI Report** filing with FinCEN~~ — **N/A / exempt** (confirmed Apr 22). Per FinCEN site banner: "All entities created in the United States — including those previously known as 'domestic reporting companies' — and their beneficial owners are now exempt from the requirement to report beneficial ownership information (BOI) to FinCEN." Layered Logic LLC is a WA-formed domestic entity and qualifies for the exemption. No filing required under the current interim final rule. Re-check FinCEN guidance before Jun 21 in case the rule is reversed.
 - **Sales tax permit** — WA Dept. of Revenue registration, needed before first Etsy/Shopify sale
 - **ESP32 firmware kickoff** — greenfield rewrite across three components: proprietary firmware + webapp + mobile app. The V0 prototype's ESPHome YAML is a feature-parity checklist only, not a port source or a reference architecture. Design principles locked Apr 20:
   - **Works out of the box with no required smart-home connection.** Smart-home integration is opt-in polish, not a gate on basic product function.
@@ -163,7 +163,7 @@ Tasks required after filing the Certificate of Formation. Items marked with a we
 - [ ] **Operating agreement** — Draft and sign a single-member operating agreement. Not always required by state law, but strongly recommended — it documents ownership structure, profit distribution, and decision-making authority. Protects the LLC's legal standing. *(Outline drafted Apr 2 with Schedule A capital contributions — needs finalization and signature.)*
 
 ### Within 90 Days of Formation (~by Jun 21)
-- [ ] **BOI Report (Beneficial Ownership Information)** — File with FinCEN at boiefiling.fincen.gov. Required by the Corporate Transparency Act for most new LLCs. Reports who owns/controls the company. Free to file, but **penalties for non-compliance are steep** ($591/day). Needs: legal name of LLC, EIN, each beneficial owner's full name, DOB, address, and a government-issued ID image.
+- [x] ~~**BOI Report (Beneficial Ownership Information)**~~ — **N/A / exempt** (confirmed Apr 22, 2026 at [fincen.gov/boi](https://fincen.gov/boi)). FinCEN interim final rule exempts all US-formed entities (formerly "domestic reporting companies") and their beneficial owners from BOI reporting. Layered Logic LLC (WA) qualifies. No filing required under current rule. *Re-check before Jun 21 in case the rule is reversed; if reinstated, needs: LLC legal name, EIN, each beneficial owner's full name, DOB, address, gov ID image.*
 
 ### Ongoing / Annual
 - [ ] **State annual report** — Check your state's Secretary of State website for filing requirements, deadlines, and fees. Some states require this annually, others biennially.
