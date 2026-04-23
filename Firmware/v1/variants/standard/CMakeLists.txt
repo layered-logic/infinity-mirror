@@ -13,4 +13,5 @@ idf_component_register(
         led_driver
         nvs
         pattern_interp
+        provisioning
 )

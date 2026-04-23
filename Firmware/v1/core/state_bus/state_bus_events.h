@@ -45,6 +45,16 @@ ESP_EVENT_DECLARE_BASE(LL_STATE_EVENT_BASE);
 #define LL_EV_RECESSED_HOLD_END     0x1002
 
 /*
+ * Wi-Fi link-state transitions, posted by core/provisioning/ after the
+ * underlying IDF WIFI_EVENT / IP_EVENT fires. Fan-out events — don't
+ * mutate ll_state_t (Wi-Fi link isn't user settings), but mdns, transport,
+ * telemetry, and ota care. Coalesced: rapid disconnect/reconnect storms
+ * post at most one CONNECTED per actual IP acquisition.
+ */
+#define LL_EV_WIFI_CONNECTED        0x1003
+#define LL_EV_WIFI_DISCONNECTED     0x1004
+
+/*
  * Payloads for each incoming LL_EV_*. esp_event copies these by value at
  * post time, so callers may pass stack pointers freely. String fields use
  * fixed buffers (not pointers) so payload lifetime is self-contained.
@@ -81,6 +91,16 @@ typedef struct {
 typedef struct {
     ll_event_t which;  /* which field just changed */
 } ll_state_changed_payload_t;
+
+typedef struct {
+    char ssid[33];     /* 32-byte SSID + null terminator */
+    uint8_t ip[4];
+    int8_t rssi;       /* dBm; negative */
+} ll_ev_wifi_connected_payload_t;
+
+typedef struct {
+    uint8_t reason;    /* wifi_err_reason_t from esp_wifi; forwarded as-is */
+} ll_ev_wifi_disconnected_payload_t;
 
 /*
  * Handle to the dedicated state-bus event loop. Valid after

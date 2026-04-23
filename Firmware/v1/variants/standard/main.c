@@ -2,11 +2,13 @@
  * Layered Logic Infinity Mirror — Standard variant (Pro).
  *
  * Wiring order matters:
- *   1. nvs_init     — load persisted state (or defaults on first boot).
- *   2. state_bus    — seed the bus with that state; everyone subscribes to its loop.
- *   3. nvs_subscribe — start debounced save-on-change AFTER the bus exists.
- *   4. pattern_interp — registers handlers + brings up led_driver.
- *   5. button       — starts posting events that the others now listen for.
+ *   1. nvs_init         — load persisted state (or defaults on first boot).
+ *   2. state_bus        — seed the bus with that state; everyone subscribes to its loop.
+ *   3. nvs_subscribe    — start debounced save-on-change AFTER the bus exists.
+ *   4. provisioning_init — bring up netif/wifi, connect if creds saved.
+ *   5. provisioning_subscribe — react to LL_EV_PROVISION_START / FACTORY_RESET.
+ *   6. pattern_interp   — registers handlers + brings up led_driver.
+ *   7. button           — starts posting events that the others now listen for.
  */
 
 #include <stdio.h>
@@ -20,6 +22,7 @@
 #include "button.h"
 #include "nvs.h"
 #include "pattern_interp.h"
+#include "provisioning.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
 
@@ -51,6 +54,9 @@ void app_main(void)
     ll_state_bus_init(&initial);
 
     ESP_ERROR_CHECK(ll_nvs_subscribe());
+
+    ESP_ERROR_CHECK(ll_provisioning_init());
+    ESP_ERROR_CHECK(ll_provisioning_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),
