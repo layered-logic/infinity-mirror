@@ -131,9 +131,11 @@ fuzzy-matches these against [sprint_plan.md](sprint_plan.md) to determine remain
 
   **Dev toolchain installed end-to-end on the dev machine (Apr 22):** ESP-IDF 5.5.4 at `C:\Espressif\frameworks\esp-idf-v5.5.4\` (per-session activation via `export.ps1`/CMD/sh — saved as memory `reference_esp_idf_setup.md`); MSYS2 MinGW64 gcc/cmake at `C:\msys64\mingw64\bin\` on permanent PATH for host tests. Nothing has been compiled or flashed yet — first action next session is verification (`cmake -S tests -B tests/build -G "MinGW Makefiles" && ctest` + `idf.py -DLL_VARIANT=standard -DLL_BOARD=c6_devkit build`). Phase 2 firmware now has a real bring-up surface to iterate on; next modules to add are NVS persistence and transport (WebSocket/HTTP).
 
+- [x] **Right-to-Repair philosophy doc finalized (Apr 27).** Status updated from draft to complete. The doc at [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md) covers: core principle, three-part rationale (pro-consumer → environmental → legal), concrete repair commitments (8 items), honest limits (acrylic EOL, ESP32 obsolescence, closed firmware, solo support), compliance reinforcement (EU RtR, WA HB-1933, CA SB-244), and buyer ask. Cross-linked to the new failure mode inventory.
+
+- [x] **Failure-mode inventory completed (Apr 27).** 17 individual failure mode files created in [Failure_Modes/](Failure_Modes/), covering all v1.0 components across 8 categories: LED strip (3), PSU (2), controller/PCB (4), acrylic panels (2), wood frame (1), PETG parts (1), wiring/connections (2), buttons (2). Each file documents symptoms, likely causes, probability, step-by-step repair path, tools and parts required, difficulty/time estimates, when to contact support, and design mitigations. Summary: 12 fully user-repairable, 5 partially (require soldering or firmware reflash), 0 non-repairable. Index at [Failure_Modes/README.md](Failure_Modes/README.md). Validates the philosophy doc's claim that every failure mode has a user-serviceable path.
+
 ### In Progress
-- Right-to-Repair philosophy doc — inherits voice from brand positioning §4 (draft complete Apr 20; STL/firmware commitments tightened Apr 20 — STLs on-request only, firmware closed binary with reflash service instead)
-- Failure-mode inventory — enumerated list of v1.0 failure modes and repair paths; scaffolds the User Repair Guide and pressure-tests the philosophy's "every failure has a service path" claim
 - User Repair Guide — customer-facing
 - User interview script + contact list
 - Packaging QR code — laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page

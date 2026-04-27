@@ -4,7 +4,7 @@ type: hcde-artifact
 phase: 2
 week: 4
 date: 2026-04-20
-status: draft
+status: complete
 tags: [hcde, repair, philosophy, values]
 ---
 
@@ -12,7 +12,7 @@ tags: [hcde, repair, philosophy, values]
 
 **Prepared by:** William White, Founder — Layered Logic LLC
 **Date:** April 20, 2026
-**Status:** Working draft — Week 4 deliverable
+**Status:** Complete — Week 4 deliverable
 
 ---
 
@@ -130,5 +130,6 @@ So: if you're holding one of these mirrors and something on this page reads as a
 - [Market Analysis Report](Market%20Analysis%20Report.md) — regulatory context (§3.E Repairability Liability)
 - [Stakeholder Map](stakeholder-map.md) — end-of-life and repair stakeholders this philosophy is written for
 - [Firmware Architecture Scoping](firmware-architecture-scoping.md) — where the closed-binary + self-hosted OTA + reflash-service commitments get technical definition
+- [Failure Mode Inventory](../Failure_Modes/) — individual failure mode analyses for every v1.0 component, with repair paths and parts sourcing
 - User Repair Guide *(pending — Week 4 → Week 8 final)* — the practical how-to companion
 - [Sprint Plan](../sprint_plan.md) — Week 4 deliverables
