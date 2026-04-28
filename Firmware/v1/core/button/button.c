@@ -241,8 +241,16 @@ static void button_task(void *arg)
 
 void ll_button_init(void)
 {
-    const uint64_t pin_mask = (1ULL << LL_PIN_BUTTON_PRIMARY)
-                            | (1ULL << LL_PIN_BUTTON_RESET);
+    /* Boards without a recessed button signal absence with
+     * LL_PIN_BUTTON_RESET = -1 (see boards/c3_devkit.h). All RESET-pin
+     * operations are guarded so we don't 1ULL<<-1 (UB) or hand a negative
+     * GPIO to the IDF (would ESP_ERROR_CHECK-panic at boot). When absent,
+     * the recessed gesture state machine still ticks but never receives
+     * input — provisioning + factory reset must come from another path. */
+    uint64_t pin_mask = (1ULL << LL_PIN_BUTTON_PRIMARY);
+    if (LL_PIN_BUTTON_RESET >= 0) {
+        pin_mask |= (1ULL << LL_PIN_BUTTON_RESET);
+    }
     gpio_config_t cfg = {
         .pin_bit_mask = pin_mask,
         .mode = GPIO_MODE_INPUT,
@@ -263,19 +271,31 @@ void ll_button_init(void)
     }
     ESP_ERROR_CHECK(gpio_isr_handler_add(LL_PIN_BUTTON_PRIMARY, on_gpio_isr,
                                           (void *)(intptr_t)LL_PIN_BUTTON_PRIMARY));
-    ESP_ERROR_CHECK(gpio_isr_handler_add(LL_PIN_BUTTON_RESET, on_gpio_isr,
-                                          (void *)(intptr_t)LL_PIN_BUTTON_RESET));
+    if (LL_PIN_BUTTON_RESET >= 0) {
+        ESP_ERROR_CHECK(gpio_isr_handler_add(LL_PIN_BUTTON_RESET, on_gpio_isr,
+                                              (void *)(intptr_t)LL_PIN_BUTTON_RESET));
+    }
 
     /* Seed debounce state from current pin levels so we don't fire a
-     * phantom release at boot if the pin is already high. */
+     * phantom release at boot if the pin is already high. When the
+     * recessed pin is absent, leave g_recessed_last_level at its
+     * static-init default of 1 (released) so the apply_edge dispatcher's
+     * level-equality early-out keeps the recessed branch quiescent. */
     g_primary_last_level = gpio_get_level(LL_PIN_BUTTON_PRIMARY);
-    g_recessed_last_level = gpio_get_level(LL_PIN_BUTTON_RESET);
+    if (LL_PIN_BUTTON_RESET >= 0) {
+        g_recessed_last_level = gpio_get_level(LL_PIN_BUTTON_RESET);
+    }
 
     BaseType_t ok = xTaskCreatePinnedToCore(button_task, "button",
                                             BUTTON_TASK_STACK, NULL,
                                             BUTTON_TASK_PRIO, &g_task, 0);
     configASSERT(ok == pdPASS);
 
-    ESP_LOGI(TAG, "init: primary=GPIO%d recessed=GPIO%d",
-             LL_PIN_BUTTON_PRIMARY, LL_PIN_BUTTON_RESET);
+    if (LL_PIN_BUTTON_RESET >= 0) {
+        ESP_LOGI(TAG, "init: primary=GPIO%d recessed=GPIO%d",
+                 LL_PIN_BUTTON_PRIMARY, LL_PIN_BUTTON_RESET);
+    } else {
+        ESP_LOGI(TAG, "init: primary=GPIO%d (no recessed button on this board)",
+                 LL_PIN_BUTTON_PRIMARY);
+    }
 }

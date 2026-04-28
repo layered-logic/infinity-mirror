@@ -19,5 +19,8 @@
 
 #define LL_PARTITION_SCHEME    "ab_with_factory"   /* 4MB, A/B + factory */
 
-#define LL_LED_COUNT_DEFAULT   32
+/* The V0 C3 prototype is the 12×12 / 66-LED test rig (per
+ * project_quarter_spring2026 memory: "12×12 (66 LEDs) is a firmware test
+ * prototype"). Production 6×6 / 32-LED ships on prod_v1_pro.h. */
+#define LL_LED_COUNT_DEFAULT   66
 #define LL_LED_COLOR_ORDER     GRB

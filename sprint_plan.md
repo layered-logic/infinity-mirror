@@ -59,8 +59,9 @@ tags: [sprint, plan, milestones]
 
   Parked for Wed Apr 23 architecture block: language/framework choice, provisioning UX pattern, smart-home integration path (ESP32-C6 Zigbee/Thread/Matter native vs. ESP32-C3 + individual integrations — not solving Wed, just flagging), OTA signed-binary architecture, app protocol.
 
-### Week 5 (Apr 28 – May 2): App UX/UI Design
-- **HCDE Task: Wireframes.** Design the app experience in Figma. How do users pick colors? Set schedules/timers? Request a custom design? Use the dev board to validate that planned features are technically feasible as you design.
+### Week 5 (Apr 28 – May 5): App UX/UI Design + App Demo Mini-Sprint
+- **App Demo Mini-Sprint (Apr 28 → May 5).** Engineering push for working end-to-end demos of both the device-hosted webapp **and** the React Native Android app, controlling a real ESP32 mirror, for the faculty advisor on May 5. Path A + B + C committed (transport + webapp + RN app). Detailed 8-session plan, locked decisions, risks, stretch goals (BLE provisioning + UI polish), and demo-day Definition of Done in [docs/mini-sprint-app-demo.md](docs/mini-sprint-app-demo.md). Bleeds into the start of Week 6 (Sun May 3 final session, Mon May 4 buffer, Tue May 5 demo).
+- **HCDE Task: Wireframes.** Design the app experience in Figma in parallel with the live builds — wireframes inform implementation, working builds inform design rationale.
 - **User Research:** Continue interviews. Test wireframe concepts informally — show people the app flow and get reactions.
 - **Portfolio:** Document the "Design Rationale" — why an app vs. physical buttons? What did users tell you that shaped the interface?
 
