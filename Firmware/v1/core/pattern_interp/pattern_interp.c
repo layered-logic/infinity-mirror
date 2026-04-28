@@ -44,7 +44,11 @@ static const char *TAG = "pattern_interp";
 #define FRAME_PERIOD_MS     (1000 / FRAME_HZ)
 #define TASK_STACK          4096
 #define TASK_PRIO           (tskIDLE_PRIORITY + 3)
-#define TASK_CORE           1
+/* All Layered Logic targets (C3, C6) are single-core from FreeRTOS's
+ * point of view — C6 has a low-power core that the scheduler doesn't
+ * use. Pin to core 0 universally; xTaskCreatePinnedToCore with core 1
+ * panics on Unicore builds (assert in freertos_tasks_c_additions.h). */
+#define TASK_CORE           0
 #define MSG_QUEUE_LEN       16
 
 typedef enum {
