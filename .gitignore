@@ -4,6 +4,12 @@ business/
 # Claude Code local config
 .claude/
 
+# Obsidian local editor config (per-machine)
+.obsidian/
+
+# Obsidian "new file" stubs
+Untitled.*
+
 # Python cache
 __pycache__/
 *.pyc
