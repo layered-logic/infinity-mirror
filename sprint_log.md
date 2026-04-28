@@ -137,8 +137,10 @@ fuzzy-matches these against [sprint_plan.md](sprint_plan.md) to determine remain
 
 ### In Progress
 - User Repair Guide — customer-facing
-- User interview script + contact list
-- Packaging QR code — laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page
+- User interview script + contact list — outline drafted Apr 28 (see Week 5); contact list still pending
+
+### Blocked
+- Packaging QR code — laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. **Blocked Apr 28** — needs final packaging design (cardboard stock, dimensions, print/laser process) decided first. Concept stays parked until packaging is far enough along to know what surface the QR lives on.
 
 ### Scheduled — Wednesday Apr 22 focus work day
 - ~~**BOI Report** filing with FinCEN~~ — **resolved as N/A / exempt Apr 22.** See Done entry below.
@@ -149,13 +151,16 @@ fuzzy-matches these against [sprint_plan.md](sprint_plan.md) to determine remain
 - Firmware architecture scoping doc produced at [docs/firmware-architecture-scoping.md](docs/firmware-architecture-scoping.md). Locks 5 design principles (standalone out-of-box, app is pattern editor, configurable LED count, brand-palette default, closed-binary + self-hosted OTA) and stages 5 open decisions for Wed with options/tradeoffs for each. Also captures: feature-parity checklist extracted from the ESPHome YAML, success criteria for Wed, and explicit out-of-scope items (Matter/Thread SKU decision, app UI design, webapp stack, test harness).
 - Clarified product-line scope: 6×6 (32 LEDs) is the shipping product; 12×12 (66 LEDs) is a firmware test prototype only, not a second SKU. Sustainability audit + BOM remain 6×6-only.
 
-### Blocked
-
 ---
 
 ## Week 5 (Apr 28 – May 2): App UX/UI Design
 
 ### Done
+- [x] **Business banking fully operational (Apr 28).** External personal accounts linked to the Layered Logic LLC business account and initial funding deposit cleared. Closes the Week 1 banking thread — account is now active and past the inactivity/fee threshold, no risk of closure. Pairs with the Apr 14 account approval.
+
+- [x] **User interview outlines drafted (Apr 28).** Lightweight outlines for two audiences — end-buyer (~22 min) and showcase partner / coffee shops (~22 min) — at [docs/user-interview-outline.md](docs/user-interview-outline.md). Captures the data concepts to collect rather than a verbatim script (Bill conducts impromptu). End-buyer flow walks space/taste → shopping behavior → product reaction → customization appetite → control preferences → values alignment → discovery. Coffee-shop flow walks current practice → artist-selection criteria → economics → logistics → fit → referrals. Doc closes with a 7-row "data we want from every conversation" table tying answers back to specific open decisions (price brackets, parked native/webapp call, Pro vs Pro+ SKU split, repair-messaging value).
+
+- [x] **Button Design Rationale drafted (Apr 28).** HCDE portfolio companion to [button-interface.md](docs/button-interface.md) at [docs/button-design-rationale.md](docs/button-design-rationale.md). Status: draft, pre-user-research — revises after Week 5 interviews. 10 sections covering: the question (light vs smart device), audience priority (Curator > Vibe-Seeker >> Spec-Head), the core "light first" tension, four rejected alternatives (app-only, single-button-only, capacitive touch, encoder), why two buttons + Eero precedent for the recessed button, why V0's gesture grammar was preserved, trade-offs explicitly accepted (sparse hardware UI, no combos, bounded discoverability, app-survival risk), six testable hypotheses tied to interview questions, and open/parked items. One-sentence summary: *"Two buttons because the mirror is a light first and a smart device second — and the difference between those two roles deserves a physical seam."* Closes the Week 5 sprint plan "design rationale" deliverable.
 
 ### In Progress
 

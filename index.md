@@ -9,35 +9,36 @@ tags: [moc, home]
 
 > Home note. Start here for any session. Links fan out to every other doc.
 
-**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-22 · **Current week:** 4 of 11
+**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-28 · **Current week:** 5 of 11
 
 ---
 
-## Right Now (Week 4: Apr 21 – Apr 25)
+## Right Now (Week 5: Apr 28 – May 2)
 
-**Phase 2 begins — Interaction Design & Branding.** Week 4 focus: brand identity, right-to-repair, user interviews, ESP32 firmware kickoff.
+**App UX/UI Design week.** Three parallel tracks: Figma wireframes, user research kickoff, design rationale documentation. Week 4 closed with Right-to-Repair philosophy locked + 17-file failure mode inventory; firmware bring-up reached provisioning + NVS persistence.
 
-**Brand track — substantially locked (Apr 20):**
-- [Brand Positioning Worksheet](docs/brand-positioning.md) — three-tier architecture, audience priority, voice, typography inversion (italic default), Berkeley Mono, hybrid palette, *"Light that layers"* tagline motif
-- [Brand Research Notes](docs/brand-research-notes.md) — five moodboard references analyzed, five signature visual devices distilled
-- [Typography Decisions](docs/typography-decisions.md) — full rationale for italic-default, NHG + Berkeley Mono (Apr 21)
-- [Logo spec](assets/brand/logo/logo-spec.md) + [code notes](assets/brand/logo/logo-code-notes.md) + rest-pose SVGs ([dark](assets/brand/logo/logo-primary-dark.svg) · [light](assets/brand/logo/logo-primary-light.svg) · [mono](assets/brand/logo/logo-primary-mono.svg)) — local mirror of the P5 sketch at [layered-logic/layered-logic-logo](https://github.com/layered-logic/layered-logic-logo), color pulled into the locked palette (Apr 21)
-- [Palette swatches](assets/brand/color/) — B (reference), C (reference), Hybrid (locked)
-- [Moodboards index](assets/moodboards/) — five references with links + summaries (captures pending)
+**This week's deliverables:**
+- ✅ Design Rationale doc — *why an app + physical buttons* drafted today at [button-design-rationale.md](docs/button-design-rationale.md); pairs with [button-interface.md](docs/button-interface.md) spec. Pre-user-research; revises after Week 5 interviews
+- *(pending)* Figma wireframes — color picker, schedules/timers, custom-design request flow
+- *(pending)* User interviews — outlines drafted at [docs/user-interview-outline.md](docs/user-interview-outline.md); contact list + first 3 sessions still TBD
 
-**Still to do this week:**
-- [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — HCDE artifact, values/voice draft complete (Apr 20) · inherits from brand §4
-- *(pending)* Failure-mode inventory — enumerated v1.0 failure modes with repair paths; feeds the Repair Guide
-- *(pending)* User Repair Guide — customer-facing doc
-- *(pending)* User interview script + contact list
-- *(pending)* Type specimen SVGs → [assets/brand/type/](assets/brand/type/) — Berkeley Mono + Neue Haas Grotesk ExtraLight Italic in-situ (rationale locked in [typography-decisions.md](docs/typography-decisions.md))
-- *(pending)* Moodboard reference image captures → [assets/moodboards/](assets/moodboards/) (links + summaries already indexed)
-- *(concept captured)* Packaging QR code laser-etched into cardboard — zero extra material; surfaces repair philosophy at unboxing
+**Parked decision blocking app work:**
+- The Apr 22 four-path call (native Android / Flutter / webapp / step-off-engineering) was never formally resolved — engineering pivoted to provisioning + NVS, then graded work. `Firmware/v1/core/transport/` and `Firmware/v1/webapp/` are still empty. This decision is upstream of the wireframes — pick the platform first.
 
-**Wednesday (Apr 22) focus work day — complete:**
-- ✅ BOI Report — confirmed exempt under FinCEN interim final rule (US-domestic entity)
-- ✅ WA BLS registration filed — UBI issued, $90 paid, 0.471% Retailing + 0.484% Manufacturing B&O
-- ✅ ESP32 firmware architecture block — all 5 decisions locked in [Firmware Architecture Scoping](docs/firmware-architecture-scoping.md); two-variant split (Pro + Pro+) with shared core; spec docs and repo scaffold below
+**Carryover from Week 4 (still open):**
+- *(pending)* User Repair Guide — customer-facing wrapper around the [right-to-repair philosophy](docs/right-to-repair-philosophy.md) + [Failure_Modes/](Failure_Modes/) inventory
+- *(blocked)* Packaging QR code — laser-etch into cardboard concept; **blocked Apr 28** awaiting final packaging design (stock/dimensions/process)
+- *(pending)* Logo P5 source sync — outer L `#420AFF → #4A25FF`
+- *(pending)* Type specimen SVGs → [assets/brand/type/](assets/brand/type/)
+- *(pending)* Moodboard reference image captures → [assets/moodboards/](assets/moodboards/)
+
+**Compliance follow-ups:**
+- *(waiting)* Reseller permit application — once UBI from Apr 22 BLS filing is confirmed (~Apr 30 – May 5)
+- *(reminder)* Re-check FinCEN BOI guidance before Jun 21 in case the interim rule reverses
+
+**This week's wins (Apr 28):**
+- ✅ Business banking fully operational — external accounts linked + initial funding deposit cleared, account safe from inactivity closure
+- ✅ User interview outlines drafted — two audiences (end-buyer + showcase partner)
 
 Deferred from Week 3:
 - PCB schematic update and production order — unblocked by 5 test boards in hand; not critical path (see [project_pcb_status memory](../../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md))
@@ -60,6 +61,9 @@ Deferred from Week 3:
 - [Brand Research Notes](docs/brand-research-notes.md) — five-reference visual grammar analysis · *Week 4*
 - [Typography Decisions](docs/typography-decisions.md) — italic-default + Berkeley Mono rationale · *Week 4*
 - [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — pro-consumer values, repair commitments, honest limits · *Week 4*
+- [Failure Mode Inventory](Failure_Modes/README.md) — 17 failure modes across 8 categories with user-facing repair paths · *Week 4*
+- [User Interview Outlines](docs/user-interview-outline.md) — end-buyer + showcase-partner interview outlines, 20–25 min each · *Week 5*
+- [Button Design Rationale](docs/button-design-rationale.md) — *why an app + physical buttons* portfolio artifact (draft, pre-user-research) · *Week 5*
 - *(pending)* User Repair Guide · *Week 4 → Week 8 final*
 - *(pending)* Service Blueprint · *Week 7*
 
