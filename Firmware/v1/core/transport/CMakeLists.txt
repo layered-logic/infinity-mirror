@@ -18,4 +18,5 @@ idf_component_register(
         esp_timer
         json
         state_bus
+        webapp_assets
 )

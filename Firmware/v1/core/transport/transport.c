@@ -33,6 +33,7 @@
 
 #include "state_bus.h"
 #include "state_bus_events.h"
+#include "webapp_assets.h"
 
 static const char *TAG = "transport";
 
@@ -304,7 +305,7 @@ static esp_err_t start_server(void)
 
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port      = LL_TRANSPORT_PORT;
-    cfg.max_uri_handlers = 4;     /* /ws today; HTTP REST adds more in S2 */
+    cfg.max_uri_handlers = 8;     /* /ws + 3 webapp assets + headroom for captive-portal probe URIs */
     cfg.lru_purge_enable = true;  /* close oldest socket on overflow */
 
     esp_err_t err = httpd_start(&g_server, &cfg);
@@ -317,6 +318,14 @@ static esp_err_t start_server(void)
     err = httpd_register_uri_handler(g_server, &URI_WS);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "register %s: %s", URI_WS.uri, esp_err_to_name(err));
+        httpd_stop(g_server);
+        g_server = NULL;
+        return err;
+    }
+
+    err = ll_webapp_assets_register(g_server);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "webapp assets register: %s", esp_err_to_name(err));
         httpd_stop(g_server);
         g_server = NULL;
         return err;
