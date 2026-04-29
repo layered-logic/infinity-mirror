@@ -1,0 +1,21 @@
+# Layered Logic Infinity Mirror — project-wide sdkconfig defaults.
+#
+# Applied as the baseline before any board- or variant-specific
+# overrides. Keep this file minimal — only settings the project
+# requires across every build target belong here.
+
+# --- Flash + partition layout -----------------------------------------
+# 4MB flash with the custom ab_with_factory partition table at
+# Firmware/v1/partitions.csv. See that file for the slot map.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+
+# --- Production hardening (deliberately left disabled this sprint) ----
+# All three of these are eFuse burns and irreversible. Per
+# docs/mini-sprint-app-demo.md §1a, they stay off until production.
+# CONFIG_SECURE_BOOT_V2_ENABLED        — leave unset
+# CONFIG_FLASH_ENCRYPTION_ENABLED      — leave unset
+# CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK  — leave unset

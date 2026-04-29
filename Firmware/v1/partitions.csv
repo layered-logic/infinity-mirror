@@ -1,0 +1,26 @@
+# Layered Logic Infinity Mirror — partition table.
+#
+# Scheme: ab_with_factory on 4MB flash (per board headers'
+# LL_PARTITION_SCHEME). Three app slots:
+#   - factory: known-good recovery image; first boot lands here.
+#   - ota_0 / ota_1: alternating slots for OTA updates.
+#
+# Slot size 1.25MB (0x140000) — current V1 binary is ~983KB after
+# Session 0, and Session 1 adds esp_http_server + cJSON + mDNS, so
+# this leaves ~25% headroom for the rest of Phase 2 firmware growth
+# before any per-slot resize is needed.
+#
+# nvs offset (0x9000) and size (24KB) match the IDF default table
+# so existing NVS contents (ll_settings + wifi creds via wifi_prov_mgr)
+# survive the partition swap on first reflash with this table.
+#
+# Total used: 0x3E0000 (3.875MB). Top 128KB intentionally unused to
+# leave room for a future coredump or fat partition without reshuffling
+# app slots.
+#
+# Name,     Type, SubType,  Offset,    Size,      Flags
+nvs,        data, nvs,      0x9000,    0x6000,
+otadata,    data, ota,      0xf000,    0x2000,
+factory,    app,  factory,  0x20000,   0x140000,
+ota_0,      app,  ota_0,    0x160000,  0x140000,
+ota_1,      app,  ota_1,    0x2a0000,  0x140000,
