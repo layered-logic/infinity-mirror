@@ -15,6 +15,9 @@ export interface MirrorClientOptions {
   onState?: (state: DeviceState) => void;
   onConn?: (s: ConnState) => void;
   onError?: (msg: string) => void;
+  // Auto-reconnect with exponential backoff (1s → 2s → 4s → 8s capped).
+  // Default true. Set false for tests or one-shot scripts.
+  autoReconnect?: boolean;
 }
 
 interface PendingRequest {
@@ -24,11 +27,16 @@ interface PendingRequest {
 }
 
 const REQ_TIMEOUT_MS = 5000;
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 8000;
 
 export class MirrorClient {
   private ws: WebSocket | null = null;
   private pending = new Map<string, PendingRequest>();
   private connState: ConnState = 'idle';
+  private wantOpen = false;
+  private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private opts: MirrorClientOptions) {}
 
@@ -37,6 +45,21 @@ export class MirrorClient {
   }
 
   connect(): void {
+    this.wantOpen = true;
+    this.openSocket();
+  }
+
+  disconnect(): void {
+    this.wantOpen = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.ws?.close();
+    this.ws = null;
+  }
+
+  private openSocket(): void {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -44,10 +67,14 @@ export class MirrorClient {
     const ws = new WebSocket(this.opts.url);
     this.ws = ws;
 
-    ws.addEventListener('open', () => this.setConn('open'));
+    ws.addEventListener('open', () => {
+      this.reconnectAttempt = 0;
+      this.setConn('open');
+    });
     ws.addEventListener('close', () => {
       this.setConn('closed');
       this.failAllPending(new Error('socket closed'));
+      this.scheduleReconnect();
     });
     ws.addEventListener('error', () => {
       this.opts.onError?.('socket error');
@@ -55,9 +82,19 @@ export class MirrorClient {
     ws.addEventListener('message', (ev) => this.handleMessage(ev.data));
   }
 
-  disconnect(): void {
-    this.ws?.close();
-    this.ws = null;
+  private scheduleReconnect(): void {
+    if (!this.wantOpen) return;
+    if (this.opts.autoReconnect === false) return;
+    if (this.reconnectTimer) return;
+    const delay = Math.min(
+      RECONNECT_BASE_MS * Math.pow(2, this.reconnectAttempt),
+      RECONNECT_MAX_MS,
+    );
+    this.reconnectAttempt += 1;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.wantOpen) this.openSocket();
+    }, delay);
   }
 
   // Send a request envelope and resolve when the matching response arrives.
