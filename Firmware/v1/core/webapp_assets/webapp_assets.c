@@ -85,6 +85,36 @@ static esp_err_t h_app_css(httpd_req_t *req)
     return serve_asset(req, &a);
 }
 
+/* ---- captive-portal 404 handler ---------------------------------- */
+
+/* Catch every URL we don't already serve and respond with a redirect to
+ * the webapp root. This is what makes OS captive-portal probes pop the
+ * sign-in sheet: Android's connectivitycheck.gstatic.com/generate_204,
+ * iOS's captive.apple.com/hotspot-detect.html, Windows' connecttest.txt,
+ * etc. all fail to match any URI in our table and fall through here.
+ *
+ * The 302 has Location set to a relative root path rather than a full
+ * URL on purpose — the OS probe was made with the captive-portal
+ * domain in the Host header, so the browser/OS auto-completes the URL
+ * against that host (resolved by our DNS hijack to 192.168.4.1).
+ * Returning a relative URL means the browser's address bar shows the
+ * probe domain instead of an explicit IP, which keeps the captive
+ * sheet UX consistent across phone OSes.
+ *
+ * STA-mode caveat: this handler is global (esp_http_server doesn't
+ * support per-mode URI tables). If someone hits an unknown path on the
+ * device when it's a real station on a real network, they'll be
+ * redirected to /. That's a reasonable fallback for a misspelled URL,
+ * not a bug. */
+static esp_err_t cap_404_redirect(httpd_req_t *req, httpd_err_code_t err)
+{
+    (void)err;
+    httpd_resp_set_status(req, "302 Found");
+    httpd_resp_set_hdr(req, "Location", "/");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    return httpd_resp_send(req, NULL, 0);
+}
+
 /* ---- registration ------------------------------------------------ */
 
 esp_err_t ll_webapp_assets_register(httpd_handle_t server)
@@ -105,10 +135,18 @@ esp_err_t ll_webapp_assets_register(httpd_handle_t server)
         }
     }
 
+    esp_err_t err = httpd_register_err_handler(server, HTTPD_404_NOT_FOUND,
+                                               cap_404_redirect);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "register 404 redirect: %s", esp_err_to_name(err));
+        return err;
+    }
+
     const size_t total = (size_t)(index_html_gz_end - index_html_gz_start)
                        + (size_t)(app_js_gz_end     - app_js_gz_start)
                        + (size_t)(app_css_gz_end    - app_css_gz_start);
-    ESP_LOGI(TAG, "registered /  /app.js  /app.css  (%u bytes gzipped total)",
+    ESP_LOGI(TAG, "registered /  /app.js  /app.css  + 404 captive redirect "
+                  "(%u bytes gzipped total)",
              (unsigned)total);
     return ESP_OK;
 }

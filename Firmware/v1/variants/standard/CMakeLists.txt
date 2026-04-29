@@ -10,6 +10,7 @@ idf_component_register(
         esp_event
         state_bus
         button
+        captive_dns
         led_driver
         ll_mdns
         nvs

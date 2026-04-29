@@ -24,6 +24,7 @@
 
 #include "board.h"
 #include "button.h"
+#include "captive_dns.h"
 #include "ll_mdns.h"
 #include "nvs.h"
 #include "pattern_interp.h"
@@ -69,6 +70,9 @@ void app_main(void)
 
     ESP_ERROR_CHECK(ll_transport_init());
     ESP_ERROR_CHECK(ll_transport_subscribe());
+
+    ESP_ERROR_CHECK(ll_captive_dns_init());
+    ESP_ERROR_CHECK(ll_captive_dns_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),
