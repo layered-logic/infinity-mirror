@@ -67,6 +67,25 @@ static cJSON *state_to_json(const ll_state_t *s)
     return obj;
 }
 
+/* ---- payload helpers --------------------------------------------- */
+
+/* Parse "#RRGGBB" or "RRGGBB" into a 0xRRGGBB uint32. Returns false
+ * on any malformation (wrong length, non-hex chars, NULL, etc.) so
+ * callers can reject quietly rather than commit a bad color. */
+static bool parse_hex_color(const char *s, uint32_t *out)
+{
+    if (!s) return false;
+    if (s[0] == '#') s++;
+    if (strlen(s) != 6) return false;
+
+    char *end;
+    unsigned long v = strtoul(s, &end, 16);
+    if (*end != '\0') return false;
+
+    *out = (uint32_t)v & 0x00FFFFFFu;
+    return true;
+}
+
 /* ---- op handlers ------------------------------------------------- */
 
 static cJSON *result_for_ping(void)
@@ -80,6 +99,71 @@ static cJSON *result_for_ping(void)
     cJSON_AddNumberToObject(result, "uptime_s",
                             (double)(esp_timer_get_time() / 1000000));
     return result;
+}
+
+/* set_state: partial state update. For each recognized field present
+ * in the payload, post the matching event to the state-bus loop. The
+ * state-bus task applies them sequentially, then re-dispatches
+ * LL_EV_STATE_CHANGED — which (Session 2c) transport will broadcast
+ * back to all clients. So the response here is a best-effort
+ * read-back; the broadcast is authoritative.
+ *
+ * Sensitive fields are intentionally NOT accepted via set_state:
+ *   - auth_mode (use the dedicated set_auth_mode op — security action)
+ *   - telemetry_enabled (use set_telemetry — privacy opt-in)
+ *   - led_count (read-only, fixed at provisioning / by board header)
+ */
+static void op_set_state(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message", "set_state requires an object payload");
+        return;
+    }
+
+    cJSON *item;
+
+    item = cJSON_GetObjectItem(payload, "on");
+    if (cJSON_IsBool(item)) {
+        ll_ev_power_toggle_payload_t p = { .on = cJSON_IsTrue(item) };
+        ll_state_bus_post(LL_EV_POWER_TOGGLE, &p);
+    }
+
+    item = cJSON_GetObjectItem(payload, "base_color");
+    {
+        const char *s = cJSON_GetStringValue(item);
+        uint32_t rgb;
+        if (s && parse_hex_color(s, &rgb)) {
+            ll_ev_base_color_payload_t p = { .rgb = rgb };
+            ll_state_bus_post(LL_EV_BASE_COLOR, &p);
+        }
+    }
+
+    item = cJSON_GetObjectItem(payload, "brightness");
+    if (cJSON_IsNumber(item)) {
+        int b = (int)cJSON_GetNumberValue(item);
+        if (b >= 0 && b <= 100) {
+            ll_ev_brightness_payload_t p = { .value = (uint8_t)b };
+            ll_state_bus_post(LL_EV_BRIGHTNESS, &p);
+        }
+    }
+
+    item = cJSON_GetObjectItem(payload, "pattern_id");
+    {
+        const char *s = cJSON_GetStringValue(item);
+        if (s) {
+            ll_ev_pattern_change_payload_t p = {0};
+            strncpy(p.id, s, sizeof(p.id) - 1);
+            ll_state_bus_post(LL_EV_PATTERN_CHANGE, &p);
+        }
+    }
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON_AddItemToObject(resp, "result", state_to_json(ll_state_bus_get()));
+    cJSON_AddNullToObject(resp, "error");
 }
 
 /* ---- envelope dispatch ------------------------------------------- */
@@ -124,6 +208,8 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         cJSON_AddBoolToObject(resp, "ok", true);
         cJSON_AddItemToObject(resp, "result", state_to_json(ll_state_bus_get()));
         cJSON_AddNullToObject(resp, "error");
+    } else if (op && strcmp(op, "set_state") == 0) {
+        op_set_state(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else {
         cJSON_AddBoolToObject(resp, "ok", false);
         cJSON_AddNullToObject(resp, "result");
