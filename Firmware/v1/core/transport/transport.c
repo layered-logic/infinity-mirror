@@ -348,6 +348,81 @@ static void on_wifi_disconnected(void *arg, esp_event_base_t base,
     stop_server();
 }
 
+/* ---- state broadcast --------------------------------------------- */
+
+/* Fire on every LL_EV_STATE_CHANGED. Builds the {op:"state",ts,state}
+ * envelope once and pushes it to every connected WS client. The same
+ * envelope is sent to the client that triggered the change too — set_state's
+ * direct response is best-effort/stale, this broadcast is authoritative
+ * and clients should rely on it.
+ *
+ * One broadcast per primitive event (not coalesced). For a multi-field
+ * set_state ({pattern_id, base_color, brightness}), that's three
+ * broadcasts in rapid succession, each carrying the full state at that
+ * point. Each frame is consistent on its own; coalescing is a future
+ * optimization if the chatter becomes a problem.
+ */
+static void broadcast_state(void)
+{
+    if (!g_server) return;
+
+    cJSON *env = cJSON_CreateObject();
+    if (!env) return;
+    cJSON_AddStringToObject(env, "op", "state");
+    cJSON_AddNumberToObject(env, "ts",
+                            (double)(esp_timer_get_time() / 1000000));
+    cJSON_AddItemToObject  (env, "state", state_to_json(ll_state_bus_get()));
+
+    char *json = cJSON_PrintUnformatted(env);
+    cJSON_Delete(env);
+    if (!json) return;
+
+    /* Enumerate active sockets, filter to WebSocket clients, send. */
+    int fds[16];
+    size_t n = sizeof(fds) / sizeof(fds[0]);
+    if (httpd_get_client_list(g_server, &n, fds) != ESP_OK) {
+        free(json);
+        return;
+    }
+
+    httpd_ws_frame_t frame = {
+        .final      = true,
+        .fragmented = false,
+        .type       = HTTPD_WS_TYPE_TEXT,
+        .payload    = (uint8_t *)json,
+        .len        = strlen(json),
+    };
+
+    int delivered = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (httpd_ws_get_fd_info(g_server, fds[i]) != HTTPD_WS_CLIENT_WEBSOCKET) {
+            continue;
+        }
+        esp_err_t err = httpd_ws_send_frame_async(g_server, fds[i], &frame);
+        if (err == ESP_OK) {
+            delivered++;
+        } else {
+            ESP_LOGW(TAG, "broadcast to fd=%d: %s", fds[i], esp_err_to_name(err));
+            /* Don't bail — try other clients. Framework reaps dead
+             * sockets on its own; we'll skip them next round. */
+        }
+    }
+
+    if (delivered > 0) {
+        ESP_LOGI(TAG, "broadcast state to %d ws client(s) (%u bytes)",
+                 delivered, (unsigned)frame.len);
+    }
+
+    free(json);
+}
+
+static void on_state_changed(void *arg, esp_event_base_t base,
+                             int32_t id, void *data)
+{
+    (void)arg; (void)base; (void)id; (void)data;
+    broadcast_state();
+}
+
 /* ---- public entry points ----------------------------------------- */
 
 esp_err_t ll_transport_init(void)
@@ -368,8 +443,14 @@ esp_err_t ll_transport_subscribe(void)
         on_wifi_connected, NULL, NULL);
     if (err != ESP_OK) return err;
 
-    return esp_event_handler_instance_register_with(
+    err = esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),
         LL_STATE_EVENT_BASE, LL_EV_WIFI_DISCONNECTED,
         on_wifi_disconnected, NULL, NULL);
+    if (err != ESP_OK) return err;
+
+    return esp_event_handler_instance_register_with(
+        ll_state_bus_get_loop(),
+        LL_STATE_EVENT_BASE, LL_EV_STATE_CHANGED,
+        on_state_changed, NULL, NULL);
 }
