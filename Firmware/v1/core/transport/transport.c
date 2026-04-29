@@ -41,6 +41,32 @@ static const char *TAG = "transport";
 
 static httpd_handle_t g_server;
 
+/* ---- state object serialization ---------------------------------- */
+
+/* Wire-format state object per control-protocol-spec.md §5. Caller
+ * takes ownership of the returned cJSON tree. */
+static cJSON *state_to_json(const ll_state_t *s)
+{
+    cJSON *obj = cJSON_CreateObject();
+    if (!obj) return NULL;
+
+    cJSON_AddBoolToObject  (obj, "on",         s->on);
+    cJSON_AddStringToObject(obj, "pattern_id", s->pattern_id);
+
+    /* base_color over the wire is "#RRGGBB" (hex string), not an int —
+     * matches the spec example. Uppercase hex for legibility. */
+    char hex[8];
+    snprintf(hex, sizeof(hex), "#%06lX", (unsigned long)s->base_color_rgb);
+    cJSON_AddStringToObject(obj, "base_color",  hex);
+
+    cJSON_AddNumberToObject(obj, "brightness",  (double)s->brightness);
+    cJSON_AddNumberToObject(obj, "led_count",   (double)s->led_count);
+    cJSON_AddStringToObject(obj, "auth_mode",
+                            s->auth_mode == LL_AUTH_PAIRED ? "paired" : "open");
+    cJSON_AddBoolToObject  (obj, "telemetry_enabled", s->telemetry_enabled);
+    return obj;
+}
+
 /* ---- op handlers ------------------------------------------------- */
 
 static cJSON *result_for_ping(void)
@@ -93,6 +119,10 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
     if (op && strcmp(op, "ping") == 0) {
         cJSON_AddBoolToObject(resp, "ok", true);
         cJSON_AddItemToObject(resp, "result", result_for_ping());
+        cJSON_AddNullToObject(resp, "error");
+    } else if (op && strcmp(op, "get_state") == 0) {
+        cJSON_AddBoolToObject(resp, "ok", true);
+        cJSON_AddItemToObject(resp, "result", state_to_json(ll_state_bus_get()));
         cJSON_AddNullToObject(resp, "error");
     } else {
         cJSON_AddBoolToObject(resp, "ok", false);
