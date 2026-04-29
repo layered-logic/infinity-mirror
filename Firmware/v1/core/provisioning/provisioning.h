@@ -50,3 +50,18 @@ esp_err_t ll_provisioning_subscribe(void);
  * though current scope keeps button behavior unchanged).
  */
 bool ll_provisioning_is_active(void);
+
+/*
+ * Dev-only: kick the deferred SoftAP that ll_provisioning_init configured
+ * but didn't actually start. Call this from main.c AFTER every *_subscribe
+ * has run, so downstream modules (mdns, transport) catch the synthesized
+ * LL_EV_WIFI_CONNECTED event the AP_START handler posts.
+ *
+ * No-op when LL_DEV_OPEN_SOFTAP is 0 (production builds) or when the
+ * device booted with creds saved (STA path took over instead). Safe to
+ * call unconditionally from main.c.
+ *
+ * Replaced by the captive-portal flow in Session 5 of the app demo
+ * mini-sprint.
+ */
+esp_err_t ll_provisioning_kick_dev_softap(void);

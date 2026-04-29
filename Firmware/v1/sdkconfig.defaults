@@ -13,6 +13,11 @@ CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 
+# --- HTTP server: WebSocket support -----------------------------------
+# Required by core/transport/. Without this flag esp_http_server
+# accepts the URI registration but the WS upgrade handshake fails.
+CONFIG_HTTPD_WS_SUPPORT=y
+
 # --- Production hardening (deliberately left disabled this sprint) ----
 # All three of these are eFuse burns and irreversible. Per
 # docs/mini-sprint-app-demo.md §1a, they stay off until production.

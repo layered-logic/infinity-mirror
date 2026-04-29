@@ -44,6 +44,27 @@ static const char *TAG = "provisioning";
 #define LL_PROV_SSID_PREFIX        "LL-Setup-"
 #define LL_PROV_MAX_CONNECT_RETRY  10   /* retries before we post DISCONNECTED */
 
+/* DEV-ONLY: when no Wi-Fi creds are saved, open a plain SoftAP at
+ * boot (no provisioning protocol on top) so transport + mdns are
+ * reachable from any wifi client without going through the full
+ * wifi_prov_mgr dance. Stays up indefinitely — no 5-min window —
+ * because Sessions 1-4 want a stable network for iterative testing.
+ *
+ * Replaced by the real captive-portal flow in Session 5 of the app
+ * demo mini-sprint. Until then, builds default to ON; flip to 0
+ * (or pass `-DLL_DEV_OPEN_SOFTAP=0` at build time) to test the
+ * production "radios dark" boot path. MUST be 0 for any production
+ * release. */
+#ifndef LL_DEV_OPEN_SOFTAP
+#define LL_DEV_OPEN_SOFTAP         1
+#endif
+
+#if LL_DEV_OPEN_SOFTAP
+#define LL_DEV_AP_SSID_PREFIX      "LL-Mirror-"
+#define LL_DEV_AP_CHANNEL          1
+#define LL_DEV_AP_MAX_CONN         4
+#endif
+
 static esp_timer_handle_t g_prov_timeout_timer;
 static bool g_prov_active;
 static uint8_t g_retry_count;
@@ -247,6 +268,81 @@ static void on_factory_reset(void *arg, esp_event_base_t base,
     post_wifi_disconnected(0);
 }
 
+#if LL_DEV_OPEN_SOFTAP
+/* Dev SoftAP helpers ------------------------------------------------
+ *
+ * Posts LL_EV_WIFI_CONNECTED on WIFI_EVENT_AP_START so that the rest
+ * of the system (transport, mdns) reacts the same way as it would for
+ * a real STA connection. The payload's "ssid" field is reused for the
+ * AP SSID; "ip" is the well-known SoftAP gateway 192.168.4.1.
+ */
+static void on_dev_ap_started(void *arg, esp_event_base_t base,
+                              int32_t id, void *data)
+{
+    (void)arg; (void)base; (void)id; (void)data;
+
+    wifi_config_t cfg;
+    if (esp_wifi_get_config(WIFI_IF_AP, &cfg) != ESP_OK) {
+        ESP_LOGW(TAG, "DEV ap_start: cannot read AP config");
+        return;
+    }
+
+    ll_ev_wifi_connected_payload_t payload = {0};
+    strncpy(payload.ssid, (const char *)cfg.ap.ssid, sizeof(payload.ssid) - 1);
+    payload.ip[0] = 192; payload.ip[1] = 168;
+    payload.ip[2] = 4;   payload.ip[3] = 1;
+    payload.rssi = 0;
+
+    esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
+                      LL_EV_WIFI_CONNECTED, &payload, sizeof(payload), 0);
+    g_last_posted_connected = true;
+
+    ESP_LOGI(TAG, "DEV SoftAP up: ssid=\"%s\" ip=192.168.4.1 (open, %d max clients)",
+             payload.ssid, LL_DEV_AP_MAX_CONN);
+}
+
+static bool g_dev_softap_init_done;
+
+/* Configure the AP and register the AP_START handler — but do NOT
+ * call esp_wifi_start. The actual start is deferred to
+ * ll_provisioning_kick_dev_softap, which main.c runs after every
+ * subscriber (mdns, transport, etc.) has registered. Otherwise the
+ * AP comes up so fast that LL_EV_WIFI_CONNECTED fires before anyone
+ * is listening, and downstream modules silently miss it. */
+static esp_err_t init_dev_softap(void)
+{
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
+
+    wifi_config_t cfg = {0};
+    snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
+             LL_DEV_AP_SSID_PREFIX "%02X%02X%02X",
+             mac[3], mac[4], mac[5]);
+    cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
+    cfg.ap.channel        = LL_DEV_AP_CHANNEL;
+    cfg.ap.authmode       = WIFI_AUTH_OPEN;
+    cfg.ap.max_connection = LL_DEV_AP_MAX_CONN;
+
+    esp_err_t err = esp_event_handler_instance_register(
+        WIFI_EVENT, WIFI_EVENT_AP_START, on_dev_ap_started, NULL, NULL);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "DEV ap_start handler register: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = esp_wifi_set_mode(WIFI_MODE_AP);
+    if (err != ESP_OK) return err;
+    err = esp_wifi_set_config(WIFI_IF_AP, &cfg);
+    if (err != ESP_OK) return err;
+
+    g_dev_softap_init_done = true;
+    ESP_LOGI(TAG, "DEV SoftAP configured (\"%s\", open, no password) — "
+                  "deferred until subscribers wired",
+             cfg.ap.ssid);
+    return ESP_OK;
+}
+#endif /* LL_DEV_OPEN_SOFTAP */
+
 esp_err_t ll_provisioning_init(void)
 {
     /* netif + system event loop are prereqs for esp_wifi. nvs_flash is
@@ -308,9 +404,33 @@ esp_err_t ll_provisioning_init(void)
         g_station_started = true;
     } else {
         ESP_LOGI(TAG, "no creds — radios dark (awaiting LL_EV_PROVISION_START)");
+#if LL_DEV_OPEN_SOFTAP
+        err = init_dev_softap();
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "DEV SoftAP init failed: %s", esp_err_to_name(err));
+            return err;
+        }
+#endif
     }
 
     return ESP_OK;
+}
+
+esp_err_t ll_provisioning_kick_dev_softap(void)
+{
+#if LL_DEV_OPEN_SOFTAP
+    if (!g_dev_softap_init_done) return ESP_OK;
+    esp_err_t err = esp_wifi_start();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "DEV SoftAP esp_wifi_start: %s", esp_err_to_name(err));
+        return err;
+    }
+    ESP_LOGW(TAG, "DEV mode: SoftAP up. Captive-portal flow lands in "
+                  "Session 5 of the app demo mini-sprint — replace before prod.");
+    return ESP_OK;
+#else
+    return ESP_OK;
+#endif
 }
 
 esp_err_t ll_provisioning_subscribe(void)

@@ -15,4 +15,5 @@ idf_component_register(
         nvs
         pattern_interp
         provisioning
+        transport
 )
