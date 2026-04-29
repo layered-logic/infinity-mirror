@@ -1,0 +1,5 @@
+## core/mdns dependencies — declares the Espressif mDNS managed component
+## so the build system fetches it into managed_components/ on first build.
+
+dependencies:
+  espressif/mdns: "^1.4"

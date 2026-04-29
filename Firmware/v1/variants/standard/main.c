@@ -7,8 +7,10 @@
  *   3. nvs_subscribe    — start debounced save-on-change AFTER the bus exists.
  *   4. provisioning_init — bring up netif/wifi, connect if creds saved.
  *   5. provisioning_subscribe — react to LL_EV_PROVISION_START / FACTORY_RESET.
- *   6. pattern_interp   — registers handlers + brings up led_driver.
- *   7. button           — starts posting events that the others now listen for.
+ *   6. mdns_init        — set hostname; service publication is deferred to WIFI_CONNECTED.
+ *   7. mdns_subscribe   — listen for WIFI_CONNECTED / DISCONNECTED / AUTH_MODE.
+ *   8. pattern_interp   — registers handlers + brings up led_driver.
+ *   9. button           — starts posting events that the others now listen for.
  */
 
 #include <stdio.h>
@@ -20,6 +22,7 @@
 
 #include "board.h"
 #include "button.h"
+#include "ll_mdns.h"
 #include "nvs.h"
 #include "pattern_interp.h"
 #include "provisioning.h"
@@ -57,6 +60,9 @@ void app_main(void)
 
     ESP_ERROR_CHECK(ll_provisioning_init());
     ESP_ERROR_CHECK(ll_provisioning_subscribe());
+
+    ESP_ERROR_CHECK(ll_mdns_init());
+    ESP_ERROR_CHECK(ll_mdns_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),

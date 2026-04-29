@@ -11,6 +11,7 @@ idf_component_register(
         state_bus
         button
         led_driver
+        ll_mdns
         nvs
         pattern_interp
         provisioning

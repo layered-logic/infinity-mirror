@@ -22,6 +22,12 @@ endif()
 string(TOUPPER ${LL_BOARD} LL_BOARD_UPPER)
 add_compile_definitions(LL_BOARD_${LL_BOARD_UPPER})
 
+# Expose LL_VARIANT as a string macro for runtime identification (mdns
+# TXT records, future telemetry beacons, advisor demo logs, etc.).
+# Backslash-escaped quotes survive cmd.exe / shell intermediation on
+# Windows hosts.
+add_compile_definitions(LL_VARIANT_NAME=\"${LL_VARIANT}\")
+
 # Include the board headers on the global include path.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/boards)
 
