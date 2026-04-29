@@ -45,11 +45,20 @@ esp_err_t ll_provisioning_init(void);
 esp_err_t ll_provisioning_subscribe(void);
 
 /*
- * True while wifi_prov_mgr is advertising and awaiting creds. Useful for
- * UI (button module could skip its cycle behavior during provisioning,
- * though current scope keeps button behavior unchanged).
+ * True while the device is in SoftAP mode awaiting credentials — covers
+ * both the dev open-SoftAP path and the wifi_prov_mgr-driven path. The
+ * webapp uses this (via the wire state object) to decide whether to
+ * show the /setup screen or the /control screen on load.
  */
 bool ll_provisioning_is_active(void);
+
+/*
+ * Current STA SSID (the network the device is connected to as a client),
+ * or an empty string when the device is not on a STA network. Backed by
+ * a static buffer; valid until the next WIFI_CONNECTED / DISCONNECTED
+ * transition. Caller does not free.
+ */
+const char *ll_provisioning_get_sta_ssid(void);
 
 /*
  * Dev-only: kick the deferred SoftAP that ll_provisioning_init configured

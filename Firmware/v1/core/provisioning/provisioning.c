@@ -70,6 +70,7 @@ static bool g_prov_active;
 static uint8_t g_retry_count;
 static bool g_station_started;
 static bool g_last_posted_connected;
+static char g_sta_ssid[33];   /* current STA network SSID, empty when not on STA */
 
 static void build_ap_ssid(char *out, size_t out_len)
 {
@@ -86,6 +87,7 @@ static void post_wifi_disconnected(uint8_t reason)
         return;
     }
     g_last_posted_connected = false;
+    g_sta_ssid[0] = '\0';
     ll_ev_wifi_disconnected_payload_t payload = { .reason = reason };
     esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
                       LL_EV_WIFI_DISCONNECTED, &payload, sizeof(payload), 0);
@@ -103,6 +105,10 @@ static void post_wifi_connected(const esp_netif_ip_info_t *ip_info)
     payload.ip[2] = esp_ip4_addr3_16(&ip_info->ip);
     payload.ip[3] = esp_ip4_addr4_16(&ip_info->ip);
     payload.rssi = ap.rssi;
+
+    /* Cache for the wire state's `wifi_ssid` field. */
+    strncpy(g_sta_ssid, payload.ssid, sizeof(g_sta_ssid) - 1);
+    g_sta_ssid[sizeof(g_sta_ssid) - 1] = '\0';
 
     g_last_posted_connected = true;
     esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
@@ -258,7 +264,7 @@ static void on_factory_reset(void *arg, esp_event_base_t base,
 {
     (void)arg; (void)base; (void)id; (void)data;
 
-    ESP_LOGW(TAG, "factory reset — wiping Wi-Fi credentials");
+    ESP_LOGW(TAG, "factory reset - wiping Wi-Fi credentials");
     esp_wifi_disconnect();
     /* esp_wifi_restore() clears the saved sta config in NVS. */
     esp_err_t err = esp_wifi_restore();
@@ -266,6 +272,67 @@ static void on_factory_reset(void *arg, esp_event_base_t base,
         ESP_LOGW(TAG, "esp_wifi_restore: %s", esp_err_to_name(err));
     }
     post_wifi_disconnected(0);
+}
+
+/*
+ * Async SoftAP→STA handoff. transport.c posts LL_EV_WIFI_APPLY_CREDS
+ * after the JSON `set_wifi_creds` op response is queued; this handler
+ * runs on the state-bus task, so the response has time to flush before
+ * the underlying SoftAP socket dies.
+ *
+ * Storage = FLASH so creds survive reboot — the dev hardcoded-creds
+ * spike used WIFI_STORAGE_RAM intentionally to skip this. In production
+ * this is the only place creds enter NVS, since wifi_prov_mgr's
+ * protocomm path is not driven for the SoftAP scheme in V1.
+ */
+static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
+                                int32_t id, void *data)
+{
+    (void)arg; (void)base; (void)id;
+    const ll_ev_wifi_apply_creds_payload_t *p = data;
+
+    ESP_LOGI(TAG, "applying creds: ssid=\"%s\" pw_len=%u",
+             p->ssid, (unsigned)strlen(p->password));
+
+    esp_err_t err = esp_wifi_set_storage(WIFI_STORAGE_FLASH);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "set_storage: %s", esp_err_to_name(err));
+        return;
+    }
+
+    /* Tear down whatever wifi mode we're currently in (SoftAP, almost
+     * always) before switching to STA. esp_wifi_stop closes the AP and
+     * disconnects any connected clients — the JSON response was already
+     * queued before this handler ran, so the webapp will see "socket
+     * closed" and fall into reconnect-with-backoff. */
+    esp_wifi_stop();
+
+    err = esp_wifi_set_mode(WIFI_MODE_STA);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "set_mode STA: %s", esp_err_to_name(err));
+        return;
+    }
+
+    wifi_config_t scfg = {0};
+    strncpy((char *)scfg.sta.ssid,     p->ssid,     sizeof(scfg.sta.ssid) - 1);
+    strncpy((char *)scfg.sta.password, p->password, sizeof(scfg.sta.password) - 1);
+    err = esp_wifi_set_config(WIFI_IF_STA, &scfg);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "set_config STA: %s", esp_err_to_name(err));
+        return;
+    }
+
+    err = esp_wifi_start();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "wifi_start STA: %s", esp_err_to_name(err));
+        return;
+    }
+    g_station_started = true;
+    g_retry_count = 0;
+    /* WIFI_EVENT_STA_START → on_wifi_event → esp_wifi_connect(). On
+     * IP_EVENT_STA_GOT_IP we post LL_EV_WIFI_CONNECTED with the new
+     * SSID/IP, which mdns republishes on and transport rebroadcasts
+     * the wire state for. */
 }
 
 #if LL_DEV_OPEN_SOFTAP
@@ -445,10 +512,25 @@ esp_err_t ll_provisioning_subscribe(void)
         ll_state_bus_get_loop(),
         LL_STATE_EVENT_BASE, LL_EV_FACTORY_RESET,
         on_factory_reset, NULL, NULL);
-    return err;
+    if (err != ESP_OK) return err;
+
+    return esp_event_handler_instance_register_with(
+        ll_state_bus_get_loop(),
+        LL_STATE_EVENT_BASE, LL_EV_WIFI_APPLY_CREDS,
+        on_wifi_apply_creds, NULL, NULL);
 }
 
 bool ll_provisioning_is_active(void)
 {
-    return g_prov_active;
+    /* AP-mode = "device is a SoftAP awaiting credentials." Covers both
+     * the dev open-SoftAP path and (future) wifi_prov_mgr scheme paths.
+     * STA / NULL = device is connected (or trying) and not provisioning. */
+    wifi_mode_t mode;
+    if (esp_wifi_get_mode(&mode) != ESP_OK) return false;
+    return mode == WIFI_MODE_AP || mode == WIFI_MODE_APSTA;
+}
+
+const char *ll_provisioning_get_sta_ssid(void)
+{
+    return g_sta_ssid;
 }

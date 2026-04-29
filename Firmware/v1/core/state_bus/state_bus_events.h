@@ -55,6 +55,16 @@ ESP_EVENT_DECLARE_BASE(LL_STATE_EVENT_BASE);
 #define LL_EV_WIFI_DISCONNECTED     0x1004
 
 /*
+ * Apply Wi-Fi STA credentials and transition out of SoftAP. Posted by
+ * core/transport/ on receipt of a `set_wifi_creds` JSON op; consumed
+ * by core/provisioning/ which performs the actual SoftAP→STA handoff
+ * asynchronously (so the JSON response can flush before the underlying
+ * socket dies). Carries the credentials by value; no caller liveness
+ * required after the post.
+ */
+#define LL_EV_WIFI_APPLY_CREDS      0x1005
+
+/*
  * Payloads for each incoming LL_EV_*. esp_event copies these by value at
  * post time, so callers may pass stack pointers freely. String fields use
  * fixed buffers (not pointers) so payload lifetime is self-contained.
@@ -101,6 +111,11 @@ typedef struct {
 typedef struct {
     uint8_t reason;    /* wifi_err_reason_t from esp_wifi; forwarded as-is */
 } ll_ev_wifi_disconnected_payload_t;
+
+typedef struct {
+    char ssid[33];     /* 32-byte SSID + null terminator */
+    char password[65]; /* 64-byte WPA2 max + null; empty string = open net */
+} ll_ev_wifi_apply_creds_payload_t;
 
 /*
  * Handle to the dedicated state-bus event loop. Valid after

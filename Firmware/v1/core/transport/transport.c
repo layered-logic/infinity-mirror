@@ -31,6 +31,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+#include "provisioning.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
 #include "webapp_assets.h"
@@ -65,6 +66,19 @@ static cJSON *state_to_json(const ll_state_t *s)
     cJSON_AddStringToObject(obj, "auth_mode",
                             s->auth_mode == LL_AUTH_PAIRED ? "paired" : "open");
     cJSON_AddBoolToObject  (obj, "telemetry_enabled", s->telemetry_enabled);
+
+    /* Wifi/provisioning state — derived from core/provisioning/, not
+     * stored in ll_state_t (the link state isn't a user setting). The
+     * webapp uses provisioning_active to decide between #/setup and
+     * #/control on load; wifi_ssid populates the settings page. */
+    cJSON_AddBoolToObject(obj, "provisioning_active",
+                          ll_provisioning_is_active());
+    const char *ssid = ll_provisioning_get_sta_ssid();
+    if (ssid && ssid[0]) {
+        cJSON_AddStringToObject(obj, "wifi_ssid", ssid);
+    } else {
+        cJSON_AddNullToObject(obj, "wifi_ssid");
+    }
     return obj;
 }
 
@@ -167,6 +181,75 @@ static void op_set_state(cJSON *resp, const cJSON *payload)
     cJSON_AddNullToObject(resp, "error");
 }
 
+/* set_wifi_creds: webapp's /setup screen submits {ssid, password} here.
+ * We validate, post LL_EV_WIFI_APPLY_CREDS to the state-bus loop, and
+ * return ok=true synchronously. The actual SoftAP→STA handoff is done
+ * by core/provisioning/'s on_wifi_apply_creds handler — running on a
+ * different task than this one, so by the time it executes our JSON
+ * response will have flushed and the client will be looking at "socket
+ * closed" (its reconnect-with-backoff is already armed for that). */
+static void op_set_wifi_creds(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message", "set_wifi_creds requires an object payload");
+        return;
+    }
+
+    const char *ssid = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "ssid"));
+    const char *pw   = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "password"));
+    if (!pw) pw = "";
+
+    size_t ssid_len = ssid ? strlen(ssid) : 0;
+    size_t pw_len   = strlen(pw);
+
+    /* SSID 1-32 chars (IEEE 802.11). Password either empty (open net)
+     * or 8-64 chars (WPA2 spec — though WPA2 actually requires 8-63
+     * printable; we accept up to 64 to match the buffer in
+     * wifi_config_t.sta.password). */
+    if (ssid_len < 1 || ssid_len > 32 ||
+        (pw_len != 0 && (pw_len < 8 || pw_len > 64))) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "ssid must be 1-32 chars; password must be empty or 8-64 chars");
+        return;
+    }
+
+    ll_ev_wifi_apply_creds_payload_t p = {0};
+    strncpy(p.ssid,     ssid, sizeof(p.ssid) - 1);
+    strncpy(p.password, pw,   sizeof(p.password) - 1);
+    esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
+                      LL_EV_WIFI_APPLY_CREDS, &p, sizeof(p), 0);
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON *result = cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddBoolToObject(result, "applied", true);
+    cJSON_AddStringToObject(result, "ssid", p.ssid);
+    cJSON_AddNullToObject(resp, "error");
+}
+
+/* factory_reset: replaces the UI mockup from sub-1 with a real wire op.
+ * Posts LL_EV_FACTORY_RESET via ll_state_bus_post; downstream handlers
+ * (state_bus → reset settings, nvs → erase namespace, provisioning →
+ * wipe wifi creds + esp_wifi_restore) take it from there. The device
+ * doesn't reboot — it just falls back into the no-creds boot path's
+ * runtime state. */
+static void op_factory_reset(cJSON *resp)
+{
+    ll_state_bus_post(LL_EV_FACTORY_RESET, NULL);
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON *result = cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddBoolToObject(result, "reset", true);
+    cJSON_AddNullToObject(resp, "error");
+}
+
 /* ---- envelope dispatch ------------------------------------------- */
 
 static esp_err_t send_text_frame(httpd_req_t *req, const char *json, size_t len)
@@ -211,6 +294,10 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         cJSON_AddNullToObject(resp, "error");
     } else if (op && strcmp(op, "set_state") == 0) {
         op_set_state(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "set_wifi_creds") == 0) {
+        op_set_wifi_creds(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "factory_reset") == 0) {
+        op_factory_reset(resp);
     } else {
         cJSON_AddBoolToObject(resp, "ok", false);
         cJSON_AddNullToObject(resp, "result");
@@ -235,6 +322,12 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
     }
     return err;
 }
+
+/* Forward decl: lifecycle handlers below now broadcast on wifi state
+ * changes (since `provisioning_active` and `wifi_ssid` are part of the
+ * wire state), and broadcast_state itself is defined further down to
+ * keep it adjacent to the LL_EV_STATE_CHANGED subscriber. */
+static void broadcast_state(void);
 
 /* ---- WS URI handler ---------------------------------------------- */
 
@@ -348,12 +441,24 @@ static void on_wifi_connected(void *arg, esp_event_base_t base,
 {
     (void)arg; (void)base; (void)id; (void)data;
     start_server();
+    /* The provisioning_active and wifi_ssid wire fields just changed —
+     * push a state broadcast so any client that's already connected
+     * (e.g. the webapp on the SoftAP, before we transition to STA, or
+     * a future browser that reconnected after STA came up) sees the
+     * fresh values. broadcast_state() is a no-op when no clients are
+     * connected. */
+    broadcast_state();
 }
 
 static void on_wifi_disconnected(void *arg, esp_event_base_t base,
                                  int32_t id, void *data)
 {
     (void)arg; (void)base; (void)id; (void)data;
+    /* Broadcast BEFORE stop_server so any connected clients see the
+     * cleared wifi_ssid before their socket dies. Realistically the
+     * frame won't make it out (the wifi link is gone), but the call
+     * is cheap and keeps the lifecycle ordering honest. */
+    broadcast_state();
     stop_server();
 }
 
