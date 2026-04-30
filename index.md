@@ -60,8 +60,11 @@ Deferred from Week 3:
 - [Brand Positioning](docs/brand-positioning.md) — product-line identity worksheet · *Week 4*
 - [Brand Research Notes](docs/brand-research-notes.md) — five-reference visual grammar analysis · *Week 4*
 - [Typography Decisions](docs/typography-decisions.md) — italic-default + Berkeley Mono rationale · *Week 4*
+- [Repair Ecosystem — Index](docs/repair-index.md) — sub-MOC tying the philosophy + inventory + design decisions + scorecard into one navigable artifact · *Week 5*
 - [Right-to-Repair Philosophy](docs/right-to-repair-philosophy.md) — pro-consumer values, repair commitments, honest limits · *Week 4*
 - [Failure Mode Inventory](Failure_Modes/README.md) — 17 failure modes across 8 categories with user-facing repair paths · *Week 4*
+- [Repair-Driven Design Decisions](docs/repair-design-decisions.md) — 20-row matrix mapping design choices to repair values + failure modes · *Week 5*
+- [Repairability Scorecard](docs/repairability-scorecard.md) — quantitative companion to the philosophy (12/17 fully user-repairable, 1-tool, 7-yr parts commitment) · *Week 5*
 - [User Interview Outlines](docs/user-interview-outline.md) — end-buyer + showcase-partner interview outlines, 20–25 min each · *Week 5*
 - [Button Design Rationale](docs/button-design-rationale.md) — *why an app + physical buttons* portfolio artifact (draft, pre-user-research) · *Week 5*
 - *(pending)* User Repair Guide · *Week 4 → Week 8 final*

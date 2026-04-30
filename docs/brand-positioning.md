@@ -48,15 +48,22 @@ Tier 1:   Layered Logic                    ← Parent company (WA LLC, filed Mar
 
 ## 1. Positioning Statement
 
-Fill in this template — one sentence that captures the whole pitch. Draft it rough, then tighten.
+**Decision (Apr 30):**
 
-> For **[who]**, who **[what they want / problem they have]**, **[product name]** is a **[category]** that **[key benefit]**. Unlike **[main alternative]**, we **[differentiator]**.
+> For design-conscious adults who want atmosphere over gadgetry, **[product name]** is a made-to-order LED light line that blends into a living space as ambient presence and that you can still repair with a screwdriver ten years later — designed, built, and documented as a system to keep, not a novelty to throw away.
 
-**Seeded from market analysis + stakeholder map:**
+**What's locked:** the audience framing (Curator-leaning, atmosphere-first), the category (made-to-order LED light objects, deliberately broader than "infinity mirror" so the same statement covers Nixie clocks and future lines under the Tier 2 mini-brand), the differentiator (decade-plus repairability, documented-as-a-system), and the anti-pattern callout (disposable novelty).
+
+**What's deferred:** the `[product name]` slot — the Tier 2 mini-brand name. Mirror-specific candidates (Depthwise, Inwards, Threshold) were ruled out on Apr 20 as too narrow once the parent brand expanded to multi-line. The slot stays bracketed until the mini-brand naming track reopens.
+
+**How this was tightened:** the original Apr 20 seed was two sentences (template Mad Libs separator), led with "made-to-order LED infinity mirror" (too narrow for the mini-brand), and split the differentiator across both clauses. The Apr 30 lock compresses to one sentence, generalizes the category, and threads the differentiator through the predicate so the sentence has one clean arc.
+
+<details>
+<summary>Original Apr 20 seed (kept for traceability)</summary>
 
 > For **design-conscious adults who want atmosphere over gadgetry**, who **are tired of sealed-unit electronics that break and become landfill**, **[product name]** is a **made-to-order LED infinity mirror** that **blends into a living space as ambient light, not a feature list — and that you can repair with a screwdriver ten years from now**. Unlike **Etsy hobbyist mirrors or sealed gaming decor**, we **design, build, and document every unit as a repairable system, not a disposable novelty**.
 
-**Your edits:** _______________
+</details>
 
 ---
 
