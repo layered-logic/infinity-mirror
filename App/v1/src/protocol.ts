@@ -25,6 +25,21 @@ export interface DeviceState {
   // tolerate `undefined` per control-protocol-spec §9 (forward compat).
   provisioning_active?: boolean;
   wifi_ssid?: string | null;
+  // Identity. `id` is the lowercase 6-hex MAC suffix — read-only, stable
+  // across factory resets, used as a fallback display label when `name` is
+  // empty. `name` is user-set via set_state and persists in NVS.
+  id?: string;
+  name?: string;
+}
+
+// GET /api/info response. Lightweight discovery payload — same id+name
+// used in DeviceState, but reachable in one HTTP roundtrip without
+// opening a WebSocket. Used by the RN app's findMirrors subnet scan.
+export interface DeviceInfo {
+  product: 'layered-logic-mirror';
+  id: string;
+  name: string;
+  fw_version: string;
 }
 
 export interface SetWifiCredsPayload {

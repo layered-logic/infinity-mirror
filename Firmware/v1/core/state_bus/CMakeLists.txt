@@ -5,5 +5,5 @@ idf_component_register(
         "state_bus.c"
         "state_bus_defaults.c"
     INCLUDE_DIRS "."
-    REQUIRES esp_event
+    REQUIRES esp_event esp_hw_support
 )

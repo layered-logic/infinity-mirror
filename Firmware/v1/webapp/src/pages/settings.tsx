@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { MirrorClient } from '../ws-client';
 import { DeviceState } from '../protocol';
 import { Route } from '../hooks';
@@ -15,6 +15,32 @@ interface SettingsPageProps {
 export function SettingsPage({ client, state, canSend, err, setErr, onNavigate }: SettingsPageProps) {
   const [resetting, setResetting] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+
+  // Rename UI. Local input buffer seeded from state, separate save state
+  // so the button can show idle / saving / saved without bouncing the
+  // whole page. Cap matches the firmware's ll_state_t.name (32 + null).
+  const [nameInput, setNameInput] = useState<string>('');
+  const [renameState, setRenameState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  useEffect(() => {
+    setNameInput(state?.name ?? '');
+  }, [state?.name]);
+
+  const submitRename = () => {
+    const trimmed = nameInput.trim();
+    if (trimmed.length > 32) {
+      setErr('name must be 32 characters or fewer');
+      return;
+    }
+    setErr(null);
+    setRenameState('saving');
+    client.setState({ name: trimmed }).then(
+      () => {
+        setRenameState('saved');
+        setTimeout(() => setRenameState('idle'), 1500);
+      },
+      (e: Error) => { setRenameState('idle'); setErr(e.message); },
+    );
+  };
 
   const tryFactoryReset = () => {
     const ok = window.confirm(
@@ -37,6 +63,47 @@ export function SettingsPage({ client, state, canSend, err, setErr, onNavigate }
           <p class="hint err">{err}</p>
         </section>
       )}
+
+      <section class="panel">
+        <h2 class="panel-title">name</h2>
+        <dl class="kv">
+          <dt>id</dt>
+          <dd><code>{state?.id ?? <span class="muted">—</span>}</code></dd>
+        </dl>
+        <p class="hint muted" style={{ margin: '8px 0' }}>
+          Used by the LL app to disambiguate when multiple mirrors share a network.
+          Empty falls back to the hardware id.
+        </p>
+        <input
+          type="text"
+          value={nameInput}
+          maxLength={32}
+          placeholder="Living Room"
+          autoCapitalize="words"
+          onInput={(e) => setNameInput((e.currentTarget as HTMLInputElement).value)}
+          disabled={!canSend}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '8px 10px',
+            marginBottom: '8px',
+          }}
+        />
+        <button
+          type="button"
+          class="btn-secondary"
+          onClick={submitRename}
+          disabled={
+            !canSend ||
+            renameState === 'saving' ||
+            nameInput.trim() === (state?.name ?? '')
+          }
+        >
+          {renameState === 'idle' && 'save name'}
+          {renameState === 'saving' && 'saving…'}
+          {renameState === 'saved' && 'saved ✓'}
+        </button>
+      </section>
 
       <section class="panel">
         <h2 class="panel-title">wi-fi</h2>
@@ -79,6 +146,8 @@ export function SettingsPage({ client, state, canSend, err, setErr, onNavigate }
             <dt>auth_mode</dt><dd>{state.auth_mode}</dd>
             <dt>telemetry</dt><dd>{String(state.telemetry_enabled)}</dd>
             <dt>provisioning_active</dt><dd>{String(state.provisioning_active ?? false)}</dd>
+            <dt>id</dt><dd><code>{state.id ?? '—'}</code></dd>
+            <dt>name</dt><dd>{state.name && state.name.length > 0 ? state.name : <span class="muted">—</span>}</dd>
           </dl>
         ) : (
           <p class="hint">waiting for snapshot…</p>

@@ -171,7 +171,9 @@ The canonical state object returned by `get_state` and broadcast on change:
   "brightness": 80,
   "led_count": 32,
   "auth_mode": "open",
-  "telemetry_enabled": false
+  "telemetry_enabled": false,
+  "id": "b2332d",
+  "name": "Living Room"
 }
 ```
 
@@ -184,8 +186,12 @@ The canonical state object returned by `get_state` and broadcast on change:
 | `led_count` | int | Read-only (set at provisioning or from board header) |
 | `auth_mode` | string | `"open"` or `"paired"` |
 | `telemetry_enabled` | bool | User opt-in status |
+| `id` | string | Read-only. Lowercase 6-hex MAC suffix — same suffix the mDNS hostname and SoftAP SSID expose. Stable across factory resets. |
+| `name` | string | User-set device name; empty when unnamed. Settable via `set_state`. Clients display `name` if non-empty, else fall back to `id`. |
 
 Partial updates via `set_state` — send only the fields changing. Device broadcasts full state after every change.
+
+`id` is read-only and cannot be set via `set_state`; setting `name` is the user-rename surface.
 
 ---
 
@@ -240,11 +246,19 @@ Convenience wrapper over ops. Every op reachable via HTTP for curl-friendliness:
 |---|---|
 | `GET /api/state` | `get_state` |
 | `POST /api/state` | `set_state` (body = payload) |
-| `GET /api/info` | `get_info` |
+| `GET /api/info` | `get_info` (V1: tiny discovery payload — see below) |
 | `POST /api/ping` | `ping` |
 | `GET /api/patterns` | `list_patterns` |
 | `POST /api/patterns` | `upload_pattern` |
 | `DELETE /api/patterns/:id` | `delete_pattern` |
+
+**V1 `GET /api/info` (implemented):** lightweight HTTP-only sentinel + identity payload, used by the LL app's subnet-scan discovery to (a) confirm an IP is a Layered Logic mirror and (b) read its `id` + `name` for the multi-mirror picker without opening a WebSocket. Response shape:
+
+```json
+{ "product": "layered-logic-mirror", "id": "b2332d", "name": "Living Room", "fw_version": "1b86d5e" }
+```
+
+Returned with `Content-Type: application/json` and `Access-Control-Allow-Origin: *` (no secrets — same identity already advertised over mDNS). The full V2 `get_info` op (board variant, hardware revision, etc.) extends this shape additively.
 
 Envelope fields (`req_id`, `ts`, `hmac` when paired) sent as HTTP headers:
 - `X-LL-Req-Id: <uuid>`

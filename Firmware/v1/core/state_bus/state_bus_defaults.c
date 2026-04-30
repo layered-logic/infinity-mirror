@@ -24,5 +24,6 @@ void ll_state_defaults(ll_state_t *out)
         .led_count = 66,
         .auth_mode = LL_AUTH_OPEN,
         .telemetry_enabled = false,
+        .name = "",  /* empty = "unnamed; clients fall back to id" */
     };
 }
