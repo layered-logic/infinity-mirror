@@ -2,6 +2,7 @@ import {
   DeviceState,
   InboundFrame,
   ResponseEnvelope,
+  SetWifiCredsPayload,
   StateBroadcast,
   isStateBroadcast,
   newReqId,
@@ -139,6 +140,25 @@ export class MirrorClient {
 
   ping(): Promise<{ fw_version: string; uptime_s: number }> {
     return this.send<undefined, { fw_version: string; uptime_s: number }>('ping').then((r) => r.result);
+  }
+
+  // Submit Wi-Fi credentials. Device responds ok=true synchronously, then
+  // tears down the SoftAP and joins the new network async — this client's
+  // socket will drop within ~100ms and the reconnect-with-backoff has to
+  // wait for the device to come up on the new netif (or for the user to
+  // switch their laptop/phone to the same network the device just joined).
+  setWifiCreds(payload: SetWifiCredsPayload): Promise<void> {
+    return this.send<SetWifiCredsPayload, { applied: boolean }>('set_wifi_creds', payload).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'set_wifi_creds failed');
+    });
+  }
+
+  // Reset all settings + wipe Wi-Fi creds. Device falls back into the
+  // no-creds boot path (SoftAP), so any STA-side client loses its socket.
+  factoryReset(): Promise<void> {
+    return this.send<undefined, { reset: boolean }>('factory_reset').then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'factory_reset failed');
+    });
   }
 
   private handleMessage(data: unknown): void {

@@ -66,11 +66,14 @@ static const char *TAG = "provisioning";
 #endif
 
 static esp_timer_handle_t g_prov_timeout_timer;
+static esp_timer_handle_t g_apply_fallback_timer;
 static bool g_prov_active;
 static uint8_t g_retry_count;
 static bool g_station_started;
 static bool g_last_posted_connected;
 static char g_sta_ssid[33];   /* current STA network SSID, empty when not on STA */
+
+#define LL_APPLY_FALLBACK_US  ((int64_t)15 * 1000 * 1000)  /* 15s STA-join window before falling back */
 
 static void build_ap_ssid(char *out, size_t out_len)
 {
@@ -109,6 +112,11 @@ static void post_wifi_connected(const esp_netif_ip_info_t *ip_info)
     /* Cache for the wire state's `wifi_ssid` field. */
     strncpy(g_sta_ssid, payload.ssid, sizeof(g_sta_ssid) - 1);
     g_sta_ssid[sizeof(g_sta_ssid) - 1] = '\0';
+
+    /* Cancel any in-flight cred-apply fallback — STA is up, the new
+     * credentials worked. esp_timer_stop is safe on a not-running
+     * timer (returns ESP_ERR_INVALID_STATE which we ignore). */
+    esp_timer_stop(g_apply_fallback_timer);
 
     g_last_posted_connected = true;
     esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
@@ -291,6 +299,15 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
     (void)arg; (void)base; (void)id;
     const ll_ev_wifi_apply_creds_payload_t *p = data;
 
+    /* Brief yield so the httpd task gets to flush the JSON ok=true
+     * response before we tear down the SoftAP underneath it. Without
+     * this, the WS frame is queued in lwip but the netif dies before
+     * TCP can push it out — the webapp's submit promise hangs and
+     * never enters the "credentials sent" view, even though the
+     * firmware-side handoff worked. 250ms is generous; typical send
+     * latency on the SoftAP is single-digit ms. */
+    vTaskDelay(pdMS_TO_TICKS(250));
+
     ESP_LOGI(TAG, "applying creds: ssid=\"%s\" pw_len=%u",
              p->ssid, (unsigned)strlen(p->password));
 
@@ -329,6 +346,13 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
     }
     g_station_started = true;
     g_retry_count = 0;
+
+    /* Arm the fallback timer. If STA hasn't connected by the time it
+     * fires, the bogus creds get wiped and the SoftAP comes back up so
+     * the user can retry — protecting against typo'd SSIDs and wrong
+     * passwords. post_wifi_connected() cancels the timer on success. */
+    esp_timer_start_once(g_apply_fallback_timer, LL_APPLY_FALLBACK_US);
+
     /* WIFI_EVENT_STA_START → on_wifi_event → esp_wifi_connect(). On
      * IP_EVENT_STA_GOT_IP we post LL_EV_WIFI_CONNECTED with the new
      * SSID/IP, which mdns republishes on and transport rebroadcasts
@@ -403,12 +427,82 @@ static esp_err_t init_dev_softap(void)
     if (err != ESP_OK) return err;
 
     g_dev_softap_init_done = true;
-    ESP_LOGI(TAG, "DEV SoftAP configured (\"%s\", open, no password) — "
+    ESP_LOGI(TAG, "DEV SoftAP configured (\"%s\", open, no password) - "
                   "deferred until subscribers wired",
              cfg.ap.ssid);
     return ESP_OK;
 }
+
+/* Bring the dev SoftAP back up at runtime — used by the cred-apply
+ * fallback when set_wifi_creds receives an SSID we can't actually join.
+ * Re-applies the AP config (cleared when we switched to STA mode in
+ * on_wifi_apply_creds) and starts wifi. The existing AP_START handler
+ * registered by init_dev_softap() reposts LL_EV_WIFI_CONNECTED with the
+ * SoftAP gateway, so transport / mdns / captive_dns all come back up
+ * just like at boot. */
+static esp_err_t bring_up_dev_softap_runtime(void)
+{
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
+
+    wifi_config_t cfg = {0};
+    snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
+             LL_DEV_AP_SSID_PREFIX "%02X%02X%02X",
+             mac[3], mac[4], mac[5]);
+    cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
+    cfg.ap.channel        = LL_DEV_AP_CHANNEL;
+    cfg.ap.authmode       = WIFI_AUTH_OPEN;
+    cfg.ap.max_connection = LL_DEV_AP_MAX_CONN;
+
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
+    if (err != ESP_OK) return err;
+    err = esp_wifi_set_config(WIFI_IF_AP, &cfg);
+    if (err != ESP_OK) return err;
+    err = esp_wifi_start();
+    if (err != ESP_OK) return err;
+
+    ESP_LOGW(TAG, "fallback: SoftAP restarted, awaiting fresh creds");
+    return ESP_OK;
+}
 #endif /* LL_DEV_OPEN_SOFTAP */
+
+/* Cred-apply fallback: the STA join didn't complete within the window.
+ * Bogus SSID, wrong password, network out of range — same fix applies:
+ * wipe the bad creds from NVS so they don't persist, and bring the
+ * SoftAP back up so the user can retry from /setup.
+ *
+ * Without this, a single typo strands the device in failing-STA mode
+ * forever (the existing on_wifi_event retry loop spins indefinitely
+ * after the budget exhausts), recoverable only by recessed-button
+ * factory reset. */
+static void apply_creds_fallback_cb(void *arg)
+{
+    (void)arg;
+    ESP_LOGW(TAG, "STA join did not complete in %ds - reverting creds, "
+                  "returning to SoftAP for retry",
+             (int)(LL_APPLY_FALLBACK_US / 1000000));
+
+    esp_wifi_disconnect();
+    esp_wifi_stop();
+    esp_wifi_restore();   /* wipes saved sta config from NVS */
+
+    g_station_started = false;
+    g_last_posted_connected = false;
+    g_sta_ssid[0] = '\0';
+    g_retry_count = 0;
+
+#if LL_DEV_OPEN_SOFTAP
+    if (bring_up_dev_softap_runtime() != ESP_OK) {
+        ESP_LOGE(TAG, "fallback: bring_up_dev_softap_runtime failed - "
+                      "device is unreachable, recessed-hold factory reset required");
+    }
+#else
+    /* Production path (sub-5+): re-trigger wifi_prov_mgr's SoftAP scheme
+     * so the user gets the captive portal again. */
+    ESP_LOGE(TAG, "fallback in non-dev build not yet implemented - "
+                  "device is unreachable, recessed-hold factory reset required");
+#endif
+}
 
 esp_err_t ll_provisioning_init(void)
 {
@@ -443,6 +537,13 @@ esp_err_t ll_provisioning_init(void)
         .name = "ll_prov_timeout",
     };
     err = esp_timer_create(&targs, &g_prov_timeout_timer);
+    if (err != ESP_OK) return err;
+
+    const esp_timer_create_args_t fb_args = {
+        .callback = &apply_creds_fallback_cb,
+        .name = "ll_apply_fallback",
+    };
+    err = esp_timer_create(&fb_args, &g_apply_fallback_timer);
     if (err != ESP_OK) return err;
 
     /* Check saved creds. Init prov mgr just long enough to query, then

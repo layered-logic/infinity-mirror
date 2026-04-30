@@ -20,6 +20,15 @@ export interface DeviceState {
   led_count: number;
   auth_mode: AuthMode;
   telemetry_enabled: boolean;
+  // Added in Session 5 sub-4. Older firmware will omit; clients must
+  // tolerate `undefined` per control-protocol-spec §9 (forward compat).
+  provisioning_active?: boolean;
+  wifi_ssid?: string | null;
+}
+
+export interface SetWifiCredsPayload {
+  ssid: string;
+  password: string;
 }
 
 export interface RequestEnvelope {
