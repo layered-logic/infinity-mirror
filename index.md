@@ -115,6 +115,7 @@ Deferred from Week 3:
 - [Advisor — Apr 7, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-07.md) — Week 1 check-in
 - [Advisor — Apr 14, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-14.md) — Week 2+3, Milestone 1 status
 - [Advisor — Apr 21, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-21.md) — Week 4 kickoff, Milestone 1 close-out
+- [Advisor — Apr 30, 2026](docs/Advisor-Meetings/advisor-meeting-2026-04-30.md) — Week 5 update: app mini-sprint delivery + repair portfolio + brand §1 lock + OTA proven
 - [Session logs](docs/session-logs/) — working session records
 
 ---
