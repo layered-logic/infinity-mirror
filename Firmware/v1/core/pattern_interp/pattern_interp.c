@@ -168,6 +168,50 @@ static void render_task(void *arg)
 
 /* ---- Init ---- */
 
+/* Boot-time welcome sequence. Runs synchronously between led_driver_init
+ * and the render task spinning up — owns the framebuffer briefly during
+ * its 2-second window with no contention. Each 500ms tick lights up one
+ * more side of the frame, additively, until the full strip is lit.
+ *
+ * Breakpoints derived from led_count so the sequence scales to any board:
+ *   side_size  = ceil(led_count / 4)
+ *   first_side = led_count - 3 * side_size  (backfills the remainder)
+ *
+ * For c3_devkit (66 LEDs):  side_size=17, first_side=15  → [15,32,49,66]
+ * For prod_v1_pro (32 LEDs): side_size=8,  first_side=8   → [8,16,24,32]
+ *
+ * Color is bright white at 100% brightness — deliberately distinct from
+ * any normal pattern so the sequence is unmistakably a boot animation
+ * and doubly serves as an OTA-success canary (see core/ota/).
+ */
+static void play_welcome_sequence(void)
+{
+    if (!g_driver_ready) return;
+
+    const uint16_t side_size = (g_led_count + 3) / 4;
+    const uint16_t first_side = (uint16_t)(g_led_count - 3 * side_size);
+    const uint16_t breakpoints[4] = {
+        first_side,
+        (uint16_t)(first_side + side_size),
+        (uint16_t)(first_side + 2 * side_size),
+        g_led_count,
+    };
+
+    memset(g_frame_buf, 0, (size_t)g_led_count * 3);
+    for (int t = 0; t < 4; t++) {
+        const uint16_t lit = breakpoints[t];
+        for (uint16_t i = 0; i < lit; i++) {
+            g_frame_buf[i * 3 + 0] = 0xFF;
+            g_frame_buf[i * 3 + 1] = 0xFF;
+            g_frame_buf[i * 3 + 2] = 0xFF;
+        }
+        (void)ll_led_driver_write(g_frame_buf, 100);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+    memset(g_frame_buf, 0, (size_t)g_led_count * 3);
+    ESP_LOGI(TAG, "welcome sequence done");
+}
+
 void ll_pattern_interp_init(void)
 {
     const ll_state_t *s = ll_state_bus_get();
@@ -184,6 +228,8 @@ void ll_pattern_interp_init(void)
         ESP_LOGE(TAG, "led_driver_init failed: %s — render loop will run "
                       "but frames will be dropped", esp_err_to_name(err));
     }
+
+    play_welcome_sequence();
 
     g_msg_queue = xQueueCreate(MSG_QUEUE_LEN, sizeof(pi_msg_t));
     configASSERT(g_msg_queue);

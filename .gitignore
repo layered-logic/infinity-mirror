@@ -14,6 +14,7 @@ Untitled.*
 __pycache__/
 *.pyc
 
-# Worktree-root build/flash/boot logs (generated during firmware bring-up).
-# Contents narrated in sprint_log.md; raw logs not worth versioning.
+# Build/flash/boot logs from firmware bring-up. Narrated in sprint_log.md;
+# raw logs not worth versioning.
 /*.log
+Firmware/v1/*.log

@@ -31,6 +31,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+#include "ota.h"
 #include "provisioning.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
@@ -250,6 +251,42 @@ static void op_factory_reset(cJSON *resp)
     cJSON_AddNullToObject(resp, "error");
 }
 
+/* start_ota: pull a binary from `payload.url` and apply as the next-boot
+ * firmware. On success the device reboots before this handler returns,
+ * so the response we build here is discarded — the client sees the
+ * socket close, reconnects, and observes the new fw_version via ping.
+ * On failure we fall through and report ota_failed with the underlying
+ * esp_err_t name so the client can show something specific. */
+static void op_start_ota(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message", "start_ota requires an object payload");
+        return;
+    }
+
+    const char *url = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "url"));
+    if (!url || !url[0]) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message", "start_ota requires a non-empty `url` string");
+        return;
+    }
+
+    esp_err_t r = ll_ota_start(url);
+    /* Only reachable on failure — success path reboots inside ll_ota_start. */
+    cJSON_AddBoolToObject(resp, "ok", false);
+    cJSON_AddNullToObject(resp, "result");
+    cJSON *err = cJSON_AddObjectToObject(resp, "error");
+    cJSON_AddStringToObject(err, "code",    "ota_failed");
+    cJSON_AddStringToObject(err, "message", esp_err_to_name(r));
+}
+
 /* ---- envelope dispatch ------------------------------------------- */
 
 static esp_err_t send_text_frame(httpd_req_t *req, const char *json, size_t len)
@@ -298,6 +335,8 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         op_set_wifi_creds(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else if (op && strcmp(op, "factory_reset") == 0) {
         op_factory_reset(resp);
+    } else if (op && strcmp(op, "start_ota") == 0) {
+        op_start_ota(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else {
         cJSON_AddBoolToObject(resp, "ok", false);
         cJSON_AddNullToObject(resp, "result");
