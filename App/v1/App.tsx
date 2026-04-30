@@ -19,7 +19,7 @@ const ANDROID_STATUS_BAR_PADDING =
   Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
 import { ConnState, MirrorClient } from './src/ws-client';
-import { DeviceState, PatternId } from './src/protocol';
+import { BRAND_SWATCHES, DeviceState, PatternId } from './src/protocol';
 import { findMirror } from './src/find-mirror';
 
 const HOME_URL = 'ws://10.123.210.61/ws';
@@ -29,18 +29,6 @@ const DEFAULT_OTA_URL = 'http://192.168.223.176:8000/layered_logic_mirror_standa
 // Matches firmware's LL_APPLY_FALLBACK_US in provisioning.c. If they
 // drift, the user just sees a misleading hint, not a real failure.
 const FALLBACK_SECONDS = 15;
-
-const SWATCHES: { name: string; hex: string }[] = [
-  { name: 'red',     hex: '#FF1A1A' },
-  { name: 'orange',  hex: '#FF7A00' },
-  { name: 'yellow',  hex: '#FFD400' },
-  { name: 'green',   hex: '#22DD55' },
-  { name: 'cyan',    hex: '#22DDDD' },
-  { name: 'blue',    hex: '#1A55FF' },
-  { name: 'indigo',  hex: '#3214FF' },
-  { name: 'magenta', hex: '#DD22DD' },
-  { name: 'white',   hex: '#FFFFFF' },
-];
 
 const BRIGHTNESS_STEPS = [25, 50, 75, 100];
 
@@ -415,7 +403,7 @@ function App() {
 
             <Text style={styles.section}>Color</Text>
             <View style={styles.swatches}>
-              {SWATCHES.map((s) => {
+              {BRAND_SWATCHES.map((s) => {
                 const active = state.base_color.toLowerCase() === s.hex.toLowerCase();
                 return (
                   <Pressable

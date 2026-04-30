@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { MirrorClient } from '../ws-client';
-import { DeviceState, PatternId } from '../protocol';
+import { BRAND_SWATCHES, DeviceState, PatternId } from '../protocol';
 
 interface ControlPageProps {
   client: MirrorClient;
@@ -9,12 +9,6 @@ interface ControlPageProps {
   err: string | null;
   setErr: (s: string | null) => void;
 }
-
-// Single-press base-color cycle from button-interface.md §4.3.
-// Reused as a one-click preset row for the demo.
-const PRESETS: string[] = [
-  '#FF0000', '#FF8000', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#FF00FF',
-];
 
 // 7 builtin patterns from control-protocol-spec.md §6.1.
 const PATTERN_IDS: PatternId[] = [
@@ -148,15 +142,15 @@ export function ControlPage({ client, state, canSend, err, setErr }: ControlPage
           />
         </div>
         <div class="presets" role="group" aria-label="preset colors">
-          {PRESETS.map((c) => (
+          {BRAND_SWATCHES.map((s) => (
             <button
-              key={c}
+              key={s.name}
               type="button"
               class="preset"
-              style={{ background: c }}
+              style={{ background: s.hex }}
               disabled={!canSend}
-              onClick={() => sendColor(c)}
-              aria-label={`set color ${c}`}
+              onClick={() => sendColor(s.hex)}
+              aria-label={`set color ${s.name}`}
             />
           ))}
         </div>
