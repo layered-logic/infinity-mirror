@@ -153,6 +153,25 @@ export class MirrorClient {
     });
   }
 
+  // Start an OTA pull. Device fetches the binary at `url`, validates it,
+  // swaps the active partition, and reboots. On success the socket dies
+  // before any response arrives — auto-reconnect picks up the new
+  // firmware. On failure the device stays put and returns ota_failed.
+  startOta(url: string): Promise<void> {
+    return this.send<{ url: string }, unknown>('start_ota', { url }).then(
+      (r) => {
+        if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'start_ota failed');
+      },
+      // socket-died-before-response is the success path here, so swallow
+      // a generic timeout/closed and let the caller treat that as "OK".
+      (e: Error) => {
+        const m = e.message;
+        if (m.includes('socket closed') || m.includes('timeout')) return;
+        throw e;
+      },
+    );
+  }
+
   private handleMessage(data: unknown): void {
     if (typeof data !== 'string') return;
     let frame: InboundFrame;

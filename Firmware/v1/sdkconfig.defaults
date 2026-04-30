@@ -18,6 +18,13 @@ CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 # accepts the URI registration but the WS upgrade handshake fails.
 CONFIG_HTTPD_WS_SUPPORT=y
 
+# --- OTA: allow plain HTTP for the dev-test path ----------------------
+# esp_https_ota rejects http:// URLs with ESP_ERR_INVALID_ARG unless
+# this is set. Production OTA per firmware-architecture-scoping §5.4
+# uses HTTPS exclusively (ota.layeredlogic.cc behind Cloudflare); flip
+# this back off when the production OTA path lands.
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
+
 # --- Production hardening (deliberately left disabled this sprint) ----
 # All three of these are eFuse burns and irreversible. Per
 # docs/mini-sprint-app-demo.md §1a, they stay off until production.

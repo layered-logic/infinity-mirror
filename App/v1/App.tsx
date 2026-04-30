@@ -24,6 +24,7 @@ import { findMirror } from './src/find-mirror';
 
 const HOME_URL = 'ws://10.123.210.61/ws';
 const SOFTAP_URL = 'ws://192.168.4.1/ws';
+const DEFAULT_OTA_URL = 'http://192.168.223.176:8000/layered_logic_mirror_standard.bin';
 
 // Matches firmware's LL_APPLY_FALLBACK_US in provisioning.c. If they
 // drift, the user just sees a misleading hint, not a real failure.
@@ -48,8 +49,10 @@ const PATTERNS: PatternId[] = [
 ];
 
 type SubmitState = 'idle' | 'submitting' | 'submitted';
+type Route = 'controls' | 'settings';
 
 function App() {
+  const [route, setRoute] = useState<Route>('controls');
   const [url, setUrl] = useState(HOME_URL);
   const [conn, setConn] = useState<ConnState>('idle');
   const [lastError, setLastError] = useState<string | null>(null);
@@ -66,6 +69,12 @@ function App() {
   const [submitTime, setSubmitTime] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [scanning, setScanning] = useState(false);
+  const [otaUrl, setOtaUrl] = useState(DEFAULT_OTA_URL);
+  const [otaState, setOtaState] = useState<'idle' | 'sending' | 'rebooting'>('idle');
+  // True when the user manually triggered Wi-Fi reconfigure from
+  // Settings (vs. the device-driven "provisioning_active" auto-route).
+  // Both cases render the same SSID/password form.
+  const [reconfiguringWifi, setReconfiguringWifi] = useState(false);
 
   useEffect(() => {
     return () => clientRef.current?.disconnect();
@@ -83,6 +92,13 @@ function App() {
     if (state?.provisioning_active === false) setSetupBypassed(false);
   }, [state?.provisioning_active]);
 
+  // If we land on Settings without being connected (e.g. socket dropped
+  // while user was on the Settings page), fall back to controls — the
+  // controls page renders the connect form.
+  useEffect(() => {
+    if (route === 'settings' && conn !== 'open') setRoute('controls');
+  }, [route, conn]);
+
   // Drive the post-submit countdown.
   useEffect(() => {
     if (submitTime === null) return;
@@ -93,6 +109,9 @@ function App() {
   const connect = () => {
     clientRef.current?.disconnect();
     setLastError(null);
+    setReconfiguringWifi(false);
+    setSubmitState('idle');
+    setSubmitTime(null);
     const c = new MirrorClient({
       url,
       onConn: setConn,
@@ -147,6 +166,31 @@ function App() {
     }
   };
 
+  const startOta = () => {
+    Alert.alert(
+      'Update firmware?',
+      `The mirror will pull a new binary from\n${otaUrl}\n\nIf the URL is unreachable or the binary is invalid, the mirror stays on its current firmware.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Update',
+          onPress: async () => {
+            if (!clientRef.current) return;
+            setLastError(null);
+            setOtaState('sending');
+            try {
+              await clientRef.current.startOta(otaUrl);
+              setOtaState('rebooting');
+            } catch (e) {
+              setOtaState('idle');
+              setLastError((e as Error).message);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const factoryReset = () => {
     Alert.alert(
       'Factory reset?',
@@ -166,7 +210,8 @@ function App() {
   };
 
   const ready = conn === 'open' && state !== null;
-  const inSetup = ready && state?.provisioning_active === true && !setupBypassed;
+  const provisioningSetup = ready && state?.provisioning_active === true && !setupBypassed;
+  const inSetup = provisioningSetup || (ready && reconfiguringWifi);
   const elapsed = submitTime ? Math.floor((now - submitTime) / 1000) : 0;
   const secondsLeft = Math.max(0, FALLBACK_SECONDS - elapsed);
   const ssidValid = ssid.length >= 1 && ssid.length <= 32;
@@ -178,54 +223,78 @@ function App() {
       <StatusBar barStyle="light-content" backgroundColor="#0B0A0F" />
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerBar}>
-          <Text style={styles.h1}>LL Mirror</Text>
+          <Text style={styles.h1}>
+            {route === 'settings' ? 'Settings' : 'LL Mirror'}
+          </Text>
+          {!inSetup && route === 'controls' && conn === 'open' && (
+            <Pressable
+              onPress={() => setRoute('settings')}
+              style={styles.navBtn}
+              hitSlop={10}
+            >
+              <Text style={styles.navBtnText}>⚙</Text>
+            </Pressable>
+          )}
+          {!inSetup && route === 'settings' && (
+            <Pressable
+              onPress={() => setRoute('controls')}
+              style={styles.navBtn}
+              hitSlop={10}
+            >
+              <Text style={styles.navBtnText}>← Back</Text>
+            </Pressable>
+          )}
         </View>
 
-        <Text style={styles.label}>Mirror URL</Text>
-        <TextInput
-          value={url}
-          onChangeText={setUrl}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
-        <View style={styles.row}>
-          <Pressable
-            onPress={findOnSubnet}
-            disabled={scanning}
-            style={[styles.urlPreset, scanning && styles.urlPresetDisabled]}
-          >
-            <Text style={styles.urlPresetText}>
-              {scanning ? 'Searching…' : 'Find mirror'}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setUrl(SOFTAP_URL)}
-            style={[styles.urlPreset, url === SOFTAP_URL && styles.urlPresetActive]}
-          >
-            <Text style={styles.urlPresetText}>SoftAP</Text>
-          </Pressable>
-        </View>
+        {!inSetup && route === 'controls' && (
+          <>
+            <Text style={styles.label}>Mirror URL</Text>
+            <TextInput
+              value={url}
+              onChangeText={setUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+            />
+            <View style={styles.row}>
+              <Pressable
+                onPress={findOnSubnet}
+                disabled={scanning}
+                style={[styles.urlPreset, scanning && styles.urlPresetDisabled]}
+              >
+                <Text style={styles.urlPresetText}>
+                  {scanning ? 'Searching…' : 'Find mirror'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setUrl(SOFTAP_URL)}
+                style={[styles.urlPreset, url === SOFTAP_URL && styles.urlPresetActive]}
+              >
+                <Text style={styles.urlPresetText}>SoftAP</Text>
+              </Pressable>
+            </View>
 
-        <View style={styles.row}>
-          <Pressable
-            onPress={connect}
-            disabled={conn === 'open' || conn === 'connecting'}
-            style={[styles.btn, (conn === 'open' || conn === 'connecting') && styles.btnDisabled]}
-          >
-            <Text style={styles.btnText}>Connect</Text>
-          </Pressable>
-          <View style={styles.gap} />
-          <Pressable
-            onPress={disconnect}
-            disabled={conn === 'idle'}
-            style={[styles.btn, conn === 'idle' && styles.btnDisabled]}
-          >
-            <Text style={styles.btnText}>Disconnect</Text>
-          </Pressable>
-          <View style={styles.gap} />
-          <Text style={[styles.pill, pillStyle(conn)]}>{conn}</Text>
-        </View>
+            <View style={styles.row}>
+              <Pressable
+                onPress={connect}
+                disabled={conn === 'open' || conn === 'connecting'}
+                style={[styles.btn, (conn === 'open' || conn === 'connecting') && styles.btnDisabled]}
+              >
+                <Text style={styles.btnText}>Connect</Text>
+              </Pressable>
+              <View style={styles.gap} />
+              <Pressable
+                onPress={disconnect}
+                disabled={conn === 'idle'}
+                style={[styles.btn, conn === 'idle' && styles.btnDisabled]}
+              >
+                <Text style={styles.btnText}>Disconnect</Text>
+              </Pressable>
+              <View style={styles.gap} />
+              <Text style={[styles.pill, pillStyle(conn)]}>{conn}</Text>
+            </View>
+          </>
+        )}
 
         {inSetup && submitState === 'submitted' && (
           <View style={styles.setupBlock}>
@@ -260,18 +329,30 @@ function App() {
 
         {inSetup && submitState !== 'submitted' && (
           <View style={styles.setupBlock}>
-            <Text style={styles.section}>Mirror needs Wi-Fi setup</Text>
+            <Text style={styles.section}>
+              {provisioningSetup ? 'Mirror needs Wi-Fi setup' : 'Reconfigure Wi-Fi'}
+            </Text>
             <Text style={styles.muted}>
-              You're connected to the mirror's SoftAP. Give it credentials for your home Wi-Fi to
-              join, or tap below to skip and control it directly over the SoftAP.
+              {provisioningSetup
+                ? "You're connected to the mirror's SoftAP. Give it credentials for your home Wi-Fi to join, or tap below to skip and control it directly over the SoftAP."
+                : `Mirror is currently on ${state?.wifi_ssid ?? '(unknown network)'}. Submit new credentials to switch it to a different network.`}
             </Text>
 
-            <Pressable
-              onPress={() => setSetupBypassed(true)}
-              style={[styles.btn, styles.btnSecondary]}
-            >
-              <Text style={styles.btnText}>Control directly (skip Wi-Fi setup)</Text>
-            </Pressable>
+            {provisioningSetup ? (
+              <Pressable
+                onPress={() => setSetupBypassed(true)}
+                style={[styles.btn, styles.btnSecondary]}
+              >
+                <Text style={styles.btnText}>Control directly (skip Wi-Fi setup)</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => { setReconfiguringWifi(false); setSsid(''); setPassword(''); }}
+                style={[styles.btn, styles.btnSecondary]}
+              >
+                <Text style={styles.btnText}>Cancel</Text>
+              </Pressable>
+            )}
 
             <Text style={styles.label}>SSID</Text>
             <TextInput
@@ -322,7 +403,7 @@ function App() {
           </View>
         )}
 
-        {ready && !inSetup && state && (
+        {ready && !inSetup && route === 'controls' && state && (
           <>
             <Text style={styles.section}>Power</Text>
             <Pressable
@@ -378,8 +459,46 @@ function App() {
                 );
               })}
             </View>
+          </>
+        )}
 
-            <Text style={styles.section}>Danger</Text>
+        {ready && !inSetup && route === 'settings' && state && (
+          <>
+            <Text style={styles.subsection}>Wi-Fi</Text>
+            <Text style={styles.muted}>
+              Network: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
+              {'\n'}
+              Mode: {state.provisioning_active ? 'setup mode (mirror is its own Wi-Fi)' : (state.wifi_ssid ? 'connected to your Wi-Fi' : 'unknown')}
+            </Text>
+            <Pressable
+              onPress={() => { setSsid(''); setPassword(''); setReconfiguringWifi(true); }}
+              style={[styles.btn, styles.btnSecondary]}
+            >
+              <Text style={styles.btnText}>Reconfigure Wi-Fi</Text>
+            </Pressable>
+
+            <Text style={styles.subsection}>Firmware update</Text>
+            <Text style={styles.label}>OTA binary URL</Text>
+            <TextInput
+              value={otaUrl}
+              onChangeText={setOtaUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+            />
+            <Pressable
+              onPress={startOta}
+              disabled={otaState !== 'idle'}
+              style={[styles.btn, otaState !== 'idle' && styles.btnDisabled]}
+            >
+              <Text style={styles.btnText}>
+                {otaState === 'idle' && 'Update firmware'}
+                {otaState === 'sending' && 'Sending request…'}
+                {otaState === 'rebooting' && 'Mirror downloading + rebooting…'}
+              </Text>
+            </Pressable>
+
+            <Text style={styles.subsection}>Danger</Text>
             <Pressable onPress={factoryReset} style={[styles.btn, styles.btnDanger]}>
               <Text style={styles.btnText}>Factory reset</Text>
             </Pressable>
@@ -404,10 +523,19 @@ function pillStyle(c: ConnState) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0B0A0F' },
   body: { padding: 16, gap: 8, paddingBottom: 64, paddingTop: 16 + ANDROID_STATUS_BAR_PADDING },
-  headerBar: { paddingVertical: 4, marginBottom: 4 },
+  headerBar: {
+    paddingVertical: 4,
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  navBtn: { paddingVertical: 6, paddingHorizontal: 10 },
+  navBtnText: { color: '#F4EFE6', fontSize: 22 },
   h1: { color: '#F4EFE6', fontSize: 22, fontWeight: '600' },
   label: { color: '#8A8A8E', fontSize: 12, marginTop: 12 },
   section: { color: '#F4EFE6', fontSize: 16, marginTop: 20, marginBottom: 6 },
+  subsection: { color: '#F4EFE6', fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 4 },
   input: {
     backgroundColor: '#1a1924',
     color: '#F4EFE6',

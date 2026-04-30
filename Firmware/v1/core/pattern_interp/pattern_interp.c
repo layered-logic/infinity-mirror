@@ -180,9 +180,9 @@ static void render_task(void *arg)
  * For c3_devkit (66 LEDs):  side_size=17, first_side=15  → [15,32,49,66]
  * For prod_v1_pro (32 LEDs): side_size=8,  first_side=8   → [8,16,24,32]
  *
- * Color is bright white at 100% brightness — deliberately distinct from
- * any normal pattern so the sequence is unmistakably a boot animation
- * and doubly serves as an OTA-success canary (see core/ota/).
+ * Color is bright cyan at 100% brightness for V2 of the OTA-test cycle.
+ * V1' shipped with white; cyan here is the visual canary that an OTA
+ * swap actually replaced the running code (white → cyan = OTA worked).
  */
 static void play_welcome_sequence(void)
 {
@@ -201,9 +201,9 @@ static void play_welcome_sequence(void)
     for (int t = 0; t < 4; t++) {
         const uint16_t lit = breakpoints[t];
         for (uint16_t i = 0; i < lit; i++) {
-            g_frame_buf[i * 3 + 0] = 0xFF;
-            g_frame_buf[i * 3 + 1] = 0xFF;
-            g_frame_buf[i * 3 + 2] = 0xFF;
+            g_frame_buf[i * 3 + 0] = 0x00;  /* R */
+            g_frame_buf[i * 3 + 1] = 0xFF;  /* G */
+            g_frame_buf[i * 3 + 2] = 0xFF;  /* B */
         }
         (void)ll_led_driver_write(g_frame_buf, 100);
         vTaskDelay(pdMS_TO_TICKS(500));
