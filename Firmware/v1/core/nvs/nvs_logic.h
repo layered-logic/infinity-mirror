@@ -19,7 +19,7 @@
 
 #include "state_bus.h"
 
-#define LL_NVS_SCHEMA_VERSION 1u
+#define LL_NVS_SCHEMA_VERSION 2u
 
 /*
  * On-flash layout for ll_settings:state. Packed so sizeof() is the wire
@@ -36,6 +36,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  auth_mode;
     uint8_t  telemetry_enabled;
     char     pattern_id[32];
+    char     name[33];          /* schema v2: user-set device name; null-terminated */
 } ll_nvs_blob_t;
 
 /*
@@ -58,6 +59,7 @@ void ll_nvs_serialize(const ll_state_t *in, ll_nvs_blob_t *out);
  *   - led_count of 0 or > 1024 → default
  *   - auth_mode outside {OPEN, PAIRED} → OPEN
  *   - pattern_id null-terminated at [31]; empty → "solid"
+ *   - name null-terminated at [32]; non-printable bytes left as-is
  *
  * The soft validation protects us from field-level drift where an old
  * firmware wrote a weird value; we recover instead of wiping everything.

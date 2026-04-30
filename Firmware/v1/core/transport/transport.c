@@ -68,6 +68,12 @@ static cJSON *state_to_json(const ll_state_t *s)
                             s->auth_mode == LL_AUTH_PAIRED ? "paired" : "open");
     cJSON_AddBoolToObject  (obj, "telemetry_enabled", s->telemetry_enabled);
 
+    /* Identity — id is read-only (MAC suffix, cached at boot); name is
+     * user-settable via set_state. Clients display name when non-empty,
+     * fall back to id for unnamed devices. */
+    cJSON_AddStringToObject(obj, "id",   ll_device_id_get());
+    cJSON_AddStringToObject(obj, "name", s->name);
+
     /* Wifi/provisioning state — derived from core/provisioning/, not
      * stored in ll_state_t (the link state isn't a user setting). The
      * webapp uses provisioning_active to decide between #/setup and
@@ -128,6 +134,10 @@ static cJSON *result_for_ping(void)
  *   - auth_mode (use the dedicated set_auth_mode op — security action)
  *   - telemetry_enabled (use set_telemetry — privacy opt-in)
  *   - led_count (read-only, fixed at provisioning / by board header)
+ *   - id (read-only MAC suffix, derived at boot, not user-settable)
+ *
+ * `name` IS accepted via set_state — user-settable, cleared by factory
+ * reset since it's part of ll_state_t and lives in the NVS settings blob.
  */
 static void op_set_state(cJSON *resp, const cJSON *payload)
 {
@@ -174,6 +184,16 @@ static void op_set_state(cJSON *resp, const cJSON *payload)
             ll_ev_pattern_change_payload_t p = {0};
             strncpy(p.id, s, sizeof(p.id) - 1);
             ll_state_bus_post(LL_EV_PATTERN_CHANGE, &p);
+        }
+    }
+
+    item = cJSON_GetObjectItem(payload, "name");
+    {
+        const char *s = cJSON_GetStringValue(item);
+        if (s) {
+            ll_ev_name_change_payload_t p = {0};
+            strncpy(p.name, s, sizeof(p.name) - 1);
+            ll_state_bus_post(LL_EV_NAME_CHANGE, &p);
         }
     }
 
@@ -286,6 +306,48 @@ static void op_start_ota(cJSON *resp, const cJSON *payload)
     cJSON_AddStringToObject(err, "code",    "ota_failed");
     cJSON_AddStringToObject(err, "message", esp_err_to_name(r));
 }
+
+/* ---- /api/info HTTP endpoint ------------------------------------- */
+
+/* Single-roundtrip discovery payload. The RN app's findMirrors scans the
+ * /24 and probes each IP with GET /api/info — devices respond with a tiny
+ * JSON shape that's both a "yes, I'm a Layered Logic mirror" sentinel and
+ * the id+name pair the picker needs to label entries. Cheaper than opening
+ * a WebSocket per candidate just to call get_state. */
+static esp_err_t info_handler(httpd_req_t *req)
+{
+    cJSON *obj = cJSON_CreateObject();
+    if (!obj) return ESP_ERR_NO_MEM;
+
+    const ll_state_t *s = ll_state_bus_get();
+    const esp_app_desc_t *desc = esp_app_get_description();
+
+    cJSON_AddStringToObject(obj, "product",    "layered-logic-mirror");
+    cJSON_AddStringToObject(obj, "id",         ll_device_id_get());
+    cJSON_AddStringToObject(obj, "name",       s->name);
+    cJSON_AddStringToObject(obj, "fw_version", desc->version);
+
+    char *out = cJSON_PrintUnformatted(obj);
+    cJSON_Delete(obj);
+    if (!out) return ESP_ERR_NO_MEM;
+
+    httpd_resp_set_type(req, "application/json; charset=utf-8");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    /* Allow cross-origin probes from a future web-based discovery page —
+     * the response carries no secrets, just the public identity already
+     * advertised over mDNS. */
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    esp_err_t err = httpd_resp_send(req, out, strlen(out));
+    free(out);
+    return err;
+}
+
+static const httpd_uri_t URI_INFO = {
+    .uri      = "/api/info",
+    .method   = HTTP_GET,
+    .handler  = info_handler,
+    .user_ctx = NULL,
+};
 
 /* ---- envelope dispatch ------------------------------------------- */
 
@@ -437,7 +499,7 @@ static esp_err_t start_server(void)
 
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port      = LL_TRANSPORT_PORT;
-    cfg.max_uri_handlers = 8;     /* /ws + 3 webapp assets + headroom for captive-portal probe URIs */
+    cfg.max_uri_handlers = 8;     /* /ws + /api/info + 3 webapp assets + headroom for captive-portal probe URIs */
     cfg.lru_purge_enable = true;  /* close oldest socket on overflow */
 
     esp_err_t err = httpd_start(&g_server, &cfg);
@@ -455,6 +517,16 @@ static esp_err_t start_server(void)
         return err;
     }
 
+    /* /api/info before webapp_assets so it wins URI matching against the
+     * 404→/ captive-portal redirect that webapp_assets installs. */
+    err = httpd_register_uri_handler(g_server, &URI_INFO);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "register %s: %s", URI_INFO.uri, esp_err_to_name(err));
+        httpd_stop(g_server);
+        g_server = NULL;
+        return err;
+    }
+
     err = ll_webapp_assets_register(g_server);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "webapp assets register: %s", esp_err_to_name(err));
@@ -463,7 +535,8 @@ static esp_err_t start_server(void)
         return err;
     }
 
-    ESP_LOGI(TAG, "listening on :%d (ws %s)", LL_TRANSPORT_PORT, URI_WS.uri);
+    ESP_LOGI(TAG, "listening on :%d (ws %s, info %s)",
+             LL_TRANSPORT_PORT, URI_WS.uri, URI_INFO.uri);
     return ESP_OK;
 }
 

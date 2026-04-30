@@ -20,11 +20,13 @@
 #include "state_bus.h"
 #include "state_bus_events.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "esp_err.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
 
@@ -35,6 +37,7 @@ ESP_EVENT_DEFINE_BASE(LL_STATE_EVENT_BASE);
 static ll_state_t g_state;
 static esp_event_loop_handle_t g_loop;
 static bool g_initialized;
+static char g_id_suffix[7];  /* lower 3 bytes of WiFi STA MAC, lowercase hex */
 
 static size_t payload_size_for(ll_event_t ev)
 {
@@ -45,6 +48,7 @@ static size_t payload_size_for(ll_event_t ev)
     case LL_EV_BRIGHTNESS:      return sizeof(ll_ev_brightness_payload_t);
     case LL_EV_AUTH_MODE:       return sizeof(ll_ev_auth_mode_payload_t);
     case LL_EV_TELEMETRY:       return sizeof(ll_ev_telemetry_payload_t);
+    case LL_EV_NAME_CHANGE:     return sizeof(ll_ev_name_change_payload_t);
     case LL_EV_PROVISION_START:
     case LL_EV_FACTORY_RESET:   return 0;
     }
@@ -84,6 +88,12 @@ static void apply_event(ll_event_t ev, const void *payload)
     case LL_EV_TELEMETRY: {
         const ll_ev_telemetry_payload_t *p = payload;
         g_state.telemetry_enabled = p->enabled;
+        break;
+    }
+    case LL_EV_NAME_CHANGE: {
+        const ll_ev_name_change_payload_t *p = payload;
+        strncpy(g_state.name, p->name, sizeof(g_state.name) - 1);
+        g_state.name[sizeof(g_state.name) - 1] = '\0';
         break;
     }
     case LL_EV_PROVISION_START:
@@ -139,6 +149,16 @@ void ll_state_bus_init(const ll_state_t *initial)
         ll_state_defaults(&g_state);
     }
 
+    /* Cache the MAC-derived id suffix for lookups via ll_device_id_get().
+     * Same form as ll_mdns publishes: lower 3 bytes, lowercase hex. */
+    uint8_t mac[6];
+    if (esp_read_mac(mac, ESP_MAC_WIFI_STA) == ESP_OK) {
+        snprintf(g_id_suffix, sizeof(g_id_suffix), "%02x%02x%02x",
+                 mac[3], mac[4], mac[5]);
+    } else {
+        g_id_suffix[0] = '\0';
+    }
+
     const esp_event_loop_args_t args = {
         .queue_size = 16,
         .task_name = "state_bus",
@@ -191,4 +211,9 @@ void ll_state_bus_post(ll_event_t ev, const void *payload)
 esp_event_loop_handle_t ll_state_bus_get_loop(void)
 {
     return g_loop;
+}
+
+const char *ll_device_id_get(void)
+{
+    return g_id_suffix;
 }

@@ -26,6 +26,7 @@ typedef struct {
     uint16_t led_count;
     ll_auth_mode_t auth_mode;
     bool telemetry_enabled;
+    char name[33];             /* user-set; empty = "fall back to id" */
 } ll_state_t;
 
 typedef enum {
@@ -37,6 +38,7 @@ typedef enum {
     LL_EV_TELEMETRY,
     LL_EV_PROVISION_START,
     LL_EV_FACTORY_RESET,
+    LL_EV_NAME_CHANGE,
 } ll_event_t;
 
 /*
@@ -58,3 +60,14 @@ void ll_state_bus_post(ll_event_t ev, const void *payload);
  * source of truth regardless of how state_bus gets initialized.
  */
 void ll_state_defaults(ll_state_t *out);
+
+/*
+ * Lower 3 bytes of the WiFi STA MAC, lowercase hex (6 chars + null).
+ * Read once at ll_state_bus_init() time. Empty string until init runs.
+ *
+ * This is the same suffix mDNS publishes in its TXT record and the SoftAP
+ * exposes in its SSID — the device's stable hardware identity, distinct
+ * from the user-settable ll_state_t.name. Returned as a const pointer to
+ * a static buffer; do not free.
+ */
+const char *ll_device_id_get(void);

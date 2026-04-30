@@ -99,6 +99,10 @@ typedef struct {
 } ll_ev_telemetry_payload_t;
 
 typedef struct {
+    char name[33];  /* null-terminated; empty string clears back to "use id" */
+} ll_ev_name_change_payload_t;
+
+typedef struct {
     ll_event_t which;  /* which field just changed */
 } ll_state_changed_payload_t;
 

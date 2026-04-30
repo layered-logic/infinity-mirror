@@ -20,7 +20,7 @@ const ANDROID_STATUS_BAR_PADDING =
 
 import { ConnState, MirrorClient } from './src/ws-client';
 import { BRAND_SWATCHES, DeviceState, PatternId } from './src/protocol';
-import { findMirror } from './src/find-mirror';
+import { FindResult, findMirrors } from './src/find-mirror';
 
 const HOME_URL = 'ws://10.123.210.61/ws';
 const SOFTAP_URL = 'ws://192.168.4.1/ws';
@@ -63,6 +63,13 @@ function App() {
   // Settings (vs. the device-driven "provisioning_active" auto-route).
   // Both cases render the same SSID/password form.
   const [reconfiguringWifi, setReconfiguringWifi] = useState(false);
+  // Discovery results from the most recent Find-mirror scan. Empty until
+  // the user triggers a scan; populated with all responders so the user
+  // can disambiguate when multiple mirrors live on the same network.
+  const [foundMirrors, setFoundMirrors] = useState<FindResult[]>([]);
+  // Rename UI — local input buffer + submit state. Shown in Settings.
+  const [nameInput, setNameInput] = useState('');
+  const [renameState, setRenameState] = useState<SubmitState>('idle');
 
   useEffect(() => {
     return () => clientRef.current?.disconnect();
@@ -86,6 +93,13 @@ function App() {
   useEffect(() => {
     if (route === 'settings' && conn !== 'open') setRoute('controls');
   }, [route, conn]);
+
+  // Seed the rename input with the device's current name whenever the
+  // user opens Settings, so the field reflects what the mirror's actually
+  // called rather than a stale draft from a prior session.
+  useEffect(() => {
+    if (route === 'settings') setNameInput(state?.name ?? '');
+  }, [route, state?.name]);
 
   // Drive the post-submit countdown.
   useEffect(() => {
@@ -144,14 +158,31 @@ function App() {
   const findOnSubnet = async () => {
     setScanning(true);
     setLastError(null);
+    setFoundMirrors([]);
     try {
-      const r = await findMirror();
-      setUrl(r.url);
+      const matches = await findMirrors();
+      if (matches.length === 0) {
+        setLastError('no mirror found on this network');
+      } else if (matches.length === 1) {
+        // Exactly one — auto-select. Clear the picker (it'd just have a
+        // single row otherwise) and drop the URL into the input.
+        setUrl(matches[0].url);
+        setFoundMirrors([]);
+      } else {
+        // Multiple responders — surface the picker. URL stays untouched
+        // until the user taps a row.
+        setFoundMirrors(matches);
+      }
     } catch (e) {
       setLastError((e as Error).message);
     } finally {
       setScanning(false);
     }
+  };
+
+  const pickMirror = (m: FindResult) => {
+    setUrl(m.url);
+    setFoundMirrors([]);
   };
 
   const startOta = () => {
@@ -177,6 +208,29 @@ function App() {
         },
       ],
     );
+  };
+
+  const submitRename = async () => {
+    if (!clientRef.current) return;
+    const trimmed = nameInput.trim();
+    // Server-side cap is 32 chars (ll_state_t.name is char[33], 1 reserved
+    // for null). Empty is a legal "clear back to id" value.
+    if (trimmed.length > 32) {
+      setLastError('name must be 32 characters or fewer');
+      return;
+    }
+    setLastError(null);
+    setRenameState('submitting');
+    try {
+      await clientRef.current.setState({ name: trimmed });
+      setRenameState('submitted');
+      // Server broadcasts the new state, which lands via onState — don't
+      // also stamp the input back to local state, let it stay editable.
+      setTimeout(() => setRenameState('idle'), 1500);
+    } catch (e) {
+      setRenameState('idle');
+      setLastError((e as Error).message);
+    }
   };
 
   const factoryReset = () => {
@@ -261,6 +315,31 @@ function App() {
                 <Text style={styles.urlPresetText}>SoftAP</Text>
               </Pressable>
             </View>
+
+            {foundMirrors.length > 0 && (
+              <View style={styles.pickerBlock}>
+                <Text style={styles.label}>
+                  {foundMirrors.length} mirrors found — pick one
+                </Text>
+                {foundMirrors.map((m) => {
+                  const active = url === m.url;
+                  const label = m.name && m.name.length > 0 ? m.name : m.id;
+                  return (
+                    <Pressable
+                      key={m.id}
+                      onPress={() => pickMirror(m)}
+                      style={[styles.pickerRow, active && styles.pickerRowActive]}
+                    >
+                      <Text style={styles.pickerRowLabel}>{label}</Text>
+                      <Text style={styles.pickerRowSub}>
+                        {m.ip}
+                        {m.name && m.name.length > 0 ? ` • ${m.id}` : ''}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             <View style={styles.row}>
               <Pressable
@@ -452,6 +531,38 @@ function App() {
 
         {ready && !inSetup && route === 'settings' && state && (
           <>
+            <Text style={styles.subsection}>Mirror name</Text>
+            <Text style={styles.muted}>
+              Hardware ID: <Text style={styles.mono}>{state.id ?? '(unknown)'}</Text>
+              {'\n'}
+              Shown in Find-mirror when you have multiple on one network. Leave empty to fall back to the hardware ID.
+            </Text>
+            <TextInput
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoCapitalize="words"
+              autoCorrect={false}
+              maxLength={32}
+              placeholder="Living Room"
+              placeholderTextColor="#555"
+              style={styles.input}
+            />
+            <Pressable
+              onPress={submitRename}
+              disabled={renameState !== 'idle' || nameInput === (state.name ?? '')}
+              style={[
+                styles.btn,
+                (renameState !== 'idle' || nameInput === (state.name ?? '')) &&
+                  styles.btnDisabled,
+              ]}
+            >
+              <Text style={styles.btnText}>
+                {renameState === 'idle' && 'Save name'}
+                {renameState === 'submitting' && 'Saving…'}
+                {renameState === 'submitted' && 'Saved ✓'}
+              </Text>
+            </Pressable>
+
             <Text style={styles.subsection}>Wi-Fi</Text>
             <Text style={styles.muted}>
               Network: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
@@ -564,6 +675,18 @@ const styles = StyleSheet.create({
   urlPresetActive: { borderColor: '#3214FF' },
   urlPresetDisabled: { opacity: 0.5 },
   urlPresetText: { color: '#F4EFE6', fontSize: 13 },
+  pickerBlock: { marginTop: 8, gap: 6 },
+  pickerRow: {
+    backgroundColor: '#1a1924',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  pickerRowActive: { borderColor: '#3214FF' },
+  pickerRowLabel: { color: '#F4EFE6', fontSize: 14, fontWeight: '600' },
+  pickerRowSub: { color: '#8A8A8E', fontSize: 12, fontFamily: 'monospace', marginTop: 2 },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   swatch: {
     width: 56,

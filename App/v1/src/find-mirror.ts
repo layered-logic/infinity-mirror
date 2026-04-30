@@ -3,6 +3,7 @@
 // that supports WifiManager.connectionInfo.
 
 import { NativeModules } from 'react-native';
+import { DeviceInfo } from './protocol';
 
 interface WifiInfoNative {
   getIpAddress(): Promise<string>;
@@ -10,31 +11,44 @@ interface WifiInfoNative {
 
 const WifiInfo: WifiInfoNative = NativeModules.WifiInfo;
 
-const PROBE_TIMEOUT_MS = 1200;
-const TITLE_MARKER = '<title>Layered Logic Mirror</title>';
+const PROBE_TIMEOUT_MS = 1500;
+const PROBE_PATH = '/api/info';
 
 export interface FindResult {
   ip: string;
-  url: string;
+  url: string;          // ws://<ip>/ws — ready for MirrorClient
+  id: string;           // lowercase 6-hex MAC suffix
+  name: string;         // user-set; empty string if unnamed
 }
 
-// Probes one IP. Resolves to the IP if it's our mirror, null otherwise.
-async function probe(ip: string, signal: AbortSignal): Promise<string | null> {
+// Probe one IP. Resolves to a FindResult if it's our mirror, null otherwise.
+// Returning the parsed body in one call avoids a second roundtrip per match
+// — the picker needs id+name immediately to label the row.
+async function probe(ip: string, signal: AbortSignal): Promise<FindResult | null> {
   try {
-    const r = await fetch(`http://${ip}/`, { signal });
+    const r = await fetch(`http://${ip}${PROBE_PATH}`, { signal });
     if (!r.ok) return null;
-    const body = await r.text();
-    if (body.includes(TITLE_MARKER)) return ip;
-    return null;
+    const body = (await r.json()) as Partial<DeviceInfo>;
+    if (body?.product !== 'layered-logic-mirror' || typeof body.id !== 'string') {
+      return null;
+    }
+    return {
+      ip,
+      url: `ws://${ip}/ws`,
+      id: body.id,
+      name: typeof body.name === 'string' ? body.name : '',
+    };
   } catch {
     return null;
   }
 }
 
-// Scans the /24 of `selfIp` for a host serving the mirror's webapp.
-// Resolves with the first match (race) or rejects if none found within
-// the deadline.
-export async function findMirror(): Promise<FindResult> {
+// Scans the /24 of `selfIp` and returns ALL mirrors that respond within
+// PROBE_TIMEOUT_MS. Resolves with [] if none found — the caller (App.tsx)
+// decides how to surface "nothing here". Order is whatever order the
+// individual probes resolve in, which on a typical home LAN is roughly
+// IP order modulo per-host latency variance.
+export async function findMirrors(): Promise<FindResult[]> {
   const selfIp = await WifiInfo.getIpAddress();
   const parts = selfIp.split('.');
   if (parts.length !== 4) throw new Error(`unexpected IP: ${selfIp}`);
@@ -44,28 +58,23 @@ export async function findMirror(): Promise<FindResult> {
   const ctrl = new AbortController();
   const deadline = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
 
-  const probes: Promise<string | null>[] = [];
+  const probes: Promise<FindResult | null>[] = [];
   for (let i = 1; i <= 254; i++) {
     if (i === selfLast) continue;
     probes.push(probe(`${subnet}.${i}`, ctrl.signal));
   }
 
-  // Promise.any-like: resolve on the first non-null, reject if all are null.
-  const found = await new Promise<string | null>((resolve) => {
-    let pending = probes.length;
-    for (const p of probes) {
-      p.then((ip) => {
-        if (ip) {
-          ctrl.abort(); // cancel the rest
-          resolve(ip);
-        } else if (--pending === 0) {
-          resolve(null);
-        }
-      });
-    }
-  });
-
+  const results = await Promise.all(probes);
   clearTimeout(deadline);
-  if (!found) throw new Error('no mirror found on this network');
-  return { ip: found, url: `ws://${found}/ws` };
+
+  const found = results.filter((r): r is FindResult => r !== null);
+  // Dedupe by id in case of NAT or multi-IP devices (defensive — we don't
+  // expect duplicates in practice, but a single mirror responding twice
+  // would otherwise show up as two picker rows).
+  const seen = new Set<string>();
+  return found.filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
 }

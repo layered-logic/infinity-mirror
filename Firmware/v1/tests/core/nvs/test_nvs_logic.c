@@ -25,6 +25,7 @@ static void make_sane_state(ll_state_t *s)
     s->led_count = 66;           /* 12x12 test prototype */
     s->auth_mode = LL_AUTH_PAIRED;
     s->telemetry_enabled = true;
+    strncpy(s->name, "Living Room", sizeof(s->name) - 1);
 }
 
 static bool states_equal(const ll_state_t *a, const ll_state_t *b)
@@ -35,7 +36,8 @@ static bool states_equal(const ll_state_t *a, const ll_state_t *b)
         && a->led_count == b->led_count
         && a->auth_mode == b->auth_mode
         && a->telemetry_enabled == b->telemetry_enabled
-        && strncmp(a->pattern_id, b->pattern_id, sizeof(a->pattern_id)) == 0;
+        && strncmp(a->pattern_id, b->pattern_id, sizeof(a->pattern_id)) == 0
+        && strncmp(a->name, b->name, sizeof(a->name)) == 0;
 }
 
 /* ---- Serialization ---- */
@@ -60,6 +62,7 @@ static void serialize_copies_all_fields(void)
     ASSERT_EQ(blob.auth_mode, (uint8_t)LL_AUTH_PAIRED);
     ASSERT_EQ(blob.telemetry_enabled, 1);
     ASSERT_STR_EQ(blob.pattern_id, "rainbow");
+    ASSERT_STR_EQ(blob.name, "Living Room");
 }
 
 static void roundtrip_preserves_all_fields(void)
@@ -76,8 +79,9 @@ static void roundtrip_preserves_all_fields(void)
 static void blob_size_matches_compile_time_constant(void)
 {
     /* Lock the wire size so accidental layout changes fail loudly in
-     * review instead of at a user's bricked infinity mirror. */
-    ASSERT_EQ(sizeof(ll_nvs_blob_t), 44);
+     * review instead of at a user's bricked infinity mirror.
+     * Schema v2: 44 (v1) + 33 (name field) = 77. */
+    ASSERT_EQ(sizeof(ll_nvs_blob_t), 77);
 }
 
 /* ---- Hard failures ---- */
@@ -209,6 +213,34 @@ static void upper_byte_of_color_ignored(void)
     ASSERT_EQ_HEX(out.base_color_rgb, 0xADBEEF);
 }
 
+static void empty_name_survives_roundtrip(void)
+{
+    /* Empty name is a legal value (signals "fall back to id" client-side);
+     * deserialize must not substitute anything. */
+    ll_state_t s; make_sane_state(&s);
+    s.name[0] = '\0';
+    ll_nvs_blob_t blob;
+    ll_nvs_serialize(&s, &blob);
+
+    ll_state_t out = {0};
+    ASSERT(ll_nvs_deserialize(&blob, sizeof(blob), &out));
+    ASSERT_EQ(strlen(out.name), 0);
+}
+
+static void non_null_terminated_name_is_truncated(void)
+{
+    ll_state_t s; make_sane_state(&s);
+    ll_nvs_blob_t blob;
+    ll_nvs_serialize(&s, &blob);
+    /* Splat 33 bytes of A across the name slot, no terminator anywhere. */
+    memset(blob.name, 'A', sizeof(blob.name));
+
+    ll_state_t out = {0};
+    ASSERT(ll_nvs_deserialize(&blob, sizeof(blob), &out));
+    ASSERT_EQ(strlen(out.name), 32);
+    ASSERT_EQ(out.name[32], '\0');
+}
+
 /* ---- Defaults ---- */
 
 static void defaults_are_shipping_values(void)
@@ -225,6 +257,9 @@ static void defaults_are_shipping_values(void)
     ASSERT_EQ(s.led_count, 32);
     ASSERT_EQ(s.auth_mode, LL_AUTH_OPEN);
     ASSERT(!s.telemetry_enabled);
+    /* Empty name: factory devices ship unnamed; the app falls back to
+     * displaying the id (MAC suffix) until the user renames. */
+    ASSERT_EQ(strlen(s.name), 0);
 }
 
 void suite_nvs_logic(void)
@@ -246,6 +281,9 @@ void suite_nvs_logic(void)
     RUN(empty_pattern_id_becomes_solid);
     RUN(non_null_terminated_pattern_id_is_truncated);
     RUN(upper_byte_of_color_ignored);
+
+    RUN(empty_name_survives_roundtrip);
+    RUN(non_null_terminated_name_is_truncated);
 
     RUN(defaults_are_shipping_values);
 }

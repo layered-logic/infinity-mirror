@@ -11,10 +11,12 @@
  * netif we don't have an IP on.
  *
  * V1 op surface (control-protocol-spec §4): `ping`, `get_state`,
- * `set_state`, `set_wifi_creds`, `factory_reset`. Other ops in the
- * spec (`get_info`, `set_auth_mode`, `list_patterns`, OTA, telemetry)
- * are V2. HTTP REST mirror of the WS surface and HMAC verification
- * (paired-mode auth) are deferred.
+ * `set_state` (incl. `name` field), `set_wifi_creds`, `factory_reset`,
+ * `start_ota`. Plus a small HTTP-only `GET /api/info` discovery endpoint
+ * that returns `{product, id, name, fw_version}` for the RN app's
+ * subnet-scan. Other ops in the spec (`set_auth_mode`, `list_patterns`,
+ * full OTA, telemetry) are V2. HMAC verification (paired-mode auth) is
+ * deferred.
  *
  * Wiring order in main():
  *     ll_provisioning_init()    → brings up esp_netif + configures SoftAP

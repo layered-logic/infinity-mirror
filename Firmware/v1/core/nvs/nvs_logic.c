@@ -18,6 +18,9 @@ void ll_nvs_serialize(const ll_state_t *in, ll_nvs_blob_t *out)
 
     strncpy(out->pattern_id, in->pattern_id, sizeof(out->pattern_id) - 1);
     out->pattern_id[sizeof(out->pattern_id) - 1] = '\0';
+
+    strncpy(out->name, in->name, sizeof(out->name) - 1);
+    out->name[sizeof(out->name) - 1] = '\0';
 }
 
 bool ll_nvs_deserialize(const void *data, size_t size, ll_state_t *out)
@@ -64,6 +67,11 @@ bool ll_nvs_deserialize(const void *data, size_t size, ll_state_t *out)
     } else {
         memcpy(s.pattern_id, pid, sizeof(s.pattern_id));
     }
+
+    /* Name: defensively null-terminate at the buffer boundary. Empty is
+     * a legal value (signals "fall back to id"), so don't substitute. */
+    memcpy(s.name, blob.name, sizeof(s.name) - 1);
+    s.name[sizeof(s.name) - 1] = '\0';
 
     *out = s;
     return true;
