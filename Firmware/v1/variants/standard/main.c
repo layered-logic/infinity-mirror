@@ -2,17 +2,22 @@
  * Layered Logic Infinity Mirror — Standard variant (Pro).
  *
  * Wiring order matters:
- *   1.  nvs_init             — load persisted state (or defaults on first boot).
- *   2.  state_bus            — seed the bus with that state; everyone subscribes to its loop.
- *   3.  nvs_subscribe        — start debounced save-on-change AFTER the bus exists.
- *   4.  provisioning_init    — bring up netif/wifi, connect if creds saved.
- *   5.  provisioning_subscribe — react to LL_EV_PROVISION_START / FACTORY_RESET.
- *   6.  mdns_init            — set hostname; service publication deferred to WIFI_CONNECTED.
- *   7.  mdns_subscribe       — listen for WIFI_CONNECTED / DISCONNECTED / AUTH_MODE.
- *   8.  transport_init       — placeholder; httpd lazy-starts on WIFI_CONNECTED.
- *   9.  transport_subscribe  — wire WIFI_CONNECTED → start_server, DISCONNECTED → stop.
- *   10. pattern_interp       — registers handlers + brings up led_driver.
- *   11. button               — starts posting events that the others now listen for.
+ *   1.  nvs_init               — load persisted state (or defaults on first boot).
+ *   2.  state_bus              — seed the bus with that state; everyone subscribes to its loop.
+ *   3.  nvs_subscribe          — start debounced save-on-change AFTER the bus exists.
+ *   4.  provisioning_init      — bring up netif/wifi; connect if creds saved, else
+ *                                 configure (but don't start) the SoftAP.
+ *   5.  provisioning_subscribe — react to LL_EV_PROVISION_START / FACTORY_RESET /
+ *                                 WIFI_APPLY_CREDS.
+ *   6.  mdns_init              — set hostname; service publication deferred to WIFI_CONNECTED.
+ *   7.  mdns_subscribe         — listen for WIFI_CONNECTED / DISCONNECTED / AUTH_MODE.
+ *   8.  transport_init         — placeholder; httpd lazy-starts on WIFI_CONNECTED.
+ *   9.  transport_subscribe    — wire WIFI_CONNECTED → start_server, DISCONNECTED → stop.
+ *   10. captive_dns_init       — placeholder; UDP responder lazy-starts on WIFI_CONNECTED.
+ *   11. captive_dns_subscribe  — wire WIFI_CONNECTED → start_responder (AP-mode only).
+ *   12. pattern_interp         — registers handlers + brings up led_driver.
+ *   13. button                 — starts posting events that the others now listen for.
+ *   14. provisioning_kick_softap — actually start the SoftAP now that subscribers are wired.
  */
 
 #include <stdio.h>
@@ -82,10 +87,11 @@ void app_main(void)
     ll_pattern_interp_init();
     ll_button_init();
 
-    /* Dev shortcut for Sessions 1-4: kick the deferred SoftAP now that
-     * every *_subscribe has run. No-op in production builds and on the
-     * real STA path. Removed when Session 5 captive portal lands. */
-    ESP_ERROR_CHECK(ll_provisioning_kick_dev_softap());
+    /* Start the SoftAP now that every *_subscribe has run, so downstream
+     * modules don't miss the LL_EV_WIFI_CONNECTED event the AP_START
+     * handler posts. No-op when LL_SOFTAP_PROVISIONING=0 or when the
+     * device booted with creds saved (STA path took over instead). */
+    ESP_ERROR_CHECK(ll_provisioning_kick_softap());
 
     /* Live behavior:
      *   primary single  → power on, then cycle base color (17 steps)

@@ -1,20 +1,34 @@
 /*
  * Wi-Fi provisioning + station lifecycle — ESP-IDF side.
  *
- * Scheme choice (Apr 2026): SoftAP only. BLE is deferred until the mobile
- * app commits to a provisioning UX and we're willing to pay the ~60KB
- * nimble stack cost + sdkconfig flip (CONFIG_BT_ENABLED). SoftAP works
- * out of the box with the ESP SoftAP Provisioning app (iOS/Android) or a
- * plain phone Wi-Fi join + web flow, which is enough for device bring-up
- * and early user testing. When BLE lands, swap wifi_prov_scheme_softap for
- * wifi_prov_scheme_ble (both schemes implement the same manager API).
+ * V1 provisioning surface (Apr 2026):
+ *   - First-boot path: no creds in NVS → open a plain SoftAP
+ *     "LL-Mirror-<3-byte MAC suffix>" at 192.168.4.1. Captive-portal
+ *     DNS hijack (core/captive_dns/) routes the host OS's probe URLs
+ *     to the device, which auto-pops the embedded webapp's /setup
+ *     screen. The user enters SSID + password, the webapp submits
+ *     them via the JSON `set_wifi_creds` op (core/transport/), and
+ *     on_wifi_apply_creds below performs the SoftAP→STA handoff.
+ *   - Cred-application failure path: 15s g_apply_fallback_timer; if
+ *     STA hasn't connected within that window, esp_wifi_restore wipes
+ *     the bad creds and bring_up_softap_runtime restores the SoftAP
+ *     so the user can retry without a factory reset.
+ *   - Saved-creds boot path: NVS has creds → bring up STA mode and
+ *     attempt connect. Stays in retry-forever mode if the network is
+ *     temporarily unavailable (so the device reconnects when wifi
+ *     comes back). Recessed-button factory reset is the recovery for
+ *     creds that are no longer valid.
  *
- * Security: WIFI_PROV_SECURITY_1 with a hardcoded proof-of-possession.
- * A MAC-derived PoP + QR code on the product is the shipping plan; the
- * hardcoded PoP here is a dev-only shortcut marked TODO.
+ * BLE provisioning is deferred to a post-V1 stretch goal (see
+ * mini-sprint-app-demo.md §4). When it lands, the wifi_prov_mgr
+ * scaffolding still imported below gains a real consumer:
+ * wifi_prov_scheme_ble running alongside this SoftAP path. RN app
+ * uses Espressif's ESPProvision SDK for that flow; webapp keeps its
+ * SoftAP-only role for users who don't want to install a phone app.
  *
- * SSID format: "LL-Setup-<3-byte MAC suffix hex>". Uniqueness per device
- * without requiring any secret distribution.
+ * SoftAP SSID: "LL-Mirror-<3-byte MAC suffix hex>". Uniqueness per
+ * device without secret distribution. Open auth — paired-mode HMAC
+ * envelope is post-pairing concern, not provisioning concern.
  */
 
 #include "provisioning.h"
@@ -44,25 +58,26 @@ static const char *TAG = "provisioning";
 #define LL_PROV_SSID_PREFIX        "LL-Setup-"
 #define LL_PROV_MAX_CONNECT_RETRY  10   /* retries before we post DISCONNECTED */
 
-/* DEV-ONLY: when no Wi-Fi creds are saved, open a plain SoftAP at
- * boot (no provisioning protocol on top) so transport + mdns are
- * reachable from any wifi client without going through the full
- * wifi_prov_mgr dance. Stays up indefinitely — no 5-min window —
- * because Sessions 1-4 want a stable network for iterative testing.
+/* SoftAP-based provisioning: when no Wi-Fi creds are saved at boot,
+ * open a plain SoftAP at 192.168.4.1 so the embedded webapp's /setup
+ * screen is reachable. Stays up indefinitely (no 5-min window) — the
+ * wifi_prov_mgr-style timeout is handled at the cred-apply layer
+ * (g_apply_fallback_timer) rather than at the SoftAP-availability
+ * layer.
  *
- * Replaced by the real captive-portal flow in Session 5 of the app
- * demo mini-sprint. Until then, builds default to ON; flip to 0
- * (or pass `-DLL_DEV_OPEN_SOFTAP=0` at build time) to test the
- * production "radios dark" boot path. MUST be 0 for any production
- * release. */
-#ifndef LL_DEV_OPEN_SOFTAP
-#define LL_DEV_OPEN_SOFTAP         1
+ * Build flag for unusual deployments (e.g., a future BLE-only or
+ * Matter-only variant where SoftAP isn't the user-facing surface):
+ * pass `-DLL_SOFTAP_PROVISIONING=0` to skip the SoftAP path, leaving
+ * the device "radios dark" until something explicitly posts
+ * LL_EV_PROVISION_START. Default is ON for the V1 standard variant. */
+#ifndef LL_SOFTAP_PROVISIONING
+#define LL_SOFTAP_PROVISIONING     1
 #endif
 
-#if LL_DEV_OPEN_SOFTAP
-#define LL_DEV_AP_SSID_PREFIX      "LL-Mirror-"
-#define LL_DEV_AP_CHANNEL          1
-#define LL_DEV_AP_MAX_CONN         4
+#if LL_SOFTAP_PROVISIONING
+#define LL_AP_SSID_PREFIX          "LL-Mirror-"
+#define LL_AP_CHANNEL              1
+#define LL_AP_MAX_CONN             4
 #endif
 
 static esp_timer_handle_t g_prov_timeout_timer;
@@ -359,22 +374,23 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
      * the wire state for. */
 }
 
-#if LL_DEV_OPEN_SOFTAP
-/* Dev SoftAP helpers ------------------------------------------------
+#if LL_SOFTAP_PROVISIONING
+/* SoftAP helpers ----------------------------------------------------
  *
  * Posts LL_EV_WIFI_CONNECTED on WIFI_EVENT_AP_START so that the rest
- * of the system (transport, mdns) reacts the same way as it would for
- * a real STA connection. The payload's "ssid" field is reused for the
- * AP SSID; "ip" is the well-known SoftAP gateway 192.168.4.1.
+ * of the system (transport, mdns, captive_dns) reacts the same way as
+ * it would for a real STA connection. The payload's "ssid" field is
+ * reused for the AP SSID; "ip" is the well-known SoftAP gateway
+ * 192.168.4.1.
  */
-static void on_dev_ap_started(void *arg, esp_event_base_t base,
+static void on_ap_started(void *arg, esp_event_base_t base,
                               int32_t id, void *data)
 {
     (void)arg; (void)base; (void)id; (void)data;
 
     wifi_config_t cfg;
     if (esp_wifi_get_config(WIFI_IF_AP, &cfg) != ESP_OK) {
-        ESP_LOGW(TAG, "DEV ap_start: cannot read AP config");
+        ESP_LOGW(TAG, "ap_start: cannot read AP config");
         return;
     }
 
@@ -388,36 +404,36 @@ static void on_dev_ap_started(void *arg, esp_event_base_t base,
                       LL_EV_WIFI_CONNECTED, &payload, sizeof(payload), 0);
     g_last_posted_connected = true;
 
-    ESP_LOGI(TAG, "DEV SoftAP up: ssid=\"%s\" ip=192.168.4.1 (open, %d max clients)",
-             payload.ssid, LL_DEV_AP_MAX_CONN);
+    ESP_LOGI(TAG, "SoftAP up: ssid=\"%s\" ip=192.168.4.1 (open, %d max clients)",
+             payload.ssid, LL_AP_MAX_CONN);
 }
 
-static bool g_dev_softap_init_done;
+static bool g_softap_init_done;
 
 /* Configure the AP and register the AP_START handler — but do NOT
  * call esp_wifi_start. The actual start is deferred to
- * ll_provisioning_kick_dev_softap, which main.c runs after every
+ * ll_provisioning_kick_softap, which main.c runs after every
  * subscriber (mdns, transport, etc.) has registered. Otherwise the
  * AP comes up so fast that LL_EV_WIFI_CONNECTED fires before anyone
  * is listening, and downstream modules silently miss it. */
-static esp_err_t init_dev_softap(void)
+static esp_err_t init_softap(void)
 {
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
 
     wifi_config_t cfg = {0};
     snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
-             LL_DEV_AP_SSID_PREFIX "%02X%02X%02X",
+             LL_AP_SSID_PREFIX "%02X%02X%02X",
              mac[3], mac[4], mac[5]);
     cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
-    cfg.ap.channel        = LL_DEV_AP_CHANNEL;
+    cfg.ap.channel        = LL_AP_CHANNEL;
     cfg.ap.authmode       = WIFI_AUTH_OPEN;
-    cfg.ap.max_connection = LL_DEV_AP_MAX_CONN;
+    cfg.ap.max_connection = LL_AP_MAX_CONN;
 
     esp_err_t err = esp_event_handler_instance_register(
-        WIFI_EVENT, WIFI_EVENT_AP_START, on_dev_ap_started, NULL, NULL);
+        WIFI_EVENT, WIFI_EVENT_AP_START, on_ap_started, NULL, NULL);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "DEV ap_start handler register: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "ap_start handler register: %s", esp_err_to_name(err));
         return err;
     }
 
@@ -426,33 +442,33 @@ static esp_err_t init_dev_softap(void)
     err = esp_wifi_set_config(WIFI_IF_AP, &cfg);
     if (err != ESP_OK) return err;
 
-    g_dev_softap_init_done = true;
-    ESP_LOGI(TAG, "DEV SoftAP configured (\"%s\", open, no password) - "
+    g_softap_init_done = true;
+    ESP_LOGI(TAG, "SoftAP configured (\"%s\", open, no password) - "
                   "deferred until subscribers wired",
              cfg.ap.ssid);
     return ESP_OK;
 }
 
-/* Bring the dev SoftAP back up at runtime — used by the cred-apply
+/* Bring the SoftAP back up at runtime — used by the cred-apply
  * fallback when set_wifi_creds receives an SSID we can't actually join.
  * Re-applies the AP config (cleared when we switched to STA mode in
  * on_wifi_apply_creds) and starts wifi. The existing AP_START handler
- * registered by init_dev_softap() reposts LL_EV_WIFI_CONNECTED with the
+ * registered by init_softap() reposts LL_EV_WIFI_CONNECTED with the
  * SoftAP gateway, so transport / mdns / captive_dns all come back up
  * just like at boot. */
-static esp_err_t bring_up_dev_softap_runtime(void)
+static esp_err_t bring_up_softap_runtime(void)
 {
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
 
     wifi_config_t cfg = {0};
     snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
-             LL_DEV_AP_SSID_PREFIX "%02X%02X%02X",
+             LL_AP_SSID_PREFIX "%02X%02X%02X",
              mac[3], mac[4], mac[5]);
     cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
-    cfg.ap.channel        = LL_DEV_AP_CHANNEL;
+    cfg.ap.channel        = LL_AP_CHANNEL;
     cfg.ap.authmode       = WIFI_AUTH_OPEN;
-    cfg.ap.max_connection = LL_DEV_AP_MAX_CONN;
+    cfg.ap.max_connection = LL_AP_MAX_CONN;
 
     esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
     if (err != ESP_OK) return err;
@@ -464,7 +480,7 @@ static esp_err_t bring_up_dev_softap_runtime(void)
     ESP_LOGW(TAG, "fallback: SoftAP restarted, awaiting fresh creds");
     return ESP_OK;
 }
-#endif /* LL_DEV_OPEN_SOFTAP */
+#endif /* LL_SOFTAP_PROVISIONING */
 
 /* Cred-apply fallback: the STA join didn't complete within the window.
  * Bogus SSID, wrong password, network out of range — same fix applies:
@@ -491,16 +507,19 @@ static void apply_creds_fallback_cb(void *arg)
     g_sta_ssid[0] = '\0';
     g_retry_count = 0;
 
-#if LL_DEV_OPEN_SOFTAP
-    if (bring_up_dev_softap_runtime() != ESP_OK) {
-        ESP_LOGE(TAG, "fallback: bring_up_dev_softap_runtime failed - "
+#if LL_SOFTAP_PROVISIONING
+    if (bring_up_softap_runtime() != ESP_OK) {
+        ESP_LOGE(TAG, "fallback: bring_up_softap_runtime failed - "
                       "device is unreachable, recessed-hold factory reset required");
     }
 #else
-    /* Production path (sub-5+): re-trigger wifi_prov_mgr's SoftAP scheme
-     * so the user gets the captive portal again. */
-    ESP_LOGE(TAG, "fallback in non-dev build not yet implemented - "
-                  "device is unreachable, recessed-hold factory reset required");
+    /* Build flag opted out of SoftAP provisioning (e.g., a future
+     * BLE-only or Matter-only variant). Caller is responsible for
+     * triggering whatever provisioning surface they wired up — there's
+     * no "rescue path" we can run unsupervised here. */
+    ESP_LOGE(TAG, "fallback: LL_SOFTAP_PROVISIONING=0 build, no SoftAP to "
+                  "restore - device is unreachable, recessed-hold factory "
+                  "reset required");
 #endif
 }
 
@@ -572,10 +591,10 @@ esp_err_t ll_provisioning_init(void)
         g_station_started = true;
     } else {
         ESP_LOGI(TAG, "no creds — radios dark (awaiting LL_EV_PROVISION_START)");
-#if LL_DEV_OPEN_SOFTAP
-        err = init_dev_softap();
+#if LL_SOFTAP_PROVISIONING
+        err = init_softap();
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "DEV SoftAP init failed: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "SoftAP init failed: %s", esp_err_to_name(err));
             return err;
         }
 #endif
@@ -584,17 +603,15 @@ esp_err_t ll_provisioning_init(void)
     return ESP_OK;
 }
 
-esp_err_t ll_provisioning_kick_dev_softap(void)
+esp_err_t ll_provisioning_kick_softap(void)
 {
-#if LL_DEV_OPEN_SOFTAP
-    if (!g_dev_softap_init_done) return ESP_OK;
+#if LL_SOFTAP_PROVISIONING
+    if (!g_softap_init_done) return ESP_OK;
     esp_err_t err = esp_wifi_start();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "DEV SoftAP esp_wifi_start: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "SoftAP esp_wifi_start: %s", esp_err_to_name(err));
         return err;
     }
-    ESP_LOGW(TAG, "DEV mode: SoftAP up. Captive-portal flow lands in "
-                  "Session 5 of the app demo mini-sprint — replace before prod.");
     return ESP_OK;
 #else
     return ESP_OK;

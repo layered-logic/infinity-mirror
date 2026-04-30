@@ -61,16 +61,16 @@ bool ll_provisioning_is_active(void);
 const char *ll_provisioning_get_sta_ssid(void);
 
 /*
- * Dev-only: kick the deferred SoftAP that ll_provisioning_init configured
- * but didn't actually start. Call this from main.c AFTER every *_subscribe
- * has run, so downstream modules (mdns, transport) catch the synthesized
- * LL_EV_WIFI_CONNECTED event the AP_START handler posts.
+ * Kick the deferred SoftAP that ll_provisioning_init configured but
+ * didn't actually start. Call this from main.c AFTER every *_subscribe
+ * has run, so downstream modules (mdns, transport, captive_dns) catch
+ * the synthesized LL_EV_WIFI_CONNECTED event the AP_START handler
+ * posts. Without the deferred-start pattern, the AP comes up so fast
+ * that LL_EV_WIFI_CONNECTED fires before subscribers register and is
+ * silently dropped.
  *
- * No-op when LL_DEV_OPEN_SOFTAP is 0 (production builds) or when the
- * device booted with creds saved (STA path took over instead). Safe to
- * call unconditionally from main.c.
- *
- * Replaced by the captive-portal flow in Session 5 of the app demo
- * mini-sprint.
+ * No-op when LL_SOFTAP_PROVISIONING is 0 (e.g., a future BLE-only
+ * variant) or when the device booted with creds saved (STA path took
+ * over instead). Safe to call unconditionally from main.c.
  */
-esp_err_t ll_provisioning_kick_dev_softap(void);
+esp_err_t ll_provisioning_kick_softap(void);
