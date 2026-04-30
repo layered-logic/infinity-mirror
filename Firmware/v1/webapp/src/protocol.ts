@@ -71,3 +71,27 @@ export function newReqId(): string {
 export function nowEpochSeconds(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+// Canonical preset colors — single source of truth for both webapp and RN
+// so a swatch labeled "red" lands on the same hex no matter which client
+// the user picks it from.
+//
+// Three brand indigos (button-interface §4.1 sets Indigo Signal as the
+// firmware default) anchor the row, followed by eight hues sampled at 45°
+// from the button's 16-step HSV cycle (button-interface §4.3) so the app
+// and the physical single-press cycle pick from the same vocabulary.
+export interface BrandSwatch { name: string; hex: string; }
+export const BRAND_SWATCHES: BrandSwatch[] = [
+  { name: 'indigo reference', hex: '#4A25FF' },
+  { name: 'indigo signal',    hex: '#3214FF' },
+  { name: 'indigo stone',     hex: '#4F3FB0' },
+  { name: 'red',     hex: '#FF0000' },
+  { name: 'amber',   hex: '#FFBF00' },
+  { name: 'lime',    hex: '#80FF00' },
+  { name: 'mint',    hex: '#00FF40' },
+  { name: 'cyan',    hex: '#00FFFF' },
+  { name: 'blue',    hex: '#0040FF' },
+  { name: 'violet',  hex: '#8000FF' },
+  { name: 'magenta', hex: '#FF00BF' },
+  { name: 'white',   hex: '#FFFFFF' },
+];
