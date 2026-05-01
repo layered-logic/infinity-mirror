@@ -567,6 +567,8 @@ function App() {
             <Text style={styles.muted}>
               Network: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
               {'\n'}
+              IP: <Text style={styles.mono}>{state.ip ?? '(none)'}</Text>
+              {'\n'}
               Mode: {state.provisioning_active ? 'setup mode (mirror is its own Wi-Fi)' : (state.wifi_ssid ? 'connected to your Wi-Fi' : 'unknown')}
             </Text>
             <Pressable

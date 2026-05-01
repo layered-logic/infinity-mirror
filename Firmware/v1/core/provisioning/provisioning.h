@@ -61,6 +61,13 @@ bool ll_provisioning_is_active(void);
 const char *ll_provisioning_get_sta_ssid(void);
 
 /*
+ * Current STA IPv4 address as a dotted-quad string ("192.168.5.229"), or
+ * an empty string when the device is not on a STA network. Same lifetime
+ * + ownership rules as ll_provisioning_get_sta_ssid.
+ */
+const char *ll_provisioning_get_sta_ip(void);
+
+/*
  * Kick the deferred SoftAP that ll_provisioning_init configured but
  * didn't actually start. Call this from main.c AFTER every *_subscribe
  * has run, so downstream modules (mdns, transport, captive_dns) catch

@@ -65,9 +65,48 @@ Every source file is currently a stub. This scaffold exists to:
 - Make `idf.py build` work from day one (even if all it does is print "hello")
 - Let CI spin up per-variant build jobs as modules get real implementations
 
-## Toolchain (planned, not yet set up)
+## Building
 
-- ESP-IDF v5.3+
-- Python 3.10+
-- CMake 3.24+
-- Host-side test runner: CMocka or Unity
+PowerShell only — see [reference_esp_idf_setup memory](../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/reference_esp_idf_setup.md). git-bash isn't supported by the IDF Windows installer's wrapper scripts.
+
+```powershell
+$env:IDF_TOOLS_PATH = "C:\Espressif"
+& "C:\Espressif\frameworks\esp-idf-v5.5.4\export.ps1"
+cd Firmware\v1
+```
+
+**First build in a fresh worktree** — two prerequisites the build won't auto-handle:
+
+```powershell
+# 1. Webapp dist must exist before idf.py build runs (webapp_assets component
+#    embeds the gzipped output). Skip this and CMake fails with
+#    "Webapp asset missing: webapp/dist/index.html.gz".
+cd webapp
+npm install
+npm run build
+cd ..
+
+# 2. Pick the board + chip target. CMakeLists defaults to c6_devkit / esp32c6.
+#    The XIAO ESP32-C3 prototype needs c3_devkit / esp32c3 instead — and
+#    set-target must be passed BOTH the board flag and the chip target;
+#    skipping it means the build silently uses the previous target from
+#    the local sdkconfig. Verify before assuming:
+idf.py -DLL_BOARD=c3_devkit set-target esp32c3
+Select-String "^CONFIG_IDF_TARGET=" sdkconfig    # should print esp32c3
+
+# 3. Build. Pass PROJECT_VER explicitly when iterating over OTA — esp_https_ota
+#    rejects images whose version string equals the running version
+#    (ESP_ERR_INVALID_VERSION), and `git describe --dirty` produces the same
+#    suffix when only uncommitted changes differ between iterations.
+idf.py -DLL_BOARD=c3_devkit -DPROJECT_VER="iter-$(Get-Date -Format yyMMdd-HHmm)" build
+```
+
+**Subsequent builds** in the same worktree — just `idf.py build`. The board + target persist in the (gitignored) sdkconfig.
+
+**Switching chip targets** (e.g. C3 ↔ C6) — must `Remove-Item sdkconfig` first; `set-target` doesn't reliably overwrite a sdkconfig from a previous chip.
+
+## Flashing
+
+USB: `idf.py -p COM<n> flash monitor`
+
+OTA: see [docs/ota-dev-runbook.md](../../docs/ota-dev-runbook.md) — host the bin via `python -m http.server 8000` in `build/`, send `start_ota` from the app or wscat.

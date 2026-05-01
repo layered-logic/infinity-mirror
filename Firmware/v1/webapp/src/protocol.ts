@@ -24,6 +24,7 @@ export interface DeviceState {
   // tolerate `undefined` per control-protocol-spec §9 (forward compat).
   provisioning_active?: boolean;
   wifi_ssid?: string | null;
+  ip?: string | null;
   // Identity. `id` is the lowercase 6-hex MAC suffix — read-only, stable
   // across factory resets, used as a fallback display label when `name` is
   // empty. `name` is user-set via set_state and persists in NVS.
