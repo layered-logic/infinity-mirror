@@ -86,6 +86,12 @@ static cJSON *state_to_json(const ll_state_t *s)
     } else {
         cJSON_AddNullToObject(obj, "wifi_ssid");
     }
+    const char *ip = ll_provisioning_get_sta_ip();
+    if (ip && ip[0]) {
+        cJSON_AddStringToObject(obj, "ip", ip);
+    } else {
+        cJSON_AddNullToObject(obj, "ip");
+    }
     return obj;
 }
 

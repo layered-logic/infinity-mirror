@@ -87,6 +87,7 @@ static uint8_t g_retry_count;
 static bool g_station_started;
 static bool g_last_posted_connected;
 static char g_sta_ssid[33];   /* current STA network SSID, empty when not on STA */
+static char g_sta_ip[16];     /* current STA IPv4 dotted-quad, empty when not on STA */
 
 #define LL_APPLY_FALLBACK_US  ((int64_t)15 * 1000 * 1000)  /* 15s STA-join window before falling back */
 
@@ -124,9 +125,10 @@ static void post_wifi_connected(const esp_netif_ip_info_t *ip_info)
     payload.ip[3] = esp_ip4_addr4_16(&ip_info->ip);
     payload.rssi = ap.rssi;
 
-    /* Cache for the wire state's `wifi_ssid` field. */
+    /* Cache for the wire state's `wifi_ssid` and `ip` fields. */
     strncpy(g_sta_ssid, payload.ssid, sizeof(g_sta_ssid) - 1);
     g_sta_ssid[sizeof(g_sta_ssid) - 1] = '\0';
+    snprintf(g_sta_ip, sizeof(g_sta_ip), IPSTR, IP2STR(&ip_info->ip));
 
     /* Cancel any in-flight cred-apply fallback — STA is up, the new
      * credentials worked. esp_timer_stop is safe on a not-running
@@ -505,6 +507,7 @@ static void apply_creds_fallback_cb(void *arg)
     g_station_started = false;
     g_last_posted_connected = false;
     g_sta_ssid[0] = '\0';
+    g_sta_ip[0] = '\0';
     g_retry_count = 0;
 
 #if LL_SOFTAP_PROVISIONING
@@ -651,4 +654,9 @@ bool ll_provisioning_is_active(void)
 const char *ll_provisioning_get_sta_ssid(void)
 {
     return g_sta_ssid;
+}
+
+const char *ll_provisioning_get_sta_ip(void)
+{
+    return g_sta_ip;
 }

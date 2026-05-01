@@ -1,32 +1,48 @@
-// Subnet-scan-based mirror discovery. Avoids needing react-native-zeroconf
-// (deep-dep, MAX_PATH risk on Windows builds) and works on any Android API
-// that supports WifiManager.connectionInfo.
+// mDNS-based mirror discovery via Android's NsdManager (see MdnsModule.kt).
+// Replaces a prior subnet-scan implementation that fired 254 parallel fetches
+// and lost the mirror's response in OkHttp's dispatcher queue. mDNS is also
+// subnet-tolerant: if the phone and mirror end up on different /24s of the
+// same routed network, scan never finds it but mDNS still does.
 
 import { NativeModules } from 'react-native';
 import { DeviceInfo } from './protocol';
 
-interface WifiInfoNative {
-  getIpAddress(): Promise<string>;
+interface MdnsResult {
+  host: string;
+  port: number;
+  attributes: Record<string, string>;
 }
 
-const WifiInfo: WifiInfoNative = NativeModules.WifiInfo;
+interface MdnsNative {
+  findMirrors(timeoutMs: number): Promise<MdnsResult[]>;
+}
 
+const Mdns: MdnsNative = NativeModules.Mdns;
+
+const DISCOVERY_TIMEOUT_MS = 2500;
 const PROBE_TIMEOUT_MS = 1500;
 const PROBE_PATH = '/api/info';
 
 export interface FindResult {
   ip: string;
-  url: string;          // ws://<ip>/ws — ready for MirrorClient
+  url: string;          // ws://<ip>[:<port>]/ws — ready for MirrorClient
   id: string;           // lowercase 6-hex MAC suffix
   name: string;         // user-set; empty string if unnamed
 }
 
-// Probe one IP. Resolves to a FindResult if it's our mirror, null otherwise.
-// Returning the parsed body in one call avoids a second roundtrip per match
-// — the picker needs id+name immediately to label the row.
-async function probe(ip: string, signal: AbortSignal): Promise<FindResult | null> {
+// Hit /api/info to get the human-readable name. mDNS TXT records carry
+// {variant, version, id, auth} but not `name` — the user-rename feature
+// (firmware welcome sequence, Apr 2026) lives in NVS-backed state, not
+// the mDNS record. One HTTP roundtrip per mirror is cheap; typically 1-2
+// mirrors on a network, never the 254 the old subnet scan sent.
+async function fetchInfo(ip: string, port: number): Promise<FindResult | null> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
   try {
-    const r = await fetch(`http://${ip}${PROBE_PATH}`, { signal });
+    const portSuffix = port === 80 ? '' : `:${port}`;
+    const r = await fetch(`http://${ip}${portSuffix}${PROBE_PATH}`, {
+      signal: ctrl.signal,
+    });
     if (!r.ok) return null;
     const body = (await r.json()) as Partial<DeviceInfo>;
     if (body?.product !== 'layered-logic-mirror' || typeof body.id !== 'string') {
@@ -34,43 +50,30 @@ async function probe(ip: string, signal: AbortSignal): Promise<FindResult | null
     }
     return {
       ip,
-      url: `ws://${ip}/ws`,
+      url: `ws://${ip}${portSuffix}/ws`,
       id: body.id,
       name: typeof body.name === 'string' ? body.name : '',
     };
   } catch {
     return null;
+  } finally {
+    clearTimeout(t);
   }
 }
 
-// Scans the /24 of `selfIp` and returns ALL mirrors that respond within
-// PROBE_TIMEOUT_MS. Resolves with [] if none found — the caller (App.tsx)
-// decides how to surface "nothing here". Order is whatever order the
-// individual probes resolve in, which on a typical home LAN is roughly
-// IP order modulo per-host latency variance.
+// Discover all _layeredlogic._tcp. mirrors on the local network and resolve
+// each to a FindResult. Returns [] when nothing's found within the
+// discovery window — caller decides how to surface "nothing here".
 export async function findMirrors(): Promise<FindResult[]> {
-  const selfIp = await WifiInfo.getIpAddress();
-  const parts = selfIp.split('.');
-  if (parts.length !== 4) throw new Error(`unexpected IP: ${selfIp}`);
-  const subnet = `${parts[0]}.${parts[1]}.${parts[2]}`;
-  const selfLast = Number(parts[3]);
+  const services = await Mdns.findMirrors(DISCOVERY_TIMEOUT_MS);
+  if (services.length === 0) return [];
 
-  const ctrl = new AbortController();
-  const deadline = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
-
-  const probes: Promise<FindResult | null>[] = [];
-  for (let i = 1; i <= 254; i++) {
-    if (i === selfLast) continue;
-    probes.push(probe(`${subnet}.${i}`, ctrl.signal));
-  }
-
+  const probes = services.map((s) => fetchInfo(s.host, s.port));
   const results = await Promise.all(probes);
-  clearTimeout(deadline);
-
   const found = results.filter((r): r is FindResult => r !== null);
-  // Dedupe by id in case of NAT or multi-IP devices (defensive — we don't
-  // expect duplicates in practice, but a single mirror responding twice
-  // would otherwise show up as two picker rows).
+
+  // Dedupe by id — multiple mDNS announcements (e.g. on multi-homed networks)
+  // can surface the same device twice. Keep the first response per id.
   const seen = new Set<string>();
   return found.filter((r) => {
     if (seen.has(r.id)) return false;

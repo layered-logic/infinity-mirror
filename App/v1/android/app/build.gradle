@@ -103,6 +103,9 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            // Cleartext is forced on via the manifest directly (not the RN
+            // placeholder) — the plugin's finalizeDsl runs after this block
+            // and would clobber any manifestPlaceholders override we set here.
         }
     }
 }
