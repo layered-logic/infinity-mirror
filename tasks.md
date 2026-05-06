@@ -1,7 +1,7 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-072
+next_id: LL-073
 updated: 2026-05-06
 ---
 
