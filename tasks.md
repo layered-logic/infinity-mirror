@@ -726,6 +726,18 @@ dependencies: —
 
 ---
 
+<a id="LL-072"></a>
+### [x] LL-072 — Migrate admin_workflow GitHub feed to LL-NNN stable IDs
+
+sprint: 6 | priority: medium | deadline: —
+added: 2026-05-06 | first_engaged: 2026-05-06 | last_engaged: 2026-05-06 | resolved: 2026-05-06
+artifacts: external — `admin_workflow/n8n-nodes/infinity_mirror_{task_collector,accomplishments,reconcile,validation}.js` · `admin_workflow/n8n-nodes/task_collector_sql_builder.js`
+dependencies: —
+
+**Notes:** Retooled the four n8n flows in `admin_workflow` that consume this repo's tasks.md so the planning + reconciliation pipeline operates on stable LL-NNN IDs instead of slug-fuzzy-matching `sprint_plan.md` through GPT-5-nano. Four structural-parse Code nodes shipped: morning task_collector (one item per open `[ ]`), accomplishments scraper (`resolved` or `last_engaged` = today), reconcile (task_log.md events → outcome_events), validation (structural invariants — every `[x]` has a `done` log row, sprint_log `[LL-NNN]` tags resolve, `next_id` counter consistency, no top-level ID gaps). Output shape conformed to the PascalCase `{Id, Source, Title, Notes, Importance, Deadline, Meta}` envelope used by the existing Trello / Canvas / TrainerRoad collectors; `task_collector_sql_builder.js` gained a `normalizeTask` shim so PascalCase and legacy lowercase coexist without a forked code path. Postgres scrubbed of 9 legacy `github:sprint:*` rows + 22 volatile rows; downstream namespace is now `github:task:LL-NNN`, immutable across renames — task identity no longer requires an LLM hop.
+
+---
+
 <a id="LL-042"></a>
 ### [ ] LL-042 — User Repair Guide / Repairability Manual
 
