@@ -47,21 +47,27 @@ This isn't just a build log. Every design decision is grounded in **human-center
 ## Project Structure
 
 ```
-├── sprint_plan.md          # 11-week development sprint (Spring 2026)
-├── sprint_log.md           # Progress tracker (done / in-progress / blocked)
+├── sprint_plan.md          # 11-week development sprint (Spring 2026), narrative
+├── sprint_log.md           # Daily progress narrative
+├── tasks.md                # Structured task registry (LL-NNN IDs, status, dates)
+├── task_log.md             # Append-only event history
 ├── tools/                  # Internal business utilities
 │   └── pricing/            # Streamlit COGS/pricing calculator dashboard
-├── hardware/               # Schematics, PCB layouts, BOM
-├── firmware/               # ESP32 firmware (Wi-Fi, BLE, LED control)
-├── app/                    # Mobile app (color/pattern control, custom orders)
-├── docs/                   # HCDE deliverables, business model, case study
+├── Firmware/               # ESP32 firmware (V1) + STM8 reference (Basic SKU)
+├── App/                    # React Native mobile app (LLogic)
+├── docs/                   # HCDE deliverables, business model, specs, case study
+│   ├── task-format-v2.md   # Task ID scheme + registry format spec
 │   ├── stakeholder-map
 │   ├── sustainability-audit
-│   ├── repair-guide
+│   ├── repair-index        # Sub-MOC for the repair docs
 │   ├── service-blueprint
 │   └── venture-readiness
+├── Failure_Modes/          # 17 failure-mode files with user-repair paths
+├── Assembly_docs/          # Production line operations
 └── assets/                 # Product photography, brand identity, media
 ```
+
+Tasks carry stable `LL-NNN` IDs (e.g., `LL-001`, `LL-035-2-1`). Sprint plan and log reference them inline as `[LL-NNN](tasks.md#LL-NNN)`; the registry is the structured source of truth, the narrative files are the human-readable story. Format spec at [docs/task-format-v2.md](docs/task-format-v2.md).
 
 ---
 
@@ -112,7 +118,8 @@ TBD
 ## Navigating This Repo
 
 - [**index.md**](index.md) — Map of Content / home note (start here for any session)
-- [Sprint Plan](sprint_plan.md) · [Sprint Log](sprint_log.md) — 11-week plan and progress
+- [Sprint Plan](sprint_plan.md) · [Sprint Log](sprint_log.md) — 11-week plan and daily narrative
+- [Task Registry](tasks.md) · [Task Event Log](task_log.md) · [Format Spec](docs/task-format-v2.md) — structured task tracking
 - [docs/](docs/) — HCDE artifacts, business, engineering, meeting logs
 - [Assembly_docs/](Assembly_docs/) — production-line ops
 - [assets/](assets/) — design assets (logo, color, type, photos, Figma exports)

@@ -48,7 +48,10 @@ Deferred from Week 3:
 ## Planning
 
 - [Sprint Plan](sprint_plan.md) — 11-week plan, milestones, LLC compliance checklist
-- [Sprint Log](sprint_log.md) — done / in-progress / blocked by week
+- [Sprint Log](sprint_log.md) — daily narrative, done / in-progress / blocked by week
+- [Task Registry](tasks.md) — structured `LL-NNN` task index with status, dates, dependencies
+- [Task Event Log](task_log.md) — append-only event history
+- [Task Format Spec](docs/task-format-v2.md) — ID scheme, schema, migration plan
 - [README](README.md) — public project overview
 
 ---
@@ -160,4 +163,5 @@ Deferred from Week 3:
 - Docs use YAML frontmatter with `type`, `phase`, `week`, `status`, `tags`.
 - Cross-doc links are standard markdown (work in both Obsidian and GitHub).
 - Each major doc ends with a `## Related` section linking to adjacent work.
+- Tasks have stable `LL-NNN` IDs. The plan and log reference them inline as `[LL-NNN](tasks.md#LL-NNN)`. IDs are immutable — children that grow spawn grandchildren rather than being promoted. See [docs/task-format-v2.md](docs/task-format-v2.md) for the full schema.
 - `MEMORY.md` (in `~/.claude/projects/.../memory/`) holds Claude's persistent context across sessions — not part of the vault.
