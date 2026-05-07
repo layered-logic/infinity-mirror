@@ -3,6 +3,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Haptic feedback for taps that trigger async device-side actions
+         (e.g. connect_wifi_network's "Switching to X…" path). Without
+         this, calls to Vibration.vibrate() throw SecurityException and
+         crash the app on Android. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
       android:name=".MainApplication"

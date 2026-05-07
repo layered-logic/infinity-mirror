@@ -264,7 +264,11 @@ function App() {
   const connectToNetwork = async (entry: WifiNetwork) => {
     if (!clientRef.current) return;
     setLastError(null);
-    Vibration.vibrate(15);
+    // Defensive try — VIBRATE is in the manifest, but a stale install
+    // or a future device that revokes the permission shouldn't take
+    // out the whole connect flow. Visual feedback is the real signal;
+    // the buzz is gravy.
+    try { Vibration.vibrate(15); } catch (_) { /* noop */ }
     setSwitchingTo(entry.ssid);
     setSavedNetworks((prev) =>
       prev?.map((n) => (n.is_active ? { ...n, is_active: false } : n)) ?? prev,
@@ -314,7 +318,14 @@ function App() {
     try {
       const matches = await findMirrors();
       if (matches.length === 0) {
-        setLastError('no mirror found on this network');
+        // Detection of an active VPN from RN core would need a native
+        // module (NetInfo's connection details only). Cheapest hint:
+        // mention it as the most common cause when Find mirror returns
+        // empty on a network that almost always has the mirror on it.
+        setLastError(
+          'no mirror found on this network. if a VPN is on, disable ' +
+          'it and try again — it scopes the scan away from your LAN.',
+        );
       } else if (matches.length === 1) {
         // Exactly one — auto-select. Clear the picker (it'd just have a
         // single row otherwise) and drop the URL into the input.
