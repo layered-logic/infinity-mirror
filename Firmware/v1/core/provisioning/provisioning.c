@@ -1066,6 +1066,21 @@ void ll_provisioning_drop_active(void)
      * posts LL_EV_WIFI_DISCONNECTED, transitions into SCANNING. */
 }
 
+/* LL_EV_WIFI_REQUEST_SWITCH — fires from transport's connect_wifi_network
+ * op after it has bumped the chosen entry's priority via ll_wifi. The
+ * 250ms yield gives transport time to flush its JSON response and the
+ * accompanying state broadcast before we tear the STA down (same
+ * dance as on_wifi_apply_creds). Without the yield the WS frames are
+ * queued in lwip but the netif dies before TCP can push them out, and
+ * the client times out instead of seeing "switching: true". */
+static void on_wifi_request_switch(void *arg, esp_event_base_t base,
+                                    int32_t id, void *data)
+{
+    (void)arg; (void)base; (void)id; (void)data;
+    vTaskDelay(pdMS_TO_TICKS(250));
+    ll_provisioning_request_switch();
+}
+
 void ll_provisioning_request_switch(void)
 {
     ESP_LOGI(TAG, "request_switch from sm=%s", sm_state_name(g_sm_state));
@@ -1130,10 +1145,16 @@ esp_err_t ll_provisioning_subscribe(void)
         on_factory_reset, NULL, NULL);
     if (err != ESP_OK) return err;
 
-    return esp_event_handler_instance_register_with(
+    err = esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),
         LL_STATE_EVENT_BASE, LL_EV_WIFI_APPLY_CREDS,
         on_wifi_apply_creds, NULL, NULL);
+    if (err != ESP_OK) return err;
+
+    return esp_event_handler_instance_register_with(
+        ll_state_bus_get_loop(),
+        LL_STATE_EVENT_BASE, LL_EV_WIFI_REQUEST_SWITCH,
+        on_wifi_request_switch, NULL, NULL);
 }
 
 bool ll_provisioning_is_active(void)

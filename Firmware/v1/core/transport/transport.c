@@ -517,7 +517,14 @@ static void op_connect_wifi_network(cJSON *resp, const cJSON *payload)
         return;
     }
 
-    ll_provisioning_request_switch();
+    /* Async hop: posting LL_EV_WIFI_REQUEST_SWITCH lets this op finish
+     * serializing + sending the response (and the broadcast below)
+     * before provisioning's handler calls esp_wifi_disconnect on the
+     * state-bus task. Without this, the disconnect kills the WS
+     * connection mid-response and the client sees a timeout instead
+     * of "switching: true". Same pattern as set_wifi_creds. */
+    esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
+                      LL_EV_WIFI_REQUEST_SWITCH, NULL, 0, 0);
 
     cJSON_AddBoolToObject(resp, "ok", true);
     cJSON *result = cJSON_AddObjectToObject(resp, "result");
@@ -525,7 +532,7 @@ static void op_connect_wifi_network(cJSON *resp, const cJSON *payload)
     cJSON_AddBoolToObject(result, "switching", true);
     cJSON_AddNullToObject(resp, "error");
     /* The list ordering changed (last_used_us updated); refresh
-     * settings pages on connected clients. */
+     * settings pages on connected clients before the STA tear-down. */
     broadcast_state();
 }
 

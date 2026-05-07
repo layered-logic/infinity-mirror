@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  Vibration,
   View,
 } from 'react-native';
 
@@ -92,6 +93,13 @@ function App() {
   const [addSsid, setAddSsid] = useState('');
   const [addPassword, setAddPassword] = useState('');
   const [addNetState, setAddNetState] = useState<SubmitState>('idle');
+  // SSID we're currently asking the mirror to switch to. Drives the
+  // "Switching to X…" banner. Cleared when the next state broadcast
+  // confirms the new wifi_ssid (success or fallback) — see the useEffect
+  // below tied to state?.wifi_ssid. The mirror does the switch async
+  // (sub-bus event with a 250ms response-flush yield), and the WS
+  // socket dies mid-switch, so this can take a few seconds to clear.
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
 
   useEffect(() => {
     return () => clientRef.current?.disconnect();
@@ -124,15 +132,32 @@ function App() {
   }, [route, state?.name]);
 
   // Refetch the saved-networks list when the user opens Settings, and
-  // again whenever the device's reported count changes (so adds/removes
-  // from another client also surface here). Failures are non-fatal —
-  // the row UI gracefully shows "couldn't load" if the list is null.
+  // again whenever the device's reported count or active ssid changes
+  // (covers cross-client adds/removes AND the switch case where the
+  // count is unchanged but the active row moved). Failures are
+  // non-fatal — the row UI gracefully shows "couldn't load" if the
+  // list is null.
   useEffect(() => {
     if (route !== 'settings' || conn !== 'open') return;
     clientRef.current?.listWifiNetworks()
-      .then(setSavedNetworks)
+      .then((next) => {
+        setSavedNetworks(next);
+        // If the broadcast confirms our requested switch (or settled
+        // somewhere else after a fallback), clear the "Switching to…"
+        // banner. The new active SSID — whichever one it is — is
+        // authoritative now.
+        if (switchingTo !== null) {
+          const active = next.find((n) => n.is_active);
+          if (active && state?.wifi_ssid === active.ssid) {
+            setSwitchingTo(null);
+          }
+        }
+      })
       .catch((e) => setLastError((e as Error).message));
-  }, [route, conn, state?.wifi_saved_count]);
+    // switchingTo intentionally not in deps — we read it inside the
+    // handler but don't want to re-fire just because the banner is up.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route, conn, state?.wifi_saved_count, state?.wifi_ssid]);
 
   // Drive the post-submit countdown.
   useEffect(() => {
@@ -223,21 +248,32 @@ function App() {
 
   // Switch the active connection to a saved network. Bumps the
   // device-side priority so the SM's scan-and-pick lands on this entry,
-  // even if another saved network is currently connected. The actual
-  // switch is async — broadcast_state arrives once IP_GOT_IP fires (or
-  // the SM falls into BACKOFF after a failed attempt). Refetching the
-  // list immediately keeps the new "is_active" flag accurate via the
-  // broadcast that lands a moment later.
+  // even if another saved network is currently connected.
+  //
+  // The actual switch is async on the device — the SM tears down the
+  // current STA, scans, picks the bumped entry, connects (or falls back
+  // if it's not visible / has bad creds). The WS socket dies mid-switch
+  // and auto-reconnect picks up afterward. Until the new state arrives:
+  //   - Drop is_active locally (per Bill's UX call) so the user sees
+  //     immediate acknowledgement that their tap landed.
+  //   - Show a "Switching to X…" banner.
+  //   - Vibrate briefly for haptic confirmation that the tap registered
+  //     even before any visual update lands.
+  // The useEffect above clears switchingTo once the broadcast confirms
+  // a settled wifi_ssid.
   const connectToNetwork = async (entry: WifiNetwork) => {
     if (!clientRef.current) return;
     setLastError(null);
+    Vibration.vibrate(15);
+    setSwitchingTo(entry.ssid);
+    setSavedNetworks((prev) =>
+      prev?.map((n) => (n.is_active ? { ...n, is_active: false } : n)) ?? prev,
+    );
     try {
       await clientRef.current.connectWifiNetwork(entry.ssid);
-      // The socket usually stays up across the switch (mirror keeps
-      // the same DHCP lease range), but on rare ESP-IDF reschedules
-      // the auto-reconnect loop will replay the WS handshake.
     } catch (e) {
       setLastError((e as Error).message);
+      setSwitchingTo(null);
     }
   };
 
@@ -687,6 +723,14 @@ function App() {
             </Text>
 
             <Text style={styles.label}>Saved networks</Text>
+            {switchingTo !== null && (
+              <View style={styles.switchingBanner}>
+                <Text style={styles.switchingText}>
+                  Switching to {switchingTo}… mirror may go briefly
+                  offline. App will reconnect when it’s back.
+                </Text>
+              </View>
+            )}
             {savedNetworks === null && (
               <Text style={styles.muted}>Loading…</Text>
             )}
@@ -881,6 +925,16 @@ const styles = StyleSheet.create({
   btnOff: { backgroundColor: '#444' },
   btnDanger: { backgroundColor: '#992020' },
   btnSecondary: { backgroundColor: '#1a1924' },
+  switchingBanner: {
+    backgroundColor: '#1a1924',
+    borderLeftColor: '#3214FF',
+    borderLeftWidth: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  switchingText: { color: '#F4EFE6', fontSize: 13, lineHeight: 18 },
   netRow: {
     flexDirection: 'row',
     alignItems: 'center',

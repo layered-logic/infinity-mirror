@@ -65,6 +65,17 @@ ESP_EVENT_DECLARE_BASE(LL_STATE_EVENT_BASE);
 #define LL_EV_WIFI_APPLY_CREDS      0x1005
 
 /*
+ * Switch to a different saved Wi-Fi network. Posted by core/transport/
+ * on receipt of a `connect_wifi_network` JSON op (after bumping the
+ * chosen entry's priority via ll_wifi_bump_priority); consumed by
+ * core/provisioning/ which calls ll_provisioning_request_switch on the
+ * state-bus task — async so the JSON response and broadcast both flush
+ * before the STA disconnect kills the underlying socket. No payload
+ * (the bump on ll_wifi already encodes which entry to favor).
+ */
+#define LL_EV_WIFI_REQUEST_SWITCH   0x1006
+
+/*
  * Payloads for each incoming LL_EV_*. esp_event copies these by value at
  * post time, so callers may pass stack pointers freely. String fields use
  * fixed buffers (not pointers) so payload lifetime is self-contained.
