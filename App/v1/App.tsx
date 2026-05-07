@@ -12,11 +12,24 @@ import {
   View,
 } from 'react-native';
 
-// SafeAreaView from react-native core only applies iOS notch insets — on
-// Android it's a no-op, so the title overlaps the status bar. Manually
-// add padding for the status bar height on Android.
-const ANDROID_STATUS_BAR_PADDING =
-  Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
+// Top-padding fallback for the title bar on Android. The native
+// SafeAreaView (RN core) only handles iOS notches; on Android the
+// status bar gets drawn over by default. Previously we read
+// StatusBar.currentHeight at module-load and applied it as static
+// padding, which broke after cold-start races on Android 15 — the
+// native value can be 0 until the activity has laid out, leaving the
+// title under the status bar with no easy way to tap into Settings.
+//
+// New approach: read currentHeight at render time and floor it at
+// MIN_TOP_PADDING. The floor matches the largest typical Android
+// status bar (Pixel 9 / Android 15 ≈ 28-44dp depending on cutout) so
+// even if the native value comes back stale-zero, the title is
+// guaranteed to land below the system bars.
+const MIN_TOP_PADDING = 32;
+function topPadding(): number {
+  if (Platform.OS !== 'android') return 0;
+  return Math.max(StatusBar.currentHeight ?? 0, MIN_TOP_PADDING);
+}
 
 import { ConnState, MirrorClient } from './src/ws-client';
 import { BRAND_SWATCHES, DeviceState, PatternId, WifiNetwork } from './src/protocol';
@@ -366,7 +379,7 @@ function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0A0F" />
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingTop: 16 + topPadding() }]}>
         <View style={styles.headerBar}>
           <Text style={styles.h1}>
             {route === 'settings' ? 'Settings' : 'LL Mirror'}
@@ -832,7 +845,7 @@ function pillStyle(c: ConnState) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0B0A0F' },
-  body: { padding: 16, gap: 8, paddingBottom: 64, paddingTop: 16 + ANDROID_STATUS_BAR_PADDING },
+  body: { padding: 16, gap: 8, paddingBottom: 64, paddingTop: 16 },
   headerBar: {
     paddingVertical: 4,
     marginBottom: 4,
