@@ -737,8 +737,10 @@ function App() {
             {switchingTo !== null && (
               <View style={styles.switchingBanner}>
                 <Text style={styles.switchingText}>
-                  Switching to {switchingTo}… mirror may go briefly
-                  offline. App will reconnect when it’s back.
+                  Switching to {switchingTo}… if {switchingTo} is a
+                  different network than this phone is on, you’ll need
+                  to switch the phone’s Wi-Fi to match, then tap Find
+                  mirror to reconnect.
                 </Text>
               </View>
             )}
