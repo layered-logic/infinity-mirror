@@ -31,6 +31,42 @@ export interface DeviceState {
   // empty. `name` is user-set via set_state and persists in NVS.
   id?: string;
   name?: string;
+  // Multi-network store size — how many entries are saved in ll_wifi.
+  // Added with LL-046 step 4. The full list lives behind list_wifi_networks
+  // to keep state broadcasts small; this count is enough for the badge on
+  // the Settings page and for clients to know whether a refetch is worth
+  // doing after a notification.
+  wifi_saved_count?: number;
+}
+
+// Multi-network store entry — what list_wifi_networks returns. Passwords
+// never leave the device, so this is read-only. last_used is monotonic
+// device uptime in seconds, used for ordering only (not a wall clock).
+export interface WifiNetwork {
+  ssid: string;
+  is_active: boolean;
+  last_used: number;
+}
+
+export interface AddWifiNetworkPayload {
+  ssid: string;
+  password: string;
+}
+
+export interface AddWifiNetworkResult {
+  ssid: string;
+  inserted: boolean;
+  updated: boolean;
+}
+
+export interface RemoveWifiNetworkPayload {
+  ssid: string;
+}
+
+export interface RemoveWifiNetworkResult {
+  ssid: string;
+  removed: boolean;
+  was_active: boolean;
 }
 
 // GET /api/info response. Lightweight discovery payload — same id+name

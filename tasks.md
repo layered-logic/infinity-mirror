@@ -808,6 +808,8 @@ OTA rollback safety net added during Step 3 (May 7 — out of LL-046's original 
 
 Step 4/6 (wire protocol ops) shipped + OTA-verified May 7. Three new ops in `transport.c`: `list_wifi_networks` (sorted by last_used desc, includes is_active), `add_wifi_network` (insert-or-update, never switches active), `remove_wifi_network` (forget by SSID; proactively disconnects via new `ll_provisioning_drop_active()` if removing the active SSID, the SM picks the next eligible). `DeviceState.wifi_saved_count` added per design-doc §7.5 (count only — full list on demand). add/remove trigger `broadcast_state()` so connected clients refresh. `set_wifi_creds` kept as legacy first-cred entry point per §7.4. Smoke-tested 9 cases on live mirror — insert / update / full / invalid / remove / not_found / wifi_saved_count round-trip all green.
 
+Step 5/6 (RN app Settings UI) shipped May 7. `App/v1/` Settings page replaces the single "Reconfigure Wi-Fi" block with a saved-networks list (rendered from `list_wifi_networks`, active-checkmark + per-row Forget button) and an inline "+ Add a network" form. Forget on the active SSID surfaces a confirm dialog (per design-doc §4.3); non-active forgets silently. `protocol.ts` gained `WifiNetwork` / `Add*` / `Remove*` types + `wifi_saved_count` on DeviceState; `ws-client.ts` gained the matching thin wrappers. List refetches on Settings open and on `wifi_saved_count` broadcasts. Setup-flow form (`provisioning_active=true`) unchanged — still uses `set_wifi_creds` per §8.2. Hardware-on-device verification deferred to Step 6 / cross-network E2E.
+
 ---
 
 <a id="LL-047"></a>

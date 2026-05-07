@@ -19,7 +19,7 @@ const ANDROID_STATUS_BAR_PADDING =
   Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
 import { ConnState, MirrorClient } from './src/ws-client';
-import { BRAND_SWATCHES, DeviceState, PatternId } from './src/protocol';
+import { BRAND_SWATCHES, DeviceState, PatternId, WifiNetwork } from './src/protocol';
 import { FindResult, findMirrors } from './src/find-mirror';
 
 const HOME_URL = 'ws://10.123.210.61/ws';
@@ -70,6 +70,15 @@ function App() {
   // Rename UI — local input buffer + submit state. Shown in Settings.
   const [nameInput, setNameInput] = useState('');
   const [renameState, setRenameState] = useState<SubmitState>('idle');
+  // Multi-network store (LL-046 step 5). `savedNetworks === null` means
+  // "haven't fetched yet"; an empty array means "the device knows it has
+  // none." Both render distinct UI states. The inline add-network form
+  // is gated behind `addingNetwork` so the network list stays compact.
+  const [savedNetworks, setSavedNetworks] = useState<WifiNetwork[] | null>(null);
+  const [addingNetwork, setAddingNetwork] = useState(false);
+  const [addSsid, setAddSsid] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addNetState, setAddNetState] = useState<SubmitState>('idle');
 
   useEffect(() => {
     return () => clientRef.current?.disconnect();
@@ -100,6 +109,17 @@ function App() {
   useEffect(() => {
     if (route === 'settings') setNameInput(state?.name ?? '');
   }, [route, state?.name]);
+
+  // Refetch the saved-networks list when the user opens Settings, and
+  // again whenever the device's reported count changes (so adds/removes
+  // from another client also surface here). Failures are non-fatal —
+  // the row UI gracefully shows "couldn't load" if the list is null.
+  useEffect(() => {
+    if (route !== 'settings' || conn !== 'open') return;
+    clientRef.current?.listWifiNetworks()
+      .then(setSavedNetworks)
+      .catch((e) => setLastError((e as Error).message));
+  }, [route, conn, state?.wifi_saved_count]);
 
   // Drive the post-submit countdown.
   useEffect(() => {
@@ -152,6 +172,69 @@ function App() {
     } catch (e) {
       setSubmitState('idle');
       setLastError((e as Error).message);
+    }
+  };
+
+  // Add a network to the saved-list. Different from submitCreds —
+  // add_wifi_network does NOT switch the active connection (per
+  // multi-network-design §7.2). The mirror keeps its current network;
+  // the SM will pick this one next time it scans and the saved one
+  // happens to be the highest-priority visible match.
+  const submitAddNetwork = async () => {
+    if (!clientRef.current) return;
+    const ssidValid = addSsid.length >= 1 && addSsid.length <= 32;
+    const passwordValid =
+      addPassword.length === 0 ||
+      (addPassword.length >= 8 && addPassword.length <= 64);
+    if (!ssidValid || !passwordValid) return;
+    setLastError(null);
+    setAddNetState('submitting');
+    try {
+      await clientRef.current.addWifiNetwork({
+        ssid: addSsid,
+        password: addPassword,
+      });
+      // Refresh the list immediately — broadcast_state will arrive too,
+      // but the inline refetch keeps the UI from looking stale for a frame.
+      const next = await clientRef.current.listWifiNetworks();
+      setSavedNetworks(next);
+      setAddNetState('idle');
+      setAddingNetwork(false);
+      setAddSsid('');
+      setAddPassword('');
+    } catch (e) {
+      setAddNetState('idle');
+      setLastError((e as Error).message);
+    }
+  };
+
+  // Forget a saved network. Per design-doc §4.3: silent for non-active
+  // entries, confirm dialog when removing the network we're currently
+  // on (because it triggers a disconnect + scan).
+  const forgetNetwork = (entry: WifiNetwork) => {
+    const doForget = async () => {
+      if (!clientRef.current) return;
+      try {
+        await clientRef.current.removeWifiNetwork(entry.ssid);
+        const next = await clientRef.current.listWifiNetworks();
+        setSavedNetworks(next);
+      } catch (e) {
+        setLastError((e as Error).message);
+      }
+    };
+    if (entry.is_active) {
+      Alert.alert(
+        `Forget ${entry.ssid}?`,
+        'The mirror will disconnect from this network. If it can reach another saved network, it’ll switch automatically; otherwise it’ll wait until one is in range.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Forget', style: 'destructive', onPress: doForget },
+        ],
+      );
+    } else {
+      // Non-active networks are forgotten silently — same UX norm as
+      // iOS/macOS for "Remove network" on networks you're not on.
+      doForget();
     }
   };
 
@@ -565,18 +648,116 @@ function App() {
 
             <Text style={styles.subsection}>Wi-Fi</Text>
             <Text style={styles.muted}>
-              Network: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
+              Connected: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
               {'\n'}
               IP: <Text style={styles.mono}>{state.ip ?? '(none)'}</Text>
-              {'\n'}
-              Mode: {state.provisioning_active ? 'setup mode (mirror is its own Wi-Fi)' : (state.wifi_ssid ? 'connected to your Wi-Fi' : 'unknown')}
             </Text>
-            <Pressable
-              onPress={() => { setSsid(''); setPassword(''); setReconfiguringWifi(true); }}
-              style={[styles.btn, styles.btnSecondary]}
-            >
-              <Text style={styles.btnText}>Reconfigure Wi-Fi</Text>
-            </Pressable>
+
+            <Text style={styles.label}>Saved networks</Text>
+            {savedNetworks === null && (
+              <Text style={styles.muted}>Loading…</Text>
+            )}
+            {savedNetworks !== null && savedNetworks.length === 0 && (
+              <Text style={styles.muted}>No saved networks yet.</Text>
+            )}
+            {savedNetworks?.map((n) => (
+              <View key={n.ssid} style={styles.netRow}>
+                <Text style={styles.netCheck}>
+                  {n.is_active ? '✓' : '  '}
+                </Text>
+                <Text style={[styles.netSsid, n.is_active && styles.bold]}>
+                  {n.ssid}
+                </Text>
+                <Pressable
+                  onPress={() => forgetNetwork(n)}
+                  style={[styles.btn, styles.btnSecondary, styles.netForgetBtn]}
+                  // Tap target stays usable but the action is destructive
+                  // for the active entry — the confirm dialog inside
+                  // forgetNetwork is what actually gates the disconnect.
+                >
+                  <Text style={styles.btnText}>Forget</Text>
+                </Pressable>
+              </View>
+            ))}
+
+            {!addingNetwork && savedNetworks !== null && (
+              <Pressable
+                onPress={() => {
+                  setAddSsid('');
+                  setAddPassword('');
+                  setAddNetState('idle');
+                  setAddingNetwork(true);
+                }}
+                style={[styles.btn, styles.btnSecondary]}
+              >
+                <Text style={styles.btnText}>+ Add a network</Text>
+              </Pressable>
+            )}
+
+            {addingNetwork && (
+              <View style={styles.addNetForm}>
+                <Text style={styles.label}>SSID</Text>
+                <TextInput
+                  value={addSsid}
+                  onChangeText={setAddSsid}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.input}
+                  placeholder="HomeWiFi"
+                  placeholderTextColor="#555"
+                />
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  value={addPassword}
+                  onChangeText={setAddPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  style={styles.input}
+                  placeholder="(empty for open networks)"
+                  placeholderTextColor="#555"
+                />
+                <View style={styles.row}>
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>
+                      {showPassword ? 'Hide password' : 'Show password'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setAddingNetwork(false);
+                      setAddSsid('');
+                      setAddPassword('');
+                    }}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={submitAddNetwork}
+                    disabled={addNetState !== 'idle'}
+                    style={[
+                      styles.btn,
+                      addNetState !== 'idle' && styles.btnDisabled,
+                    ]}
+                  >
+                    <Text style={styles.btnText}>
+                      {addNetState === 'idle' && 'Save'}
+                      {addNetState === 'submitting' && 'Saving…'}
+                      {addNetState === 'submitted' && 'Saved ✓'}
+                    </Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.muted}>
+                  Adding a network saves it for later — the mirror won’t
+                  switch to it until it’s in range and the current network
+                  isn’t.
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.subsection}>Firmware update</Text>
             <Text style={styles.label}>OTA binary URL</Text>
@@ -659,6 +840,25 @@ const styles = StyleSheet.create({
   btnOff: { backgroundColor: '#444' },
   btnDanger: { backgroundColor: '#992020' },
   btnSecondary: { backgroundColor: '#1a1924' },
+  netRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#15141d',
+    borderRadius: 6,
+    marginTop: 4,
+    gap: 8,
+  },
+  netCheck: {
+    color: '#3214FF',
+    fontSize: 16,
+    width: 16,
+    textAlign: 'center',
+  },
+  netSsid: { color: '#F4EFE6', fontSize: 14, flex: 1 },
+  netForgetBtn: { paddingVertical: 6, paddingHorizontal: 10 },
+  addNetForm: { marginTop: 8, gap: 4 },
   pill: {
     color: '#0B0A0F',
     paddingVertical: 4,
