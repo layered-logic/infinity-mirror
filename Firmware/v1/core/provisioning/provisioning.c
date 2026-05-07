@@ -48,6 +48,7 @@
 #include "wifi_provisioning/manager.h"
 #include "wifi_provisioning/scheme_softap.h"
 
+#include "ll_wifi.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
 
@@ -86,8 +87,10 @@ static bool g_prov_active;
 static uint8_t g_retry_count;
 static bool g_station_started;
 static bool g_last_posted_connected;
-static char g_sta_ssid[33];   /* current STA network SSID, empty when not on STA */
-static char g_sta_ip[16];     /* current STA IPv4 dotted-quad, empty when not on STA */
+static char g_sta_ssid[33];      /* current STA network SSID, empty when not on STA */
+static char g_sta_ip[16];        /* current STA IPv4 dotted-quad, empty when not on STA */
+static char g_pending_ssid[33];  /* ssid being applied via LL_EV_WIFI_APPLY_CREDS;
+                                    cleared on STA up, removed from ll_wifi on fallback */
 
 #define LL_APPLY_FALLBACK_US  ((int64_t)15 * 1000 * 1000)  /* 15s STA-join window before falling back */
 
@@ -97,6 +100,93 @@ static void build_ap_ssid(char *out, size_t out_len)
     esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
     snprintf(out, out_len, LL_PROV_SSID_PREFIX "%02X%02X%02X",
              mac[3], mac[4], mac[5]);
+}
+
+/* ---- ll_wifi bridge helpers ---------------------------------------------- *
+ * Step 2 of LL-046: provisioning now drives STA from the ll_wifi store
+ * instead of esp_wifi's saved cred. ll_wifi is the source of truth;
+ * esp_wifi_set_storage(WIFI_STORAGE_RAM) ensures we don't double-write.
+ */
+
+static int find_idx_by_ssid(const char *ssid)
+{
+    if (ssid == NULL) return -1;
+    ll_wifi_list_t snapshot;
+    ll_wifi_get_list(&snapshot);
+    for (uint8_t i = 0; i < snapshot.count; i++) {
+        if (strncmp(snapshot.entries[i].ssid, ssid, LL_WIFI_SSID_MAX) == 0) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+
+/* Push entries[idx]'s creds into esp_wifi as the STA config. Caller is
+ * expected to call esp_wifi_set_mode(STA) and esp_wifi_start() around it. */
+static esp_err_t apply_entry_to_esp_wifi(uint8_t idx)
+{
+    ll_wifi_list_t snapshot;
+    ll_wifi_get_list(&snapshot);
+    if (idx >= snapshot.count) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    wifi_config_t scfg = {0};
+    strncpy((char *)scfg.sta.ssid,
+            snapshot.entries[idx].ssid, sizeof(scfg.sta.ssid) - 1);
+    strncpy((char *)scfg.sta.password,
+            snapshot.entries[idx].password, sizeof(scfg.sta.password) - 1);
+    return esp_wifi_set_config(WIFI_IF_STA, &scfg);
+}
+
+/* Pick the entry to attempt at boot. Prefer the previously-active one
+ * (that's the network the device was on when it was last powered down,
+ * the most natural reconnect target); fall back to "highest last_used"
+ * for the cold-start case. Returns -1 only if the list is empty.
+ *
+ * Step 3 will replace this with the SCANNING → PICKING → BACKOFF state
+ * machine that scans first and picks based on visibility. */
+static int pick_boot_idx(void)
+{
+    uint8_t a = ll_wifi_get_active_idx();
+    if (a != LL_WIFI_ACTIVE_NONE) {
+        return (int)a;
+    }
+    ll_wifi_list_t snapshot;
+    ll_wifi_get_list(&snapshot);
+    return ll_wifi_list_pick_next(&snapshot, 0);
+}
+
+/* If ll_wifi is empty but esp_wifi has a saved STA cred from the legacy
+ * single-network era, copy it over (§5.3 of multi-network-design.md).
+ * Run AFTER esp_wifi_init (so esp_wifi has loaded the saved cred from
+ * NVS) and AFTER ll_wifi_init. */
+static void migrate_legacy_cred_if_needed(void)
+{
+    if (ll_wifi_count() != 0) {
+        return;
+    }
+
+    wifi_config_t cur = {0};
+    if (esp_wifi_get_config(WIFI_IF_STA, &cur) != ESP_OK) {
+        return;
+    }
+    if (cur.sta.ssid[0] == '\0') {
+        return;  /* never provisioned in the legacy era either */
+    }
+
+    char ssid[33] = {0};
+    char password[65] = {0};
+    strncpy(ssid, (const char *)cur.sta.ssid, sizeof(ssid) - 1);
+    strncpy(password, (const char *)cur.sta.password, sizeof(password) - 1);
+
+    esp_err_t err = ll_wifi_migrate_from_esp_wifi(ssid, password);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "migration: legacy esp_wifi cred (\"%s\") → ll_wifi[0]",
+                 ssid);
+    } else {
+        ESP_LOGW(TAG, "migration failed: %s", esp_err_to_name(err));
+    }
 }
 
 static void post_wifi_disconnected(uint8_t reason)
@@ -134,6 +224,21 @@ static void post_wifi_connected(const esp_netif_ip_info_t *ip_info)
      * credentials worked. esp_timer_stop is safe on a not-running
      * timer (returns ESP_ERR_INVALID_STATE which we ignore). */
     esp_timer_stop(g_apply_fallback_timer);
+
+    /* Stamp ll_wifi: this entry is now the active one, last_used = now.
+     * Used by the boot-time pick_boot_idx() and (future Step 3) the
+     * scan-and-pick "highest last_used wins" logic. */
+    int idx = find_idx_by_ssid(payload.ssid);
+    if (idx >= 0) {
+        ll_wifi_set_active((uint8_t)idx, esp_timer_get_time());
+    } else {
+        /* Got an IP on a network not in ll_wifi — should not happen
+         * since we always apply via ll_wifi-driven set_config. Don't
+         * crash; just log and let the connection live untracked. */
+        ESP_LOGW(TAG, "connected to \"%s\" but it is not in ll_wifi",
+                 payload.ssid);
+    }
+    g_pending_ssid[0] = '\0';
 
     g_last_posted_connected = true;
     esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
@@ -291,11 +396,18 @@ static void on_factory_reset(void *arg, esp_event_base_t base,
 
     ESP_LOGW(TAG, "factory reset - wiping Wi-Fi credentials");
     esp_wifi_disconnect();
-    /* esp_wifi_restore() clears the saved sta config in NVS. */
-    esp_err_t err = esp_wifi_restore();
+    /* ll_wifi is the source of truth — wipe it. esp_wifi_restore on the
+     * legacy NVS namespace is belt-and-suspenders for devices that were
+     * provisioned in the single-cred era; harmless once storage is RAM. */
+    esp_err_t err = ll_wifi_erase_all();
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "ll_wifi_erase_all: %s", esp_err_to_name(err));
+    }
+    err = esp_wifi_restore();
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "esp_wifi_restore: %s", esp_err_to_name(err));
     }
+    g_pending_ssid[0] = '\0';
     post_wifi_disconnected(0);
 }
 
@@ -305,16 +417,38 @@ static void on_factory_reset(void *arg, esp_event_base_t base,
  * runs on the state-bus task, so the response has time to flush before
  * the underlying SoftAP socket dies.
  *
- * Storage = FLASH so creds survive reboot — the dev hardcoded-creds
- * spike used WIFI_STORAGE_RAM intentionally to skip this. In production
- * this is the only place creds enter NVS, since wifi_prov_mgr's
- * protocomm path is not driven for the SoftAP scheme in V1.
+ * As of LL-046 Step 2: ll_wifi is the source of truth. We persist via
+ * ll_wifi_add (insert-or-update by SSID), then push that entry's creds
+ * into esp_wifi as the active STA config. esp_wifi storage is RAM —
+ * set in ll_provisioning_init — so set_config doesn't double-write.
  */
 static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
                                 int32_t id, void *data)
 {
     (void)arg; (void)base; (void)id;
     const ll_ev_wifi_apply_creds_payload_t *p = data;
+
+    /* Persist to ll_wifi first — even if the rest of this handler
+     * fails, the cred is saved and a reboot will re-attempt at boot.
+     * Insert-or-update; on full-list, surface the error and bail. The
+     * webapp doesn't yet handle WIFI_LIST_FULL gracefully (Step 4 of
+     * LL-046 introduces an explicit `add_wifi_network` op with proper
+     * error reporting on the wire). */
+    ll_wifi_add_result_t add_r = ll_wifi_add(p->ssid, p->password);
+    if (add_r == LL_WIFI_ADD_ERR_FULL) {
+        ESP_LOGE(TAG, "ll_wifi list full — cannot add \"%s\"", p->ssid);
+        return;
+    }
+    if (add_r == LL_WIFI_ADD_ERR_INVALID) {
+        ESP_LOGE(TAG, "ll_wifi rejected \"%s\" (invalid ssid/password)",
+                 p->ssid);
+        return;
+    }
+
+    /* Track which ssid is in flight so the apply-creds fallback can
+     * remove it from ll_wifi if STA never comes up within the window. */
+    strncpy(g_pending_ssid, p->ssid, sizeof(g_pending_ssid) - 1);
+    g_pending_ssid[sizeof(g_pending_ssid) - 1] = '\0';
 
     /* Brief yield so the httpd task gets to flush the JSON ok=true
      * response before we tear down the SoftAP underneath it. Without
@@ -325,14 +459,9 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
      * latency on the SoftAP is single-digit ms. */
     vTaskDelay(pdMS_TO_TICKS(250));
 
-    ESP_LOGI(TAG, "applying creds: ssid=\"%s\" pw_len=%u",
-             p->ssid, (unsigned)strlen(p->password));
-
-    esp_err_t err = esp_wifi_set_storage(WIFI_STORAGE_FLASH);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "set_storage: %s", esp_err_to_name(err));
-        return;
-    }
+    ESP_LOGI(TAG, "applying creds: ssid=\"%s\" pw_len=%u (%s)",
+             p->ssid, (unsigned)strlen(p->password),
+             add_r == LL_WIFI_ADD_OK_INSERTED ? "new" : "updated");
 
     /* Tear down whatever wifi mode we're currently in (SoftAP, almost
      * always) before switching to STA. esp_wifi_stop closes the AP and
@@ -341,18 +470,21 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
      * closed" and fall into reconnect-with-backoff. */
     esp_wifi_stop();
 
-    err = esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_STA);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "set_mode STA: %s", esp_err_to_name(err));
         return;
     }
 
-    wifi_config_t scfg = {0};
-    strncpy((char *)scfg.sta.ssid,     p->ssid,     sizeof(scfg.sta.ssid) - 1);
-    strncpy((char *)scfg.sta.password, p->password, sizeof(scfg.sta.password) - 1);
-    err = esp_wifi_set_config(WIFI_IF_STA, &scfg);
+    /* Look up the entry we just added/updated and push it into esp_wifi. */
+    int idx = find_idx_by_ssid(p->ssid);
+    if (idx < 0) {
+        ESP_LOGE(TAG, "post-add lookup failed for \"%s\"", p->ssid);
+        return;
+    }
+    err = apply_entry_to_esp_wifi((uint8_t)idx);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "set_config STA: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "apply_entry_to_esp_wifi: %s", esp_err_to_name(err));
         return;
     }
 
@@ -365,9 +497,10 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
     g_retry_count = 0;
 
     /* Arm the fallback timer. If STA hasn't connected by the time it
-     * fires, the bogus creds get wiped and the SoftAP comes back up so
-     * the user can retry — protecting against typo'd SSIDs and wrong
-     * passwords. post_wifi_connected() cancels the timer on success. */
+     * fires, the new ll_wifi entry gets removed and the SoftAP comes
+     * back up so the user can retry — protecting against typo'd SSIDs
+     * and wrong passwords. post_wifi_connected() cancels the timer on
+     * success. */
     esp_timer_start_once(g_apply_fallback_timer, LL_APPLY_FALLBACK_US);
 
     /* WIFI_EVENT_STA_START → on_wifi_event → esp_wifi_connect(). On
@@ -486,8 +619,9 @@ static esp_err_t bring_up_softap_runtime(void)
 
 /* Cred-apply fallback: the STA join didn't complete within the window.
  * Bogus SSID, wrong password, network out of range — same fix applies:
- * wipe the bad creds from NVS so they don't persist, and bring the
- * SoftAP back up so the user can retry from /setup.
+ * remove the just-added entry from ll_wifi so we don't auto-retry it on
+ * the next boot, and bring the SoftAP back up so the user can re-enter
+ * fresh creds from /setup.
  *
  * Without this, a single typo strands the device in failing-STA mode
  * forever (the existing on_wifi_event retry loop spins indefinitely
@@ -500,9 +634,23 @@ static void apply_creds_fallback_cb(void *arg)
                   "returning to SoftAP for retry",
              (int)(LL_APPLY_FALLBACK_US / 1000000));
 
+    /* Remove the failed entry from ll_wifi (source of truth). */
+    if (g_pending_ssid[0] != '\0') {
+        ll_wifi_remove_result_t r = ll_wifi_remove(g_pending_ssid);
+        if (r == LL_WIFI_REMOVE_OK) {
+            ESP_LOGW(TAG, "fallback: removed \"%s\" from ll_wifi",
+                     g_pending_ssid);
+        }
+        g_pending_ssid[0] = '\0';
+    }
+
     esp_wifi_disconnect();
     esp_wifi_stop();
-    esp_wifi_restore();   /* wipes saved sta config from NVS */
+    /* esp_wifi_restore() is largely vestigial post Step 2 (storage is
+     * RAM, ll_wifi is the source of truth) but kept as belt-and-
+     * suspenders for any cred that legacy code paths may have written
+     * before the migration. */
+    esp_wifi_restore();
 
     g_station_started = false;
     g_last_posted_connected = false;
@@ -568,32 +716,47 @@ esp_err_t ll_provisioning_init(void)
     err = esp_timer_create(&fb_args, &g_apply_fallback_timer);
     if (err != ESP_OK) return err;
 
-    /* Check saved creds. Init prov mgr just long enough to query, then
-     * deinit unless we're actively provisioning — keeps RAM low during
-     * normal operation. */
-    wifi_prov_mgr_config_t qcfg = {
-        .scheme = wifi_prov_scheme_softap,
-        .scheme_event_handler = WIFI_PROV_EVENT_HANDLER_NONE,
-    };
-    err = wifi_prov_mgr_init(qcfg);
+    /* Multi-network store: load saved networks, migrate any legacy
+     * single-cred from esp_wifi's NVS namespace, then take ownership
+     * of the credential pipeline. After this, ll_wifi is the source
+     * of truth — set storage to RAM so subsequent set_config calls
+     * don't keep writing back into esp_wifi's NVS. */
+    err = ll_wifi_init();
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "wifi_prov_mgr_init (query): %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "ll_wifi_init: %s", esp_err_to_name(err));
         return err;
     }
+    migrate_legacy_cred_if_needed();
+    err = esp_wifi_set_storage(WIFI_STORAGE_RAM);
+    if (err != ESP_OK) {
+        /* Non-fatal: storage stays at default FLASH, which produces a
+         * harmless duplicate cache in esp_wifi's NVS. ll_wifi remains
+         * authoritative on read. */
+        ESP_LOGW(TAG, "set_storage RAM: %s — continuing with default",
+                 esp_err_to_name(err));
+    }
 
-    bool provisioned = false;
-    wifi_prov_mgr_is_provisioned(&provisioned);
-    wifi_prov_mgr_deinit();
-
-    if (provisioned) {
-        ESP_LOGI(TAG, "creds present — starting station");
+    if (ll_wifi_count() > 0) {
+        int idx = pick_boot_idx();
+        if (idx < 0) {
+            /* count > 0 but pick failed — should not happen. Fall back
+             * to entry 0 rather than dropping into provisioning. */
+            idx = 0;
+        }
+        ESP_LOGI(TAG, "ll_wifi has %u entries — starting STA on idx=%d",
+                 (unsigned)ll_wifi_count(), idx);
         err = esp_wifi_set_mode(WIFI_MODE_STA);
         if (err != ESP_OK) return err;
+        err = apply_entry_to_esp_wifi((uint8_t)idx);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "boot apply_entry: %s", esp_err_to_name(err));
+            return err;
+        }
         err = esp_wifi_start();
         if (err != ESP_OK) return err;
         g_station_started = true;
     } else {
-        ESP_LOGI(TAG, "no creds — radios dark (awaiting LL_EV_PROVISION_START)");
+        ESP_LOGI(TAG, "ll_wifi empty — radios dark (awaiting LL_EV_PROVISION_START)");
 #if LL_SOFTAP_PROVISIONING
         err = init_softap();
         if (err != ESP_OK) {

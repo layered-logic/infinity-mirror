@@ -23,6 +23,7 @@ void suite_cycle_color(void);
 void suite_cycle_pattern(void);
 void suite_cycle_brightness(void);
 void suite_led_driver_encode(void);
+void suite_ll_wifi_logic(void);
 void suite_nvs_logic(void);
 void suite_patterns(void);
 void suite_cue(void);
@@ -48,6 +49,9 @@ int main(void)
 
     printf("\n[led_driver encode]\n");
     suite_led_driver_encode();
+
+    printf("\n[ll_wifi logic]\n");
+    suite_ll_wifi_logic();
 
     printf("\n[nvs logic]\n");
     suite_nvs_logic();

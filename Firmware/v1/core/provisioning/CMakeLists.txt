@@ -8,6 +8,7 @@ idf_component_register(
         esp_netif
         esp_timer
         esp_wifi
+        ll_wifi
         nvs_flash
         state_bus
         wifi_provisioning

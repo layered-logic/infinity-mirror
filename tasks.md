@@ -2,7 +2,7 @@
 title: Task Registry
 type: task-registry
 next_id: LL-073
-updated: 2026-05-06
+updated: 2026-05-07
 ---
 
 # Task Registry
@@ -792,11 +792,15 @@ sprint_target: post-quarter
 ### [ ] LL-046 — Multi-network firmware implementation
 
 sprint: 6 | priority: high | deadline: 2026-05-09
-added: 2026-05-01
-artifacts: —
+added: 2026-05-01 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07
+artifacts: [Firmware/v1/core/ll_wifi/](Firmware/v1/core/ll_wifi/) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c)
 dependencies: LL-041
 
 **Notes:** Implements the spec locked in LL-041 (multi-network design doc). NVS schema bump for N saved networks (N_MAX=4), scan-and-pick reconnect, protocol additions (`list/add/remove_wifi_network`), `set_wifi_creds` retained as deprecated shim through V2 lifetime. App UX: settings page network list with last-used-wins ordering, proactive disconnect on remove with confirm dialog. ~6 days estimated implementation. Proposed Week 6 engineering replacement for the no-longer-real PCB-arrival item.
+
+Step 1/6 (NVS layer + migration shim) shipped May 7: new `core/ll_wifi/` module with `wifi_entry_t`, list ops (find/add/remove/pick_next/sanitize), per-entry NVS persistence, mutex-guarded singleton, and a separate `ll_wifi_migrate_from_esp_wifi(ssid, password)` hook so the dependency direction stays one-way (provisioning depends on ll_wifi, not vice versa). 27 host tests cover sizing, find, add (insert/update/full/invalid), remove (compaction + active_idx fixup), pick_next priority + recently-failed mask + tiebreak, and sanitize.
+
+Step 2/6 (provisioning refactor) shipped May 7: `provisioning.c` now drives STA from `ll_wifi`. Boot-time legacy cred migration via `migrate_legacy_cred_if_needed()`; `esp_wifi_set_storage(WIFI_STORAGE_RAM)` so `esp_wifi`'s NVS becomes vestigial; new helpers `find_idx_by_ssid` / `apply_entry_to_esp_wifi` / `pick_boot_idx`; `on_wifi_apply_creds` writes to `ll_wifi` first then drives the SoftAP→STA handoff; apply-creds fallback removes the failed entry from `ll_wifi` (was previously `esp_wifi_restore` only); `on_factory_reset` calls `ll_wifi_erase_all` alongside `esp_wifi_restore`; `post_wifi_connected` stamps `ll_wifi_set_active(idx, last_used_us)`. Step 2 still uses today's "retry same network" loop on STA disconnect — the SCANNING / PICKING / BACKOFF state machine lands in Step 3. Build-clean for esp32c3 / c3_devkit / standard variant (1052 ninja steps green; binary 0x1255a0, 8% headroom). **OTA-flashed and verified on live mirror b2332c at 192.168.5.229** (May 7): `fw_version` flipped `ip-state-v3` → `4c1f888-dirty`, STA auto-reconnected to "IoT" at the same DHCP-leased IP without user intervention, all 7 `ll_settings` fields preserved across reboot, fresh WS `get_state` cross-checked transport (`provisioning_active=false`, `wifi_ssid="IoT"`). **Migration shim is real-hardware-confirmed** — device booted with empty `ll_wifi`, read its legacy STA cred from `nvs.net80211` via `esp_wifi_get_config`, copied it into `ll_wifi[0]` per design-doc §5.3, and connected.
 
 ---
 
@@ -1097,6 +1101,12 @@ artifacts: [docs/firmware-architecture-scoping.md](docs/firmware-architecture-sc
 dependencies: LL-038
 
 **Notes:** Production-grade OTA: signed binaries (ECDSA P-256, key in offline password manager), self-hosted on `ota.layeredlogic.cc` (Cloudflare Worker + R2), `CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK` (eFuse burn — out of scope this sprint per demo-build hardware safety rules), auto-revert on health-check failure within 60s, staged rollout via device-ID hash buckets. Replaces the throwaway dev-test path from LL-038. Post-demo workstream — eFuse burns are irreversible, only safe to enable after secure-boot strategy is fully locked.
+
+**Architecture decisions added 2026-05-07** (in conversation while OTA-flashing LL-046 Step 2):
+- **Pull-based, manifest-then-binary.** Device polls a small JSON manifest at `ota.layeredlogic.cc` carrying `{version, url, sha256, signature}`. Only fetches the (~1.2 MB) binary if `version` is newer than what it's running. Manifest is ~200 bytes; binaries can be GitHub Releases-hosted with the manifest pointing at them — keeps storage/bandwidth on GitHub while keeping the routing/staged-rollout/observability surface on Bill's domain.
+- **Poll interval: 48 hours, configurable via NVS-backed setting.** Bill's expected update cadence is "rarely urgent," so 48h gives a reasonable freshness floor without thrashing the device. Surface as a hidden/dev setting (e.g., `ota_poll_interval_h`) so it can be lowered for staged rollout investigations or raised for power-sensitive deployments without a firmware push.
+- **UX is prompt-and-confirm via the LL app.** App surfaces "update available" when `current < manifest.version`; user taps "install" to actually trigger the download + reboot. Auto-install would mean unexpected mid-use reboots — explicitly avoided per consumer-hardware UX norms.
+- **Cohort routing via Cloudflare Worker.** Worker hashes `device_id` from the request + maps to a rollout bucket (e.g., 5% canary → 50% → 100%). Bad release stays contained until the canary catches it.
 
 ---
 
