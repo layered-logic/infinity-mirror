@@ -856,14 +856,14 @@ dependencies: LL-032, LL-043
 ---
 
 <a id="LL-050"></a>
-### [ ] LL-050 — Supply chain map
+### [x] LL-050 — Supply chain map
 
 sprint: 6 | priority: high | deadline: 2026-05-09
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resolved: 2026-05-07
+artifacts: [docs/supply-chain-map.md](docs/supply-chain-map.md)
 dependencies: LL-010, LL-011
 
-**Notes:** Every component, lead time, cost, backup supplier. Per Week 6 plan. Builds on BOM (LL-010) and JLCPCB analysis (LL-011); adds supplier diversity and lead-time risk exposure. Required input for Milestone 2.
+**Notes:** Every component, lead time, cost, backup supplier. Per Week 6 plan. Builds on BOM (LL-010) and JLCPCB analysis (LL-011); adds supplier diversity and lead-time risk exposure. Required input for Milestone 2. Resolved 2026-05-07: 13-line component table with primary + backup cascade per row, executive risk summary (tariff = high, lead time = medium-but-graceful, single-source = low), and 3 open actions (find die-cut packaging vendor, spec LED-holder/back-reflector parts, finalize PSU spec to USB-C PD). Standard sourcing cascades documented: Amazon → AliExpress → Temu → factory direct for commodity items; JLCPCB → PCBWay → OSH Park for PCB fab.
 
 ---
 
