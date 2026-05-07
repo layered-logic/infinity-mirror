@@ -1066,6 +1066,41 @@ void ll_provisioning_drop_active(void)
      * posts LL_EV_WIFI_DISCONNECTED, transitions into SCANNING. */
 }
 
+void ll_provisioning_request_switch(void)
+{
+    ESP_LOGI(TAG, "request_switch from sm=%s", sm_state_name(g_sm_state));
+    switch (g_sm_state) {
+    case LL_WIFI_SM_ONLINE:
+        /* Disconnect; STA_DISCONNECTED handler kicks SCANNING. */
+        esp_wifi_disconnect();
+        break;
+    case LL_WIFI_SM_CONNECTING:
+        /* Mid-attempt — abort. The mask-bit set ensures the failed
+         * entry isn't immediately re-picked; the bumped priority on
+         * the user's chosen entry takes precedence. */
+        if (g_sm_current_attempt >= 0) {
+            g_sm_recently_failed_mask |=
+                (uint8_t)(1u << g_sm_current_attempt);
+            g_sm_current_attempt = -1;
+        }
+        esp_wifi_disconnect();
+        break;
+    case LL_WIFI_SM_BACKOFF:
+        /* Don't make the user wait for the backoff window to elapse —
+         * fresh scan now. */
+        sm_enter_scanning();
+        break;
+    case LL_WIFI_SM_SCANNING:
+        /* In-flight scan will produce SCAN_DONE; pick_next will use
+         * the bumped priority. Nothing to do. */
+        break;
+    case LL_WIFI_SM_IDLE:
+        /* SoftAP / no saved networks. Caller should have guarded by
+         * checking ll_wifi_count() > 0 before invoking. */
+        break;
+    }
+}
+
 esp_err_t ll_provisioning_kick_softap(void)
 {
 #if LL_SOFTAP_PROVISIONING

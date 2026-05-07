@@ -473,6 +473,62 @@ static void op_remove_wifi_network(cJSON *resp, const cJSON *payload)
     broadcast_state();
 }
 
+/* connect_wifi_network: switch the active STA to a user-chosen saved
+ * network. Bumps the chosen entry's last_used_us so the SM's
+ * "highest last_used wins" pick logic favors it on the next scan, then
+ * forces a fresh scan-and-pick cycle (regardless of current SM state).
+ *
+ * Useful when the device is currently on a different saved network,
+ * stuck in BACKOFF after a bad-cred attempt, or the user explicitly
+ * wants to switch (multi-location use). Returns synchronously — actual
+ * connect is async; clients observe via the next state broadcast. If
+ * the chosen network isn't visible / has bad creds, the SM falls back
+ * to the next eligible saved network (or BACKOFF if none).
+ */
+static void op_connect_wifi_network(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "connect_wifi_network requires an object payload");
+        return;
+    }
+    const char *ssid = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "ssid"));
+    if (!ssid || !ssid[0]) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "connect_wifi_network requires a non-empty `ssid`");
+        return;
+    }
+
+    if (!ll_wifi_bump_priority(ssid, esp_timer_get_time())) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "not_found");
+        cJSON_AddStringToObject(err, "message",
+            "no saved network with that ssid");
+        return;
+    }
+
+    ll_provisioning_request_switch();
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON *result = cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddStringToObject(result, "ssid", ssid);
+    cJSON_AddBoolToObject(result, "switching", true);
+    cJSON_AddNullToObject(resp, "error");
+    /* The list ordering changed (last_used_us updated); refresh
+     * settings pages on connected clients. */
+    broadcast_state();
+}
+
 /* factory_reset: replaces the UI mockup from sub-1 with a real wire op.
  * Posts LL_EV_FACTORY_RESET via ll_state_bus_post; downstream handlers
  * (state_bus → reset settings, nvs → erase namespace, provisioning →
@@ -619,6 +675,8 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         op_add_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else if (op && strcmp(op, "remove_wifi_network") == 0) {
         op_remove_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "connect_wifi_network") == 0) {
+        op_connect_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else if (op && strcmp(op, "factory_reset") == 0) {
         op_factory_reset(resp);
     } else if (op && strcmp(op, "start_ota") == 0) {

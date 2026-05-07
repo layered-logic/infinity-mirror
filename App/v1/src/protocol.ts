@@ -69,6 +69,11 @@ export interface RemoveWifiNetworkResult {
   was_active: boolean;
 }
 
+export interface ConnectWifiNetworkResult {
+  ssid: string;
+  switching: boolean;
+}
+
 // GET /api/info response. Lightweight discovery payload — same id+name
 // used in DeviceState, but reachable in one HTTP roundtrip without
 // opening a WebSocket. Used by the RN app's findMirrors subnet scan.

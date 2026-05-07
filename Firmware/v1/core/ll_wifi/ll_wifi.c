@@ -355,6 +355,27 @@ ll_wifi_remove_result_t ll_wifi_remove(const char *ssid)
     return r;
 }
 
+bool ll_wifi_bump_priority(const char *ssid, int64_t last_used_us)
+{
+    if (!g_inited || ssid == NULL) {
+        return false;
+    }
+    bool ok = false;
+    if (xSemaphoreTake(g_lock, portMAX_DELAY) == pdTRUE) {
+        int idx = ll_wifi_list_find(&g_list, ssid);
+        if (idx >= 0) {
+            g_list.entries[idx].last_used_us = last_used_us;
+            esp_err_t err = persist_locked(g_list.count);
+            if (err != ESP_OK) {
+                ESP_LOGW(TAG, "bump_priority persist: %s", esp_err_to_name(err));
+            }
+            ok = true;
+        }
+        xSemaphoreGive(g_lock);
+    }
+    return ok;
+}
+
 esp_err_t ll_wifi_set_active(uint8_t idx, int64_t last_used_us)
 {
     if (!g_inited) {

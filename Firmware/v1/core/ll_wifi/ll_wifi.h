@@ -96,6 +96,19 @@ ll_wifi_remove_result_t ll_wifi_remove(const char *ssid);
 esp_err_t ll_wifi_set_active(uint8_t idx, int64_t last_used_us);
 
 /*
+ * Bump a saved entry's priority by stamping its last_used_us. Does NOT
+ * touch active_idx — that's reserved for ll_wifi_set_active, which the
+ * provisioning module calls only on a successful IP_GOT_IP. Persists.
+ *
+ * Used by the connect_wifi_network wire op to bias the SM toward a
+ * user-chosen network on the next scan-and-pick cycle, without lying
+ * about which network is currently connected.
+ *
+ * Returns true if the ssid was found and updated; false otherwise.
+ */
+bool ll_wifi_bump_priority(const char *ssid, int64_t last_used_us);
+
+/*
  * Clear the active flag (e.g., on STA disconnect). Persists. Does not
  * touch any entry's last_used_us.
  */

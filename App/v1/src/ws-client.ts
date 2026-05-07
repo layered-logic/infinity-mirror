@@ -5,6 +5,7 @@
 import {
   AddWifiNetworkPayload,
   AddWifiNetworkResult,
+  ConnectWifiNetworkResult,
   DeviceState,
   InboundFrame,
   RemoveWifiNetworkResult,
@@ -179,6 +180,20 @@ export class MirrorClient {
   removeWifiNetwork(ssid: string): Promise<RemoveWifiNetworkResult> {
     return this.send<{ ssid: string }, RemoveWifiNetworkResult>('remove_wifi_network', { ssid }).then((r) => {
       if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'remove_wifi_network failed');
+      return r.result;
+    });
+  }
+
+  // Switch the active connection to a user-chosen saved network. Bumps
+  // the entry's priority and forces a fresh scan-and-pick on the device.
+  // Resolves synchronously with `switching: true` — the actual connect
+  // happens async; observe the result via the next state broadcast.
+  // The socket may briefly close mid-switch (the device's STA tear-down
+  // kicks pending HTTP server connections); the auto-reconnect loop
+  // brings it back once the new network has an IP.
+  connectWifiNetwork(ssid: string): Promise<ConnectWifiNetworkResult> {
+    return this.send<{ ssid: string }, ConnectWifiNetworkResult>('connect_wifi_network', { ssid }).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'connect_wifi_network failed');
       return r.result;
     });
   }

@@ -208,6 +208,26 @@ function App() {
     }
   };
 
+  // Switch the active connection to a saved network. Bumps the
+  // device-side priority so the SM's scan-and-pick lands on this entry,
+  // even if another saved network is currently connected. The actual
+  // switch is async — broadcast_state arrives once IP_GOT_IP fires (or
+  // the SM falls into BACKOFF after a failed attempt). Refetching the
+  // list immediately keeps the new "is_active" flag accurate via the
+  // broadcast that lands a moment later.
+  const connectToNetwork = async (entry: WifiNetwork) => {
+    if (!clientRef.current) return;
+    setLastError(null);
+    try {
+      await clientRef.current.connectWifiNetwork(entry.ssid);
+      // The socket usually stays up across the switch (mirror keeps
+      // the same DHCP lease range), but on rare ESP-IDF reschedules
+      // the auto-reconnect loop will replay the WS handshake.
+    } catch (e) {
+      setLastError((e as Error).message);
+    }
+  };
+
   // Forget a saved network. Per design-doc §4.3: silent for non-active
   // entries, confirm dialog when removing the network we're currently
   // on (because it triggers a disconnect + scan).
@@ -668,6 +688,14 @@ function App() {
                 <Text style={[styles.netSsid, n.is_active && styles.bold]}>
                   {n.ssid}
                 </Text>
+                {!n.is_active && (
+                  <Pressable
+                    onPress={() => connectToNetwork(n)}
+                    style={[styles.btn, styles.btnSecondary, styles.netForgetBtn]}
+                  >
+                    <Text style={styles.btnText}>Connect</Text>
+                  </Pressable>
+                )}
                 <Pressable
                   onPress={() => forgetNetwork(n)}
                   style={[styles.btn, styles.btnSecondary, styles.netForgetBtn]}

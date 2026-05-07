@@ -83,6 +83,21 @@ const char *ll_provisioning_get_sta_ip(void);
 void ll_provisioning_drop_active(void);
 
 /*
+ * Force a fresh scan-and-pick cycle now. Used by transport's
+ * `connect_wifi_network` op after bumping a saved entry's priority,
+ * so the SM picks the user-chosen network without waiting out the
+ * current backoff or letting the in-flight CONNECTING attempt finish.
+ *
+ * Behavior depends on current SM state:
+ *   ONLINE     → disconnect (handler kicks SCANNING)
+ *   CONNECTING → mark current attempt failed, disconnect → SCANNING
+ *   BACKOFF    → cancel timer, enter SCANNING immediately
+ *   SCANNING   → no-op (current scan will produce the right pick)
+ *   IDLE       → no-op (no saved networks; caller should have guarded)
+ */
+void ll_provisioning_request_switch(void);
+
+/*
  * Kick the deferred SoftAP that ll_provisioning_init configured but
  * didn't actually start. Call this from main.c AFTER every *_subscribe
  * has run, so downstream modules (mdns, transport, captive_dns) catch
