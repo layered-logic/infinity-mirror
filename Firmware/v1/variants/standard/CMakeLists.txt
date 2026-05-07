@@ -14,6 +14,7 @@ idf_component_register(
         led_driver
         ll_mdns
         nvs
+        ota
         pattern_interp
         provisioning
         transport
