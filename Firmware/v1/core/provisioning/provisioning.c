@@ -1053,6 +1053,19 @@ esp_err_t ll_provisioning_init(void)
     return ESP_OK;
 }
 
+void ll_provisioning_drop_active(void)
+{
+    if (g_sm_state != LL_WIFI_SM_ONLINE) {
+        /* Not currently connected — nothing to drop. SM might be
+         * SCANNING already, or in BACKOFF, or IDLE (SoftAP). */
+        return;
+    }
+    ESP_LOGI(TAG, "drop_active: disconnecting STA at user request");
+    esp_wifi_disconnect();
+    /* WIFI_EVENT_STA_DISCONNECTED → on_wifi_event sees SM == ONLINE,
+     * posts LL_EV_WIFI_DISCONNECTED, transitions into SCANNING. */
+}
+
 esp_err_t ll_provisioning_kick_softap(void)
 {
 #if LL_SOFTAP_PROVISIONING

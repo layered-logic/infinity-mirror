@@ -806,6 +806,8 @@ Step 3/6 (SCANNING/PICKING/BACKOFF state machine) shipped May 7. New SM in `prov
 
 OTA rollback safety net added during Step 3 (May 7 — out of LL-046's original scope, surfaced by the brick). `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y` in `sdkconfig.defaults`; new `ll_ota_subscribe()` calls `esp_ota_mark_app_valid_cancel_rollback()` on first `LL_EV_WIFI_CONNECTED` after boot. Future OTAs that panic before getting online (or never connect) will auto-rollback to the previous slot. Wired into `main.c` after captive-DNS. Orthogonal to LL-071's eFuse anti-rollback (downgrade defense vs. boot-loop recovery). Bootloader change deployed via USB flash.
 
+Step 4/6 (wire protocol ops) shipped + OTA-verified May 7. Three new ops in `transport.c`: `list_wifi_networks` (sorted by last_used desc, includes is_active), `add_wifi_network` (insert-or-update, never switches active), `remove_wifi_network` (forget by SSID; proactively disconnects via new `ll_provisioning_drop_active()` if removing the active SSID, the SM picks the next eligible). `DeviceState.wifi_saved_count` added per design-doc §7.5 (count only — full list on demand). add/remove trigger `broadcast_state()` so connected clients refresh. `set_wifi_creds` kept as legacy first-cred entry point per §7.4. Smoke-tested 9 cases on live mirror — insert / update / full / invalid / remove / not_found / wifi_saved_count round-trip all green.
+
 ---
 
 <a id="LL-047"></a>

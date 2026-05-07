@@ -17,6 +17,7 @@ idf_component_register(
         esp_http_server
         esp_timer
         json
+        ll_wifi
         ota
         provisioning
         state_bus

@@ -68,6 +68,21 @@ const char *ll_provisioning_get_sta_ssid(void);
 const char *ll_provisioning_get_sta_ip(void);
 
 /*
+ * Disconnect the current STA connection (if any). Used by transport's
+ * `remove_wifi_network` op when the user forgets the network the mirror
+ * is currently connected to — per multi-network-design.md §4.3, the
+ * mirror disconnects immediately rather than the iOS-style "stay
+ * connected until natural disconnect" pattern.
+ *
+ * After the disconnect, the wifi event handler sees SM in ONLINE state,
+ * posts LL_EV_WIFI_DISCONNECTED, and transitions the SM back into
+ * SCANNING — which will pick the next eligible saved network.
+ *
+ * No-op when not currently STA-connected. Safe to call from any task.
+ */
+void ll_provisioning_drop_active(void);
+
+/*
  * Kick the deferred SoftAP that ll_provisioning_init configured but
  * didn't actually start. Call this from main.c AFTER every *_subscribe
  * has run, so downstream modules (mdns, transport, captive_dns) catch
