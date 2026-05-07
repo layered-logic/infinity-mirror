@@ -3,6 +3,7 @@ title: Task Registry
 type: task-registry
 next_id: LL-073
 updated: 2026-05-07
+
 ---
 
 # Task Registry
@@ -789,11 +790,11 @@ sprint_target: post-quarter
 ---
 
 <a id="LL-046"></a>
-### [ ] LL-046 — Multi-network firmware implementation
+### [x] LL-046 — Multi-network firmware implementation
 
 sprint: 6 | priority: high | deadline: 2026-05-09
-added: 2026-05-01 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07
-artifacts: [Firmware/v1/core/ll_wifi/](Firmware/v1/core/ll_wifi/) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c)
+added: 2026-05-01 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resolved: 2026-05-07
+artifacts: [Firmware/v1/core/ll_wifi/](Firmware/v1/core/ll_wifi/) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c) · [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-041
 
 **Notes:** Implements the spec locked in LL-041 (multi-network design doc). NVS schema bump for N saved networks (N_MAX=4), scan-and-pick reconnect, protocol additions (`list/add/remove_wifi_network`), `set_wifi_creds` retained as deprecated shim through V2 lifetime. App UX: settings page network list with last-used-wins ordering, proactive disconnect on remove with confirm dialog. ~6 days estimated implementation. Proposed Week 6 engineering replacement for the no-longer-real PCB-arrival item.
