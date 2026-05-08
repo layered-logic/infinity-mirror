@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  GestureResponderEvent,
+  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -9,9 +11,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  Vibration,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { haptic } from './src/haptic';
 
 // Top-padding fallback for the title bar on Android. The native
 // SafeAreaView (RN core) only handles iOS notches; on Android the
@@ -32,9 +35,58 @@ function topPadding(): number {
   return Math.max(StatusBar.currentHeight ?? 0, MIN_TOP_PADDING);
 }
 
+// Map a touch on the color wheel to a #RRGGBB hex string. Mirrors the
+// PNG generator's mapping (scripts/gen-color-wheel.py): hue from angle
+// (rotated so red sits at the top), saturation from radius, value
+// fixed at 1. Returns null when the touch lands outside the wheel's
+// inscribed circle so the handler can no-op cleanly.
+function colorAtTouch(x: number, y: number, size: number): string | null {
+  const r = size / 2;
+  const dx = x - r;
+  const dy = y - r;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > r) return null;
+  const theta = Math.atan2(dy, dx);
+  const hue = (((theta + Math.PI / 2) / (2 * Math.PI)) % 1 + 1) % 1;
+  const sat = Math.min(dist / r, 1);
+  return rgbHexFromHsv(hue, sat, 1);
+}
+
+// HSV → "#RRGGBB". h ∈ [0,1], s ∈ [0,1], v ∈ [0,1]. Standard HSV-to-RGB
+// six-cone formula; the firmware's protocol takes uppercase hex.
+function rgbHexFromHsv(h: number, s: number, v: number): string {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  let r = 0, g = 0, b = 0;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+  const cc = (n: number) =>
+    Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase();
+  return `#${cc(r)}${cc(g)}${cc(b)}`;
+}
+
 import { ConnState, MirrorClient } from './src/ws-client';
-import { BRAND_SWATCHES, DeviceState, PatternId, WifiNetwork } from './src/protocol';
+import { DeviceState, PatternId, WifiNetwork } from './src/protocol';
 import { FindResult, findMirrors } from './src/find-mirror';
+
+// Color wheel asset is 512×512 px (regenerate via scripts/gen-color-wheel.py).
+// Renders at runtime to fit window-width minus the body padding so it
+// dominates the controls page without overflowing. RN's Image scales
+// the source bitmap with bilinear sampling, so a 512 source upscales
+// fine to ~360-400dp.
+const COLOR_WHEEL_BODY_PADDING = 16; // matches styles.body.padding
+const COLOR_WHEEL_THROTTLE_MS = 80;
+const COLOR_WHEEL_BUBBLE_PX = 56;    // magnifier bubble that follows the touch
+const colorWheelAsset = require('./assets/color-wheel.png');
 
 const HOME_URL = 'ws://10.123.210.61/ws';
 const SOFTAP_URL = 'ws://192.168.4.1/ws';
@@ -54,6 +106,13 @@ type SubmitState = 'idle' | 'submitting' | 'submitted';
 type Route = 'controls' | 'settings';
 
 function App() {
+  // Color wheel sizes to fill the screen width minus body padding on
+  // either side. useWindowDimensions re-renders on rotation / fold
+  // changes so the wheel adapts; the touch math is parameterized by
+  // size, not a fixed constant.
+  const { width: windowWidth } = useWindowDimensions();
+  const wheelSize = Math.max(160, windowWidth - COLOR_WHEEL_BODY_PADDING * 2);
+
   const [route, setRoute] = useState<Route>('controls');
   const [url, setUrl] = useState(HOME_URL);
   const [conn, setConn] = useState<ConnState>('idle');
@@ -193,11 +252,51 @@ function App() {
     catch (e) { setLastError((e as Error).message); }
   };
 
+  // Color wheel touch handler — fires on initial tap (onResponderGrant)
+  // and on every drag move (onResponderMove). Throttled to ~10Hz (the
+  // firmware can take more, but the LED visual update + WS round-trip
+  // gets jittery above that). Sends a final apply on release so the
+  // last position lands even if it fell inside a throttle gap. A light
+  // haptic fires on initial tap only — buzz-on-every-drag-step would
+  // be continuous noise.
+  //
+  // The follow bubble + scroll lock both key off `wheelTouch` state:
+  // when non-null, the bubble renders at that point and the parent
+  // ScrollView is disabled so the page doesn't scroll under the drag.
+  const lastColorSendRef = useRef(0);
+  const [wheelTouch, setWheelTouch] = useState<{ x: number; y: number } | null>(null);
+  const handleWheelTouchInternal = (
+    e: GestureResponderEvent,
+    isInitial: boolean,
+    wheelSize: number,
+  ) => {
+    const { locationX, locationY } = e.nativeEvent;
+    setWheelTouch({ x: locationX, y: locationY });
+    const hex = colorAtTouch(locationX, locationY, wheelSize);
+    if (!hex) return;
+    if (isInitial) haptic.light();
+    const now = Date.now();
+    if (isInitial || now - lastColorSendRef.current >= COLOR_WHEEL_THROTTLE_MS) {
+      lastColorSendRef.current = now;
+      apply({ base_color: hex });
+    }
+  };
+  const handleWheelReleaseInternal = (
+    e: GestureResponderEvent,
+    wheelSize: number,
+  ) => {
+    const { locationX, locationY } = e.nativeEvent;
+    const hex = colorAtTouch(locationX, locationY, wheelSize);
+    if (hex) apply({ base_color: hex });
+    setWheelTouch(null);
+  };
+
   const submitCreds = async () => {
     if (!clientRef.current) return;
     const ssidValid = ssid.length >= 1 && ssid.length <= 32;
     const passwordValid = password.length === 0 || (password.length >= 8 && password.length <= 64);
     if (!ssidValid || !passwordValid) return;
+    haptic.medium();
     setLastError(null);
     setSubmitState('submitting');
     try {
@@ -225,6 +324,7 @@ function App() {
       addPassword.length === 0 ||
       (addPassword.length >= 8 && addPassword.length <= 64);
     if (!ssidValid || !passwordValid) return;
+    haptic.medium();
     setLastError(null);
     setAddNetState('submitting');
     try {
@@ -264,11 +364,7 @@ function App() {
   const connectToNetwork = async (entry: WifiNetwork) => {
     if (!clientRef.current) return;
     setLastError(null);
-    // Defensive try — VIBRATE is in the manifest, but a stale install
-    // or a future device that revokes the permission shouldn't take
-    // out the whole connect flow. Visual feedback is the real signal;
-    // the buzz is gravy.
-    try { Vibration.vibrate(15); } catch (_) { /* noop */ }
+    haptic.medium();
     setSwitchingTo(entry.ssid);
     setSavedNetworks((prev) =>
       prev?.map((n) => (n.is_active ? { ...n, is_active: false } : n)) ?? prev,
@@ -287,6 +383,11 @@ function App() {
   const forgetNetwork = (entry: WifiNetwork) => {
     const doForget = async () => {
       if (!clientRef.current) return;
+      // Heavy buzz for the active forget (destructive, just confirmed
+      // through a dialog) vs. a light buzz for the silent non-active
+      // case. Mirrors the escalation in haptic intensity to commitment.
+      if (entry.is_active) haptic.heavy();
+      else haptic.light();
       try {
         await clientRef.current.removeWifiNetwork(entry.ssid);
         const next = await clientRef.current.listWifiNetworks();
@@ -358,6 +459,7 @@ function App() {
           text: 'Update',
           onPress: async () => {
             if (!clientRef.current) return;
+            haptic.medium();
             setLastError(null);
             setOtaState('sending');
             try {
@@ -375,6 +477,7 @@ function App() {
 
   const submitRename = async () => {
     if (!clientRef.current) return;
+    haptic.medium();
     const trimmed = nameInput.trim();
     // Server-side cap is 32 chars (ll_state_t.name is char[33], 1 reserved
     // for null). Empty is a legal "clear back to id" value.
@@ -406,6 +509,7 @@ function App() {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
+            haptic.heavy();
             try { await clientRef.current!.factoryReset(); }
             catch (e) { setLastError((e as Error).message); }
           },
@@ -426,7 +530,10 @@ function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0A0F" />
-      <ScrollView contentContainerStyle={[styles.body, { paddingTop: 16 + topPadding() }]}>
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingTop: 16 + topPadding() }]}
+        scrollEnabled={wheelTouch === null}
+      >
         <View style={styles.headerBar}>
           <Text style={styles.h1}>
             {route === 'settings' ? 'Settings' : 'LL Mirror'}
@@ -637,26 +744,63 @@ function App() {
           <>
             <Text style={styles.section}>Power</Text>
             <Pressable
-              onPress={() => apply({ on: !state.on })}
+              onPress={() => { haptic.medium(); apply({ on: !state.on }); }}
               style={[styles.btn, state.on ? styles.btnOn : styles.btnOff]}
             >
               <Text style={styles.btnText}>{state.on ? 'On' : 'Off'}</Text>
             </Pressable>
 
             <Text style={styles.section}>Color</Text>
-            <View style={styles.swatches}>
-              {BRAND_SWATCHES.map((s) => {
-                const active = state.base_color.toLowerCase() === s.hex.toLowerCase();
-                return (
-                  <Pressable
-                    key={s.name}
-                    onPress={() => apply({ base_color: s.hex })}
-                    style={[styles.swatch, { backgroundColor: s.hex }, active && styles.swatchActive]}
-                  />
-                );
-              })}
+            <View
+              style={{ width: wheelSize, height: wheelSize, alignSelf: 'center' }}
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+              // Deny ScrollView's request to take over the touch — without
+              // this, dragging on the wheel pans the page and the user
+              // loses the gesture.
+              onResponderTerminationRequest={() => false}
+              onResponderGrant={(e) => handleWheelTouchInternal(e, true, wheelSize)}
+              onResponderMove={(e) => handleWheelTouchInternal(e, false, wheelSize)}
+              onResponderRelease={(e) => handleWheelReleaseInternal(e, wheelSize)}
+              onResponderTerminate={(e) => handleWheelReleaseInternal(e, wheelSize)}
+            >
+              <Image
+                source={colorWheelAsset}
+                style={{ width: wheelSize, height: wheelSize }}
+                fadeDuration={0}
+              />
+              {/* Color preview at top-right of the wheel (45° from
+                  center). Lives in the empty corner space outside the
+                  inscribed circle so it doesn't block any colors. */}
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.wheelPreview,
+                  {
+                    right: wheelSize * 0.04,
+                    top: wheelSize * 0.04,
+                    backgroundColor: state.base_color,
+                  },
+                ]}
+              />
+              {/* Touch-follow magnifier — only visible while the user
+                  is interacting. Shows the color at the current touch
+                  point so the finger isn't covering its own target. */}
+              {wheelTouch !== null && (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.wheelBubble,
+                    {
+                      left: wheelTouch.x - COLOR_WHEEL_BUBBLE_PX / 2,
+                      top: wheelTouch.y - COLOR_WHEEL_BUBBLE_PX - 16,
+                      backgroundColor: state.base_color,
+                    },
+                  ]}
+                />
+              )}
             </View>
-            <Text style={styles.mono}>{state.base_color}</Text>
+            <Text style={[styles.mono, { textAlign: 'center', marginTop: 4 }]}>{state.base_color}</Text>
 
             <Text style={styles.section}>Brightness</Text>
             <View style={styles.row}>
@@ -665,7 +809,7 @@ function App() {
                 return (
                   <Pressable
                     key={b}
-                    onPress={() => apply({ brightness: b })}
+                    onPress={() => { haptic.brightness(b); apply({ brightness: b }); }}
                     style={[styles.stepBtn, active && styles.stepBtnActive]}
                   >
                     <Text style={[styles.btnText, active && styles.stepBtnTextActive]}>{b}</Text>
@@ -681,7 +825,7 @@ function App() {
                 return (
                   <Pressable
                     key={p}
-                    onPress={() => apply({ pattern_id: p })}
+                    onPress={() => { haptic.pattern(p); apply({ pattern_id: p }); }}
                     style={[styles.patternBtn, active && styles.patternBtnActive]}
                   >
                     <Text style={[styles.btnText, active && styles.stepBtnTextActive]}>{p}</Text>
@@ -997,15 +1141,37 @@ const styles = StyleSheet.create({
   pickerRowActive: { borderColor: '#3214FF' },
   pickerRowLabel: { color: '#F4EFE6', fontSize: 14, fontWeight: '600' },
   pickerRowSub: { color: '#8A8A8E', fontSize: 12, fontFamily: 'monospace', marginTop: 2 },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  swatch: {
+  // Color wheel — replaces the BRAND_SWATCHES grid. Wheel image is a
+  // pre-rendered HSV gamut from scripts/gen-color-wheel.py. Sized
+  // dynamically by useWindowDimensions, so width/height land via
+  // inline styles, not StyleSheet.
+  wheelPreview: {
+    position: 'absolute',
     width: 56,
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#F4EFE6',
+    // Drop shadow so it reads against any wheel color underneath.
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  swatchActive: { borderColor: '#F4EFE6' },
+  wheelBubble: {
+    position: 'absolute',
+    width: COLOR_WHEEL_BUBBLE_PX,
+    height: COLOR_WHEEL_BUBBLE_PX,
+    borderRadius: COLOR_WHEEL_BUBBLE_PX / 2,
+    borderWidth: 3,
+    borderColor: '#F4EFE6',
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
   stepBtn: {
     backgroundColor: '#1a1924',
     paddingVertical: 12,
