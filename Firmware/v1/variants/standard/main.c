@@ -32,6 +32,7 @@
 #include "captive_dns.h"
 #include "ll_mdns.h"
 #include "nvs.h"
+#include "ota.h"
 #include "pattern_interp.h"
 #include "provisioning.h"
 #include "state_bus.h"
@@ -78,6 +79,14 @@ void app_main(void)
 
     ESP_ERROR_CHECK(ll_captive_dns_init());
     ESP_ERROR_CHECK(ll_captive_dns_subscribe());
+
+    /* OTA: subscribes to LL_EV_WIFI_CONNECTED. The first connect after
+     * boot marks the running image as valid (cancels rollback). If the
+     * image panics or never reaches Wi-Fi, the bootloader rolls back
+     * to the previous slot on the next reset — see
+     * CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE in sdkconfig.defaults. */
+    ESP_ERROR_CHECK(ll_ota_init());
+    ESP_ERROR_CHECK(ll_ota_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),

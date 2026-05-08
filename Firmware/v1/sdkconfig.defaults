@@ -25,6 +25,17 @@ CONFIG_HTTPD_WS_SUPPORT=y
 # this back off when the production OTA path lands.
 CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
 
+# --- OTA rollback safety net (NOT eFuse — pure firmware-managed) ------
+# When set, the bootloader watches for OTA images marked PENDING_VERIFY
+# and rolls back to the previously-good slot if the new image resets
+# before calling esp_ota_mark_app_valid_cancel_rollback(). core/ota
+# wires the mark on first LL_EV_WIFI_CONNECTED — so any OTA that
+# panics during boot, or never reaches the network, is automatically
+# rolled back on the next reset. Cheap insurance for dev OTAs;
+# orthogonal to the eFuse-based anti-rollback below (which is for
+# downgrade-attack defense, not boot-loop recovery).
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
 # --- Production hardening (deliberately left disabled this sprint) ----
 # All three of these are eFuse burns and irreversible. Per
 # docs/mini-sprint-app-demo.md §1a, they stay off until production.

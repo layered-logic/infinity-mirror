@@ -31,6 +31,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+#include "ll_wifi.h"
 #include "ota.h"
 #include "provisioning.h"
 #include "state_bus.h"
@@ -43,6 +44,12 @@ static const char *TAG = "transport";
 #define LL_WS_RX_MAX       1024   /* envelope+payload — generous for ping/state */
 
 static httpd_handle_t g_server;
+
+/* Forward decl — the multi-network ops below trigger broadcasts after
+ * mutating the saved-list (so wifi_saved_count refreshes on connected
+ * clients), but the body of broadcast_state lives further down with
+ * the rest of the broadcast plumbing. */
+static void broadcast_state(void);
 
 /* ---- state object serialization ---------------------------------- */
 
@@ -92,6 +99,12 @@ static cJSON *state_to_json(const ll_state_t *s)
     } else {
         cJSON_AddNullToObject(obj, "ip");
     }
+
+    /* Per multi-network-design.md §7.5: count only — full list is
+     * fetched on demand via list_wifi_networks. Keeps the broadcast
+     * envelope small for the common case (settings page closed). */
+    cJSON_AddNumberToObject(obj, "wifi_saved_count",
+                            (double)ll_wifi_count());
     return obj;
 }
 
@@ -261,6 +274,268 @@ static void op_set_wifi_creds(cJSON *resp, const cJSON *payload)
     cJSON_AddNullToObject(resp, "error");
 }
 
+/* ---- multi-network ops (LL-046 step 4 — multi-network-design.md §7) ----
+ *
+ * list_wifi_networks: read-only enumeration of the saved-networks list.
+ * add_wifi_network:    insert-or-update; never switches the active conn.
+ * remove_wifi_network: forget by ssid; if removing the active one, the
+ *                      mirror disconnects + falls into SCANNING.
+ *
+ * set_wifi_creds (above) is kept as the legacy single-cred entry point
+ * for the first-boot provisioning flow — it writes to ll_wifi via the
+ * apply-creds event handler and triggers an immediate SoftAP→STA
+ * handoff. The three ops below are the V1+ multi-network surface.
+ */
+
+/* selection-sort indices in `out_order` so out_order[0] is the entry
+ * with the highest last_used_us. With LL_WIFI_LIST_MAX == 4 the O(n²)
+ * cost is trivial and the in-place algorithm avoids any allocation. */
+static void sort_indices_by_last_used_desc(const ll_wifi_list_t *list,
+                                            uint8_t *out_order)
+{
+    for (uint8_t i = 0; i < list->count; i++) {
+        out_order[i] = i;
+    }
+    for (uint8_t i = 0; i < list->count; i++) {
+        uint8_t best = i;
+        for (uint8_t j = i + 1; j < list->count; j++) {
+            if (list->entries[out_order[j]].last_used_us
+                > list->entries[out_order[best]].last_used_us) {
+                best = j;
+            }
+        }
+        if (best != i) {
+            uint8_t tmp = out_order[i];
+            out_order[i] = out_order[best];
+            out_order[best] = tmp;
+        }
+    }
+}
+
+static void op_list_wifi_networks(cJSON *resp)
+{
+    ll_wifi_list_t snapshot;
+    ll_wifi_get_list(&snapshot);
+
+    uint8_t order[LL_WIFI_LIST_MAX];
+    sort_indices_by_last_used_desc(&snapshot, order);
+
+    uint8_t active = ll_wifi_get_active_idx();
+
+    cJSON *result = cJSON_CreateObject();
+    cJSON *arr = cJSON_AddArrayToObject(result, "networks");
+    for (uint8_t k = 0; k < snapshot.count; k++) {
+        uint8_t i = order[k];
+        cJSON *entry = cJSON_CreateObject();
+        cJSON_AddStringToObject(entry, "ssid", snapshot.entries[i].ssid);
+        cJSON_AddBoolToObject(entry, "is_active", i == active);
+        /* last_used_us is monotonic boot-time microseconds — clients
+         * use it for ordering, not as a wall clock. We expose it as
+         * seconds to keep the JSON number small. */
+        cJSON_AddNumberToObject(entry, "last_used",
+                                (double)(snapshot.entries[i].last_used_us / 1000000));
+        cJSON_AddItemToArray(arr, entry);
+    }
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON_AddItemToObject(resp, "result", result);
+    cJSON_AddNullToObject(resp, "error");
+}
+
+static void op_add_wifi_network(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "add_wifi_network requires an object payload");
+        return;
+    }
+
+    const char *ssid = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "ssid"));
+    const char *pw   = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "password"));
+    if (!pw) pw = "";
+
+    size_t ssid_len = ssid ? strlen(ssid) : 0;
+    size_t pw_len   = strlen(pw);
+
+    /* Same validation surface as set_wifi_creds — IEEE 802.11 + WPA2. */
+    if (ssid_len < 1 || ssid_len > 32 ||
+        (pw_len != 0 && (pw_len < 8 || pw_len > 64))) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "ssid must be 1-32 chars; password must be empty or 8-64 chars");
+        return;
+    }
+
+    ll_wifi_add_result_t r = ll_wifi_add(ssid, pw);
+    switch (r) {
+    case LL_WIFI_ADD_OK_INSERTED:
+    case LL_WIFI_ADD_OK_UPDATED: {
+        cJSON_AddBoolToObject(resp, "ok", true);
+        cJSON *result = cJSON_AddObjectToObject(resp, "result");
+        cJSON_AddStringToObject(result, "ssid", ssid);
+        cJSON_AddBoolToObject(result, "inserted",
+                              r == LL_WIFI_ADD_OK_INSERTED);
+        cJSON_AddBoolToObject(result, "updated",
+                              r == LL_WIFI_ADD_OK_UPDATED);
+        cJSON_AddNullToObject(resp, "error");
+        /* Count changed (insert) or list state changed (update — same
+         * count but the new password may matter for clients displaying
+         * the list); broadcast either way so settings pages refresh. */
+        broadcast_state();
+        return;
+    }
+    case LL_WIFI_ADD_ERR_FULL: {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "wifi_list_full");
+        cJSON_AddStringToObject(err, "message",
+            "saved-networks list is full; remove one before adding another");
+        return;
+    }
+    case LL_WIFI_ADD_ERR_INVALID:
+    default:
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "ll_wifi_add rejected the entry");
+        return;
+    }
+}
+
+static void op_remove_wifi_network(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "remove_wifi_network requires an object payload");
+        return;
+    }
+
+    const char *ssid = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "ssid"));
+    if (!ssid || !ssid[0]) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "remove_wifi_network requires a non-empty `ssid`");
+        return;
+    }
+
+    /* Snapshot whether this is the network we're currently on, before
+     * the remove mutates active_idx. The app gates this op behind a
+     * confirm dialog when target == current SSID (per design-doc §4.3),
+     * but we still verify server-side to drive the disconnect. */
+    const char *active_ssid = ll_provisioning_get_sta_ssid();
+    bool was_active = active_ssid && active_ssid[0]
+                       && strcmp(active_ssid, ssid) == 0;
+
+    ll_wifi_remove_result_t r = ll_wifi_remove(ssid);
+    if (r == LL_WIFI_REMOVE_NOT_FOUND) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "not_found");
+        cJSON_AddStringToObject(err, "message",
+            "no saved network with that ssid");
+        return;
+    }
+
+    if (was_active) {
+        /* Proactive disconnect: design-doc §4.3 explicitly diverges from
+         * iOS's "stay connected until natural disconnect" pattern.
+         * provisioning's STA_DISCONNECTED handler will see SM == ONLINE
+         * and transition into SCANNING, picking the next eligible saved
+         * network (or BACKOFF if none are visible). */
+        ll_provisioning_drop_active();
+    }
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON *result = cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddStringToObject(result, "ssid", ssid);
+    cJSON_AddBoolToObject(result, "removed",     true);
+    cJSON_AddBoolToObject(result, "was_active",  was_active);
+    cJSON_AddNullToObject(resp, "error");
+    /* wifi_saved_count changed; refresh state on connected clients. */
+    broadcast_state();
+}
+
+/* connect_wifi_network: switch the active STA to a user-chosen saved
+ * network. Bumps the chosen entry's last_used_us so the SM's
+ * "highest last_used wins" pick logic favors it on the next scan, then
+ * forces a fresh scan-and-pick cycle (regardless of current SM state).
+ *
+ * Useful when the device is currently on a different saved network,
+ * stuck in BACKOFF after a bad-cred attempt, or the user explicitly
+ * wants to switch (multi-location use). Returns synchronously — actual
+ * connect is async; clients observe via the next state broadcast. If
+ * the chosen network isn't visible / has bad creds, the SM falls back
+ * to the next eligible saved network (or BACKOFF if none).
+ */
+static void op_connect_wifi_network(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "connect_wifi_network requires an object payload");
+        return;
+    }
+    const char *ssid = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "ssid"));
+    if (!ssid || !ssid[0]) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "bad_payload");
+        cJSON_AddStringToObject(err, "message",
+            "connect_wifi_network requires a non-empty `ssid`");
+        return;
+    }
+
+    if (!ll_wifi_bump_priority(ssid, esp_timer_get_time())) {
+        cJSON_AddBoolToObject(resp, "ok", false);
+        cJSON_AddNullToObject(resp, "result");
+        cJSON *err = cJSON_AddObjectToObject(resp, "error");
+        cJSON_AddStringToObject(err, "code",    "not_found");
+        cJSON_AddStringToObject(err, "message",
+            "no saved network with that ssid");
+        return;
+    }
+
+    /* Async hop: posting LL_EV_WIFI_REQUEST_SWITCH lets this op finish
+     * serializing + sending the response (and the broadcast below)
+     * before provisioning's handler calls esp_wifi_disconnect on the
+     * state-bus task. Without this, the disconnect kills the WS
+     * connection mid-response and the client sees a timeout instead
+     * of "switching: true". Same pattern as set_wifi_creds. */
+    esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
+                      LL_EV_WIFI_REQUEST_SWITCH, NULL, 0, 0);
+
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON *result = cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddStringToObject(result, "ssid", ssid);
+    cJSON_AddBoolToObject(result, "switching", true);
+    cJSON_AddNullToObject(resp, "error");
+    /* The list ordering changed (last_used_us updated); refresh
+     * settings pages on connected clients before the STA tear-down. */
+    broadcast_state();
+}
+
 /* factory_reset: replaces the UI mockup from sub-1 with a real wire op.
  * Posts LL_EV_FACTORY_RESET via ll_state_bus_post; downstream handlers
  * (state_bus → reset settings, nvs → erase namespace, provisioning →
@@ -401,6 +676,14 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         op_set_state(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else if (op && strcmp(op, "set_wifi_creds") == 0) {
         op_set_wifi_creds(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "list_wifi_networks") == 0) {
+        op_list_wifi_networks(resp);
+    } else if (op && strcmp(op, "add_wifi_network") == 0) {
+        op_add_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "remove_wifi_network") == 0) {
+        op_remove_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "connect_wifi_network") == 0) {
+        op_connect_wifi_network(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else if (op && strcmp(op, "factory_reset") == 0) {
         op_factory_reset(resp);
     } else if (op && strcmp(op, "start_ota") == 0) {

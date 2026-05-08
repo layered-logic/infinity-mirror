@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  GestureResponderEvent,
+  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -10,17 +12,81 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { haptic } from './src/haptic';
 
-// SafeAreaView from react-native core only applies iOS notch insets — on
-// Android it's a no-op, so the title overlaps the status bar. Manually
-// add padding for the status bar height on Android.
-const ANDROID_STATUS_BAR_PADDING =
-  Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
+// Top-padding fallback for the title bar on Android. The native
+// SafeAreaView (RN core) only handles iOS notches; on Android the
+// status bar gets drawn over by default. Previously we read
+// StatusBar.currentHeight at module-load and applied it as static
+// padding, which broke after cold-start races on Android 15 — the
+// native value can be 0 until the activity has laid out, leaving the
+// title under the status bar with no easy way to tap into Settings.
+//
+// New approach: read currentHeight at render time and floor it at
+// MIN_TOP_PADDING. The floor matches the largest typical Android
+// status bar (Pixel 9 / Android 15 ≈ 28-44dp depending on cutout) so
+// even if the native value comes back stale-zero, the title is
+// guaranteed to land below the system bars.
+const MIN_TOP_PADDING = 32;
+function topPadding(): number {
+  if (Platform.OS !== 'android') return 0;
+  return Math.max(StatusBar.currentHeight ?? 0, MIN_TOP_PADDING);
+}
+
+// Map a touch on the color wheel to a #RRGGBB hex string. Mirrors the
+// PNG generator's mapping (scripts/gen-color-wheel.py): hue from angle
+// (rotated so red sits at the top), saturation from radius, value
+// fixed at 1. Returns null when the touch lands outside the wheel's
+// inscribed circle so the handler can no-op cleanly.
+function colorAtTouch(x: number, y: number, size: number): string | null {
+  const r = size / 2;
+  const dx = x - r;
+  const dy = y - r;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > r) return null;
+  const theta = Math.atan2(dy, dx);
+  const hue = (((theta + Math.PI / 2) / (2 * Math.PI)) % 1 + 1) % 1;
+  const sat = Math.min(dist / r, 1);
+  return rgbHexFromHsv(hue, sat, 1);
+}
+
+// HSV → "#RRGGBB". h ∈ [0,1], s ∈ [0,1], v ∈ [0,1]. Standard HSV-to-RGB
+// six-cone formula; the firmware's protocol takes uppercase hex.
+function rgbHexFromHsv(h: number, s: number, v: number): string {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  let r = 0, g = 0, b = 0;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+  const cc = (n: number) =>
+    Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase();
+  return `#${cc(r)}${cc(g)}${cc(b)}`;
+}
 
 import { ConnState, MirrorClient } from './src/ws-client';
-import { BRAND_SWATCHES, DeviceState, PatternId } from './src/protocol';
+import { DeviceState, PatternId, WifiNetwork } from './src/protocol';
 import { FindResult, findMirrors } from './src/find-mirror';
+
+// Color wheel asset is 512×512 px (regenerate via scripts/gen-color-wheel.py).
+// Renders at runtime to fit window-width minus the body padding so it
+// dominates the controls page without overflowing. RN's Image scales
+// the source bitmap with bilinear sampling, so a 512 source upscales
+// fine to ~360-400dp.
+const COLOR_WHEEL_BODY_PADDING = 16; // matches styles.body.padding
+const COLOR_WHEEL_THROTTLE_MS = 80;
+const COLOR_WHEEL_BUBBLE_PX = 56;    // magnifier bubble that follows the touch
+const colorWheelAsset = require('./assets/color-wheel.png');
 
 const HOME_URL = 'ws://10.123.210.61/ws';
 const SOFTAP_URL = 'ws://192.168.4.1/ws';
@@ -40,6 +106,13 @@ type SubmitState = 'idle' | 'submitting' | 'submitted';
 type Route = 'controls' | 'settings';
 
 function App() {
+  // Color wheel sizes to fill the screen width minus body padding on
+  // either side. useWindowDimensions re-renders on rotation / fold
+  // changes so the wheel adapts; the touch math is parameterized by
+  // size, not a fixed constant.
+  const { width: windowWidth } = useWindowDimensions();
+  const wheelSize = Math.max(160, windowWidth - COLOR_WHEEL_BODY_PADDING * 2);
+
   const [route, setRoute] = useState<Route>('controls');
   const [url, setUrl] = useState(HOME_URL);
   const [conn, setConn] = useState<ConnState>('idle');
@@ -70,6 +143,22 @@ function App() {
   // Rename UI — local input buffer + submit state. Shown in Settings.
   const [nameInput, setNameInput] = useState('');
   const [renameState, setRenameState] = useState<SubmitState>('idle');
+  // Multi-network store (LL-046 step 5). `savedNetworks === null` means
+  // "haven't fetched yet"; an empty array means "the device knows it has
+  // none." Both render distinct UI states. The inline add-network form
+  // is gated behind `addingNetwork` so the network list stays compact.
+  const [savedNetworks, setSavedNetworks] = useState<WifiNetwork[] | null>(null);
+  const [addingNetwork, setAddingNetwork] = useState(false);
+  const [addSsid, setAddSsid] = useState('');
+  const [addPassword, setAddPassword] = useState('');
+  const [addNetState, setAddNetState] = useState<SubmitState>('idle');
+  // SSID we're currently asking the mirror to switch to. Drives the
+  // "Switching to X…" banner. Cleared when the next state broadcast
+  // confirms the new wifi_ssid (success or fallback) — see the useEffect
+  // below tied to state?.wifi_ssid. The mirror does the switch async
+  // (sub-bus event with a 250ms response-flush yield), and the WS
+  // socket dies mid-switch, so this can take a few seconds to clear.
+  const [switchingTo, setSwitchingTo] = useState<string | null>(null);
 
   useEffect(() => {
     return () => clientRef.current?.disconnect();
@@ -100,6 +189,34 @@ function App() {
   useEffect(() => {
     if (route === 'settings') setNameInput(state?.name ?? '');
   }, [route, state?.name]);
+
+  // Refetch the saved-networks list when the user opens Settings, and
+  // again whenever the device's reported count or active ssid changes
+  // (covers cross-client adds/removes AND the switch case where the
+  // count is unchanged but the active row moved). Failures are
+  // non-fatal — the row UI gracefully shows "couldn't load" if the
+  // list is null.
+  useEffect(() => {
+    if (route !== 'settings' || conn !== 'open') return;
+    clientRef.current?.listWifiNetworks()
+      .then((next) => {
+        setSavedNetworks(next);
+        // If the broadcast confirms our requested switch (or settled
+        // somewhere else after a fallback), clear the "Switching to…"
+        // banner. The new active SSID — whichever one it is — is
+        // authoritative now.
+        if (switchingTo !== null) {
+          const active = next.find((n) => n.is_active);
+          if (active && state?.wifi_ssid === active.ssid) {
+            setSwitchingTo(null);
+          }
+        }
+      })
+      .catch((e) => setLastError((e as Error).message));
+    // switchingTo intentionally not in deps — we read it inside the
+    // handler but don't want to re-fire just because the banner is up.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route, conn, state?.wifi_saved_count, state?.wifi_ssid]);
 
   // Drive the post-submit countdown.
   useEffect(() => {
@@ -135,11 +252,51 @@ function App() {
     catch (e) { setLastError((e as Error).message); }
   };
 
+  // Color wheel touch handler — fires on initial tap (onResponderGrant)
+  // and on every drag move (onResponderMove). Throttled to ~10Hz (the
+  // firmware can take more, but the LED visual update + WS round-trip
+  // gets jittery above that). Sends a final apply on release so the
+  // last position lands even if it fell inside a throttle gap. A light
+  // haptic fires on initial tap only — buzz-on-every-drag-step would
+  // be continuous noise.
+  //
+  // The follow bubble + scroll lock both key off `wheelTouch` state:
+  // when non-null, the bubble renders at that point and the parent
+  // ScrollView is disabled so the page doesn't scroll under the drag.
+  const lastColorSendRef = useRef(0);
+  const [wheelTouch, setWheelTouch] = useState<{ x: number; y: number } | null>(null);
+  const handleWheelTouchInternal = (
+    e: GestureResponderEvent,
+    isInitial: boolean,
+    wheelSize: number,
+  ) => {
+    const { locationX, locationY } = e.nativeEvent;
+    setWheelTouch({ x: locationX, y: locationY });
+    const hex = colorAtTouch(locationX, locationY, wheelSize);
+    if (!hex) return;
+    if (isInitial) haptic.light();
+    const now = Date.now();
+    if (isInitial || now - lastColorSendRef.current >= COLOR_WHEEL_THROTTLE_MS) {
+      lastColorSendRef.current = now;
+      apply({ base_color: hex });
+    }
+  };
+  const handleWheelReleaseInternal = (
+    e: GestureResponderEvent,
+    wheelSize: number,
+  ) => {
+    const { locationX, locationY } = e.nativeEvent;
+    const hex = colorAtTouch(locationX, locationY, wheelSize);
+    if (hex) apply({ base_color: hex });
+    setWheelTouch(null);
+  };
+
   const submitCreds = async () => {
     if (!clientRef.current) return;
     const ssidValid = ssid.length >= 1 && ssid.length <= 32;
     const passwordValid = password.length === 0 || (password.length >= 8 && password.length <= 64);
     if (!ssidValid || !passwordValid) return;
+    haptic.medium();
     setLastError(null);
     setSubmitState('submitting');
     try {
@@ -155,6 +312,106 @@ function App() {
     }
   };
 
+  // Add a network to the saved-list. Different from submitCreds —
+  // add_wifi_network does NOT switch the active connection (per
+  // multi-network-design §7.2). The mirror keeps its current network;
+  // the SM will pick this one next time it scans and the saved one
+  // happens to be the highest-priority visible match.
+  const submitAddNetwork = async () => {
+    if (!clientRef.current) return;
+    const ssidValid = addSsid.length >= 1 && addSsid.length <= 32;
+    const passwordValid =
+      addPassword.length === 0 ||
+      (addPassword.length >= 8 && addPassword.length <= 64);
+    if (!ssidValid || !passwordValid) return;
+    haptic.medium();
+    setLastError(null);
+    setAddNetState('submitting');
+    try {
+      await clientRef.current.addWifiNetwork({
+        ssid: addSsid,
+        password: addPassword,
+      });
+      // Refresh the list immediately — broadcast_state will arrive too,
+      // but the inline refetch keeps the UI from looking stale for a frame.
+      const next = await clientRef.current.listWifiNetworks();
+      setSavedNetworks(next);
+      setAddNetState('idle');
+      setAddingNetwork(false);
+      setAddSsid('');
+      setAddPassword('');
+    } catch (e) {
+      setAddNetState('idle');
+      setLastError((e as Error).message);
+    }
+  };
+
+  // Switch the active connection to a saved network. Bumps the
+  // device-side priority so the SM's scan-and-pick lands on this entry,
+  // even if another saved network is currently connected.
+  //
+  // The actual switch is async on the device — the SM tears down the
+  // current STA, scans, picks the bumped entry, connects (or falls back
+  // if it's not visible / has bad creds). The WS socket dies mid-switch
+  // and auto-reconnect picks up afterward. Until the new state arrives:
+  //   - Drop is_active locally (per Bill's UX call) so the user sees
+  //     immediate acknowledgement that their tap landed.
+  //   - Show a "Switching to X…" banner.
+  //   - Vibrate briefly for haptic confirmation that the tap registered
+  //     even before any visual update lands.
+  // The useEffect above clears switchingTo once the broadcast confirms
+  // a settled wifi_ssid.
+  const connectToNetwork = async (entry: WifiNetwork) => {
+    if (!clientRef.current) return;
+    setLastError(null);
+    haptic.medium();
+    setSwitchingTo(entry.ssid);
+    setSavedNetworks((prev) =>
+      prev?.map((n) => (n.is_active ? { ...n, is_active: false } : n)) ?? prev,
+    );
+    try {
+      await clientRef.current.connectWifiNetwork(entry.ssid);
+    } catch (e) {
+      setLastError((e as Error).message);
+      setSwitchingTo(null);
+    }
+  };
+
+  // Forget a saved network. Per design-doc §4.3: silent for non-active
+  // entries, confirm dialog when removing the network we're currently
+  // on (because it triggers a disconnect + scan).
+  const forgetNetwork = (entry: WifiNetwork) => {
+    const doForget = async () => {
+      if (!clientRef.current) return;
+      // Heavy buzz for the active forget (destructive, just confirmed
+      // through a dialog) vs. a light buzz for the silent non-active
+      // case. Mirrors the escalation in haptic intensity to commitment.
+      if (entry.is_active) haptic.heavy();
+      else haptic.light();
+      try {
+        await clientRef.current.removeWifiNetwork(entry.ssid);
+        const next = await clientRef.current.listWifiNetworks();
+        setSavedNetworks(next);
+      } catch (e) {
+        setLastError((e as Error).message);
+      }
+    };
+    if (entry.is_active) {
+      Alert.alert(
+        `Forget ${entry.ssid}?`,
+        'The mirror will disconnect from this network. If it can reach another saved network, it’ll switch automatically; otherwise it’ll wait until one is in range.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Forget', style: 'destructive', onPress: doForget },
+        ],
+      );
+    } else {
+      // Non-active networks are forgotten silently — same UX norm as
+      // iOS/macOS for "Remove network" on networks you're not on.
+      doForget();
+    }
+  };
+
   const findOnSubnet = async () => {
     setScanning(true);
     setLastError(null);
@@ -162,7 +419,14 @@ function App() {
     try {
       const matches = await findMirrors();
       if (matches.length === 0) {
-        setLastError('no mirror found on this network');
+        // Detection of an active VPN from RN core would need a native
+        // module (NetInfo's connection details only). Cheapest hint:
+        // mention it as the most common cause when Find mirror returns
+        // empty on a network that almost always has the mirror on it.
+        setLastError(
+          'no mirror found on this network. if a VPN is on, disable ' +
+          'it and try again — it scopes the scan away from your LAN.',
+        );
       } else if (matches.length === 1) {
         // Exactly one — auto-select. Clear the picker (it'd just have a
         // single row otherwise) and drop the URL into the input.
@@ -195,6 +459,7 @@ function App() {
           text: 'Update',
           onPress: async () => {
             if (!clientRef.current) return;
+            haptic.medium();
             setLastError(null);
             setOtaState('sending');
             try {
@@ -212,6 +477,7 @@ function App() {
 
   const submitRename = async () => {
     if (!clientRef.current) return;
+    haptic.medium();
     const trimmed = nameInput.trim();
     // Server-side cap is 32 chars (ll_state_t.name is char[33], 1 reserved
     // for null). Empty is a legal "clear back to id" value.
@@ -243,6 +509,7 @@ function App() {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
+            haptic.heavy();
             try { await clientRef.current!.factoryReset(); }
             catch (e) { setLastError((e as Error).message); }
           },
@@ -263,7 +530,10 @@ function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0A0F" />
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingTop: 16 + topPadding() }]}
+        scrollEnabled={wheelTouch === null}
+      >
         <View style={styles.headerBar}>
           <Text style={styles.h1}>
             {route === 'settings' ? 'Settings' : 'LL Mirror'}
@@ -474,26 +744,63 @@ function App() {
           <>
             <Text style={styles.section}>Power</Text>
             <Pressable
-              onPress={() => apply({ on: !state.on })}
+              onPress={() => { haptic.medium(); apply({ on: !state.on }); }}
               style={[styles.btn, state.on ? styles.btnOn : styles.btnOff]}
             >
               <Text style={styles.btnText}>{state.on ? 'On' : 'Off'}</Text>
             </Pressable>
 
             <Text style={styles.section}>Color</Text>
-            <View style={styles.swatches}>
-              {BRAND_SWATCHES.map((s) => {
-                const active = state.base_color.toLowerCase() === s.hex.toLowerCase();
-                return (
-                  <Pressable
-                    key={s.name}
-                    onPress={() => apply({ base_color: s.hex })}
-                    style={[styles.swatch, { backgroundColor: s.hex }, active && styles.swatchActive]}
-                  />
-                );
-              })}
+            <View
+              style={{ width: wheelSize, height: wheelSize, alignSelf: 'center' }}
+              onStartShouldSetResponder={() => true}
+              onMoveShouldSetResponder={() => true}
+              // Deny ScrollView's request to take over the touch — without
+              // this, dragging on the wheel pans the page and the user
+              // loses the gesture.
+              onResponderTerminationRequest={() => false}
+              onResponderGrant={(e) => handleWheelTouchInternal(e, true, wheelSize)}
+              onResponderMove={(e) => handleWheelTouchInternal(e, false, wheelSize)}
+              onResponderRelease={(e) => handleWheelReleaseInternal(e, wheelSize)}
+              onResponderTerminate={(e) => handleWheelReleaseInternal(e, wheelSize)}
+            >
+              <Image
+                source={colorWheelAsset}
+                style={{ width: wheelSize, height: wheelSize }}
+                fadeDuration={0}
+              />
+              {/* Color preview at top-right of the wheel (45° from
+                  center). Lives in the empty corner space outside the
+                  inscribed circle so it doesn't block any colors. */}
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.wheelPreview,
+                  {
+                    right: wheelSize * 0.04,
+                    top: wheelSize * 0.04,
+                    backgroundColor: state.base_color,
+                  },
+                ]}
+              />
+              {/* Touch-follow magnifier — only visible while the user
+                  is interacting. Shows the color at the current touch
+                  point so the finger isn't covering its own target. */}
+              {wheelTouch !== null && (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.wheelBubble,
+                    {
+                      left: wheelTouch.x - COLOR_WHEEL_BUBBLE_PX / 2,
+                      top: wheelTouch.y - COLOR_WHEEL_BUBBLE_PX - 16,
+                      backgroundColor: state.base_color,
+                    },
+                  ]}
+                />
+              )}
             </View>
-            <Text style={styles.mono}>{state.base_color}</Text>
+            <Text style={[styles.mono, { textAlign: 'center', marginTop: 4 }]}>{state.base_color}</Text>
 
             <Text style={styles.section}>Brightness</Text>
             <View style={styles.row}>
@@ -502,7 +809,7 @@ function App() {
                 return (
                   <Pressable
                     key={b}
-                    onPress={() => apply({ brightness: b })}
+                    onPress={() => { haptic.brightness(b); apply({ brightness: b }); }}
                     style={[styles.stepBtn, active && styles.stepBtnActive]}
                   >
                     <Text style={[styles.btnText, active && styles.stepBtnTextActive]}>{b}</Text>
@@ -518,7 +825,7 @@ function App() {
                 return (
                   <Pressable
                     key={p}
-                    onPress={() => apply({ pattern_id: p })}
+                    onPress={() => { haptic.pattern(p); apply({ pattern_id: p }); }}
                     style={[styles.patternBtn, active && styles.patternBtnActive]}
                   >
                     <Text style={[styles.btnText, active && styles.stepBtnTextActive]}>{p}</Text>
@@ -565,18 +872,134 @@ function App() {
 
             <Text style={styles.subsection}>Wi-Fi</Text>
             <Text style={styles.muted}>
-              Network: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
+              Connected: <Text style={styles.bold}>{state.wifi_ssid ?? '(not on a network)'}</Text>
               {'\n'}
               IP: <Text style={styles.mono}>{state.ip ?? '(none)'}</Text>
-              {'\n'}
-              Mode: {state.provisioning_active ? 'setup mode (mirror is its own Wi-Fi)' : (state.wifi_ssid ? 'connected to your Wi-Fi' : 'unknown')}
             </Text>
-            <Pressable
-              onPress={() => { setSsid(''); setPassword(''); setReconfiguringWifi(true); }}
-              style={[styles.btn, styles.btnSecondary]}
-            >
-              <Text style={styles.btnText}>Reconfigure Wi-Fi</Text>
-            </Pressable>
+
+            <Text style={styles.label}>Saved networks</Text>
+            {switchingTo !== null && (
+              <View style={styles.switchingBanner}>
+                <Text style={styles.switchingText}>
+                  Switching to {switchingTo}… if {switchingTo} is a
+                  different network than this phone is on, you’ll need
+                  to switch the phone’s Wi-Fi to match, then tap Find
+                  mirror to reconnect.
+                </Text>
+              </View>
+            )}
+            {savedNetworks === null && (
+              <Text style={styles.muted}>Loading…</Text>
+            )}
+            {savedNetworks !== null && savedNetworks.length === 0 && (
+              <Text style={styles.muted}>No saved networks yet.</Text>
+            )}
+            {savedNetworks?.map((n) => (
+              <View key={n.ssid} style={styles.netRow}>
+                <Text style={styles.netCheck}>
+                  {n.is_active ? '✓' : '  '}
+                </Text>
+                <Text style={[styles.netSsid, n.is_active && styles.bold]}>
+                  {n.ssid}
+                </Text>
+                {!n.is_active && (
+                  <Pressable
+                    onPress={() => connectToNetwork(n)}
+                    style={[styles.btn, styles.btnSecondary, styles.netForgetBtn]}
+                  >
+                    <Text style={styles.btnText}>Connect</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={() => forgetNetwork(n)}
+                  style={[styles.btn, styles.btnSecondary, styles.netForgetBtn]}
+                  // Tap target stays usable but the action is destructive
+                  // for the active entry — the confirm dialog inside
+                  // forgetNetwork is what actually gates the disconnect.
+                >
+                  <Text style={styles.btnText}>Forget</Text>
+                </Pressable>
+              </View>
+            ))}
+
+            {!addingNetwork && savedNetworks !== null && (
+              <Pressable
+                onPress={() => {
+                  setAddSsid('');
+                  setAddPassword('');
+                  setAddNetState('idle');
+                  setAddingNetwork(true);
+                }}
+                style={[styles.btn, styles.btnSecondary]}
+              >
+                <Text style={styles.btnText}>+ Add a network</Text>
+              </Pressable>
+            )}
+
+            {addingNetwork && (
+              <View style={styles.addNetForm}>
+                <Text style={styles.label}>SSID</Text>
+                <TextInput
+                  value={addSsid}
+                  onChangeText={setAddSsid}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.input}
+                  placeholder="HomeWiFi"
+                  placeholderTextColor="#555"
+                />
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  value={addPassword}
+                  onChangeText={setAddPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  style={styles.input}
+                  placeholder="(empty for open networks)"
+                  placeholderTextColor="#555"
+                />
+                <View style={styles.row}>
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>
+                      {showPassword ? 'Hide password' : 'Show password'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setAddingNetwork(false);
+                      setAddSsid('');
+                      setAddPassword('');
+                    }}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={submitAddNetwork}
+                    disabled={addNetState !== 'idle'}
+                    style={[
+                      styles.btn,
+                      addNetState !== 'idle' && styles.btnDisabled,
+                    ]}
+                  >
+                    <Text style={styles.btnText}>
+                      {addNetState === 'idle' && 'Save'}
+                      {addNetState === 'submitting' && 'Saving…'}
+                      {addNetState === 'submitted' && 'Saved ✓'}
+                    </Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.muted}>
+                  Adding a network saves it for later — the mirror won’t
+                  switch to it until it’s in range and the current network
+                  isn’t.
+                </Text>
+              </View>
+            )}
 
             <Text style={styles.subsection}>Firmware update</Text>
             <Text style={styles.label}>OTA binary URL</Text>
@@ -623,7 +1046,7 @@ function pillStyle(c: ConnState) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0B0A0F' },
-  body: { padding: 16, gap: 8, paddingBottom: 64, paddingTop: 16 + ANDROID_STATUS_BAR_PADDING },
+  body: { padding: 16, gap: 8, paddingBottom: 64, paddingTop: 16 },
   headerBar: {
     paddingVertical: 4,
     marginBottom: 4,
@@ -659,6 +1082,35 @@ const styles = StyleSheet.create({
   btnOff: { backgroundColor: '#444' },
   btnDanger: { backgroundColor: '#992020' },
   btnSecondary: { backgroundColor: '#1a1924' },
+  switchingBanner: {
+    backgroundColor: '#1a1924',
+    borderLeftColor: '#3214FF',
+    borderLeftWidth: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  switchingText: { color: '#F4EFE6', fontSize: 13, lineHeight: 18 },
+  netRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    backgroundColor: '#15141d',
+    borderRadius: 6,
+    marginTop: 4,
+    gap: 8,
+  },
+  netCheck: {
+    color: '#3214FF',
+    fontSize: 16,
+    width: 16,
+    textAlign: 'center',
+  },
+  netSsid: { color: '#F4EFE6', fontSize: 14, flex: 1 },
+  netForgetBtn: { paddingVertical: 6, paddingHorizontal: 10 },
+  addNetForm: { marginTop: 8, gap: 4 },
   pill: {
     color: '#0B0A0F',
     paddingVertical: 4,
@@ -689,15 +1141,37 @@ const styles = StyleSheet.create({
   pickerRowActive: { borderColor: '#3214FF' },
   pickerRowLabel: { color: '#F4EFE6', fontSize: 14, fontWeight: '600' },
   pickerRowSub: { color: '#8A8A8E', fontSize: 12, fontFamily: 'monospace', marginTop: 2 },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  swatch: {
+  // Color wheel — replaces the BRAND_SWATCHES grid. Wheel image is a
+  // pre-rendered HSV gamut from scripts/gen-color-wheel.py. Sized
+  // dynamically by useWindowDimensions, so width/height land via
+  // inline styles, not StyleSheet.
+  wheelPreview: {
+    position: 'absolute',
     width: 56,
     height: 56,
     borderRadius: 28,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#F4EFE6',
+    // Drop shadow so it reads against any wheel color underneath.
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  swatchActive: { borderColor: '#F4EFE6' },
+  wheelBubble: {
+    position: 'absolute',
+    width: COLOR_WHEEL_BUBBLE_PX,
+    height: COLOR_WHEEL_BUBBLE_PX,
+    borderRadius: COLOR_WHEEL_BUBBLE_PX / 2,
+    borderWidth: 3,
+    borderColor: '#F4EFE6',
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
   stepBtn: {
     backgroundColor: '#1a1924',
     paddingVertical: 12,

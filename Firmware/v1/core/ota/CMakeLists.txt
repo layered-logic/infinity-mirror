@@ -4,8 +4,10 @@ idf_component_register(
     INCLUDE_DIRS
         "."
     REQUIRES
+        esp_event
         esp_https_ota
         esp_http_client
         app_update
         esp_system
+        state_bus
 )

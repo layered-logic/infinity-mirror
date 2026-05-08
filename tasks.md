@@ -1,8 +1,9 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-073
-updated: 2026-05-06
+next_id: LL-074
+updated: 2026-05-07
+
 ---
 
 # Task Registry
@@ -789,14 +790,32 @@ sprint_target: post-quarter
 ---
 
 <a id="LL-046"></a>
-### [ ] LL-046 — Multi-network firmware implementation
+### [x] LL-046 — Multi-network firmware implementation
 
 sprint: 6 | priority: high | deadline: 2026-05-09
-added: 2026-05-01
-artifacts: —
+added: 2026-05-01 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resolved: 2026-05-07
+artifacts: [Firmware/v1/core/ll_wifi/](Firmware/v1/core/ll_wifi/) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c) · [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-041
 
 **Notes:** Implements the spec locked in LL-041 (multi-network design doc). NVS schema bump for N saved networks (N_MAX=4), scan-and-pick reconnect, protocol additions (`list/add/remove_wifi_network`), `set_wifi_creds` retained as deprecated shim through V2 lifetime. App UX: settings page network list with last-used-wins ordering, proactive disconnect on remove with confirm dialog. ~6 days estimated implementation. Proposed Week 6 engineering replacement for the no-longer-real PCB-arrival item.
+
+Step 1/6 (NVS layer + migration shim) shipped May 7: new `core/ll_wifi/` module with `wifi_entry_t`, list ops (find/add/remove/pick_next/sanitize), per-entry NVS persistence, mutex-guarded singleton, and a separate `ll_wifi_migrate_from_esp_wifi(ssid, password)` hook so the dependency direction stays one-way (provisioning depends on ll_wifi, not vice versa). 27 host tests cover sizing, find, add (insert/update/full/invalid), remove (compaction + active_idx fixup), pick_next priority + recently-failed mask + tiebreak, and sanitize.
+
+Step 2/6 (provisioning refactor) shipped May 7: `provisioning.c` now drives STA from `ll_wifi`. Boot-time legacy cred migration via `migrate_legacy_cred_if_needed()`; `esp_wifi_set_storage(WIFI_STORAGE_RAM)` so `esp_wifi`'s NVS becomes vestigial; new helpers `find_idx_by_ssid` / `apply_entry_to_esp_wifi`; `on_wifi_apply_creds` writes to `ll_wifi` first then drives the SoftAP→STA handoff; apply-creds fallback removes the failed entry from `ll_wifi` (was previously `esp_wifi_restore` only); `on_factory_reset` calls `ll_wifi_erase_all` alongside `esp_wifi_restore`; `post_wifi_connected` stamps `ll_wifi_set_active(idx, last_used_us)`. **OTA-flashed and verified on live mirror b2332c** — `fw_version` flipped `ip-state-v3` → `4c1f888-dirty`, STA auto-reconnected to "IoT", all 7 `ll_settings` fields preserved, migration shim real-hardware-confirmed.
+
+Step 3/6 (SCANNING/PICKING/BACKOFF state machine) shipped May 7. New SM in `provisioning.c`: 5 states (IDLE/SCANNING/CONNECTING/ONLINE/BACKOFF), backoff 5s/15s/60s, 8s connect-watchdog, recently-failed bitmask cleared on BACKOFF→SCANNING. PICKING is sub-logic in `sm_handle_scan_done()` — builds a not-visible mask from scan results, ORs with recently-failed, picks via `ll_wifi_list_pick_next`. STA_START kicks the SM (boot path) or calls `esp_wifi_connect` directly (apply-creds path); STA_DISCONNECTED branches on SM state. Factory reset and apply-creds fallback both tear the SM down to IDLE. Boot path simplified — no more `pick_boot_idx`/`apply_entry_to_esp_wifi` at init; the SM kicks itself from STA_START. **First OTA bricked the live mirror** via stack overflow in `sm_handle_scan_done` (1.6 KB `wifi_ap_record_t` array on ~2.3 KB system event task stack); fix heap-allocates the records buffer. USB recovery flashed the stack-fixed build; mirror booted clean, SM connected to "IoT" autonomously through SCANNING→PICKING→CONNECTING→ONLINE.
+
+OTA rollback safety net added during Step 3 (May 7 — out of LL-046's original scope, surfaced by the brick). `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y` in `sdkconfig.defaults`; new `ll_ota_subscribe()` calls `esp_ota_mark_app_valid_cancel_rollback()` on first `LL_EV_WIFI_CONNECTED` after boot. Future OTAs that panic before getting online (or never connect) will auto-rollback to the previous slot. Wired into `main.c` after captive-DNS. Orthogonal to LL-071's eFuse anti-rollback (downgrade defense vs. boot-loop recovery). Bootloader change deployed via USB flash.
+
+Step 4/6 (wire protocol ops) shipped + OTA-verified May 7. Three new ops in `transport.c`: `list_wifi_networks` (sorted by last_used desc, includes is_active), `add_wifi_network` (insert-or-update, never switches active), `remove_wifi_network` (forget by SSID; proactively disconnects via new `ll_provisioning_drop_active()` if removing the active SSID, the SM picks the next eligible). `DeviceState.wifi_saved_count` added per design-doc §7.5 (count only — full list on demand). add/remove trigger `broadcast_state()` so connected clients refresh. `set_wifi_creds` kept as legacy first-cred entry point per §7.4. Smoke-tested 9 cases on live mirror — insert / update / full / invalid / remove / not_found / wifi_saved_count round-trip all green.
+
+Step 5/6 (RN app Settings UI) shipped May 7. `App/v1/` Settings page replaces the single "Reconfigure Wi-Fi" block with a saved-networks list (rendered from `list_wifi_networks`, active-checkmark + per-row Forget button) and an inline "+ Add a network" form. Forget on the active SSID surfaces a confirm dialog (per design-doc §4.3); non-active forgets silently. `protocol.ts` gained `WifiNetwork` / `Add*` / `Remove*` types + `wifi_saved_count` on DeviceState; `ws-client.ts` gained the matching thin wrappers. List refetches on Settings open and on `wifi_saved_count` broadcasts. Setup-flow form (`provisioning_active=true`) unchanged — still uses `set_wifi_creds` per §8.2. Hardware-on-device verification deferred to Step 6 / cross-network E2E.
+
+Step 6 hardware test (May 7) surfaced two issues. (1) The release APK installed and the multi-network UI worked — Bill exercised `set_wifi_creds`, `add_wifi_network`, `remove_wifi_network` paths cleanly. But he hit a recovery gap: bad creds on a second network + Forget on the first (good) network ⇒ mirror stuck in BACKOFF with no auto-SoftAP fallback (per design-doc Q3 / `feedback_rf_minimal_unless_asked`). Recovery via USB `esptool erase_region 0x9000 0x6000` (NVS partition only — preserves firmware, wipes ll_settings + ll_wifi + esp_wifi cred). (2) Bill flagged the bigger feature gap: the spec deliberately omits a "switch to this network" op (§4.2 Q1, "Adding ≠ joining"), but the failure mode he hit proves it's needed. Added a new `connect_wifi_network(ssid)` wire op + `ll_wifi_bump_priority` (last_used only) + `ll_provisioning_request_switch` (handles all SM states); RN app gains a "Connect" button per non-active row. Firmware USB-flashed; APK rebuilt.
+
+Status-bar overlap fix landed in the same session (out of LL-046's original scope but Bill flagged it during testing): module-load read of `StatusBar.currentHeight` returned 0 in cold-start races on Android 15 / Pixel 9, leaving the Settings nav icon untappable under the system bar. Tried `react-native-safe-area-context` first; the deep worktree path blew the C++ codegen filenames past Windows MAX_PATH and a `subst`-aliased drive broke `path.relative` cross-drive in `@react-native/codegen`. Shipped a smaller render-time read floored at 32px instead — no native deps, no Windows-path risk, same outcome.
+
+connect_wifi_network UX polish (May 7): first hardware exercise of the Connect button had no haptic/visual feedback on tap and the WS op was timing out client-side because `ll_provisioning_request_switch()` was tearing the STA down synchronously before transport could flush the response. Refactored to post a new `LL_EV_WIFI_REQUEST_SWITCH` event; provisioning's handler runs on the state-bus task with a 250ms response-flush yield (same pattern as `on_wifi_apply_creds`). App side: optimistic-clear of `is_active` on tap (per Bill's UX call), "Switching to X…" banner, 15ms `Vibration.vibrate` haptic, and the Settings list-refetch `useEffect` now keys on `state.wifi_ssid` so the post-switch settle replaces the optimistic state. Three follow-on fixes after a second hardware pass: VIBRATE permission added to AndroidManifest (was crashing the app on tap), banner copy reworded to tell the user to match their phone's Wi-Fi and re-run Find mirror (auto-reconnect is a lie unless the phone is on the same network), and the Find-mirror "no mirror found" error now mentions disabling VPN as the most common cause.
 
 ---
 
@@ -837,14 +856,14 @@ dependencies: LL-032, LL-043
 ---
 
 <a id="LL-050"></a>
-### [ ] LL-050 — Supply chain map
+### [x] LL-050 — Supply chain map
 
 sprint: 6 | priority: high | deadline: 2026-05-09
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resolved: 2026-05-07
+artifacts: [docs/supply-chain-map.md](docs/supply-chain-map.md)
 dependencies: LL-010, LL-011
 
-**Notes:** Every component, lead time, cost, backup supplier. Per Week 6 plan. Builds on BOM (LL-010) and JLCPCB analysis (LL-011); adds supplier diversity and lead-time risk exposure. Required input for Milestone 2.
+**Notes:** Every component, lead time, cost, backup supplier. Per Week 6 plan. Builds on BOM (LL-010) and JLCPCB analysis (LL-011); adds supplier diversity and lead-time risk exposure. Required input for Milestone 2. Resolved 2026-05-07: 13-line component table with primary + backup cascade per row, executive risk summary (tariff = high, lead time = medium-but-graceful, single-source = low), and 3 open actions (find die-cut packaging vendor, spec LED-holder/back-reflector parts, finalize PSU spec to USB-C PD). Standard sourcing cascades documented: Amazon → AliExpress → Temu → factory direct for commodity items; JLCPCB → PCBWay → OSH Park for PCB fab.
 
 ---
 
@@ -1097,6 +1116,24 @@ artifacts: [docs/firmware-architecture-scoping.md](docs/firmware-architecture-sc
 dependencies: LL-038
 
 **Notes:** Production-grade OTA: signed binaries (ECDSA P-256, key in offline password manager), self-hosted on `ota.layeredlogic.cc` (Cloudflare Worker + R2), `CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK` (eFuse burn — out of scope this sprint per demo-build hardware safety rules), auto-revert on health-check failure within 60s, staged rollout via device-ID hash buckets. Replaces the throwaway dev-test path from LL-038. Post-demo workstream — eFuse burns are irreversible, only safe to enable after secure-boot strategy is fully locked.
+
+**Architecture decisions added 2026-05-07** (in conversation while OTA-flashing LL-046 Step 2):
+- **Pull-based, manifest-then-binary.** Device polls a small JSON manifest at `ota.layeredlogic.cc` carrying `{version, url, sha256, signature}`. Only fetches the (~1.2 MB) binary if `version` is newer than what it's running. Manifest is ~200 bytes; binaries can be GitHub Releases-hosted with the manifest pointing at them — keeps storage/bandwidth on GitHub while keeping the routing/staged-rollout/observability surface on Bill's domain.
+- **Poll interval: 48 hours, configurable via NVS-backed setting.** Bill's expected update cadence is "rarely urgent," so 48h gives a reasonable freshness floor without thrashing the device. Surface as a hidden/dev setting (e.g., `ota_poll_interval_h`) so it can be lowered for staged rollout investigations or raised for power-sensitive deployments without a firmware push.
+- **UX is prompt-and-confirm via the LL app.** App surfaces "update available" when `current < manifest.version`; user taps "install" to actually trigger the download + reboot. Auto-install would mean unexpected mid-use reboots — explicitly avoided per consumer-hardware UX norms.
+- **Cohort routing via Cloudflare Worker.** Worker hashes `device_id` from the request + maps to a rollout bucket (e.g., 5% canary → 50% → 100%). Bad release stays contained until the canary catches it.
+
+---
+
+<a id="LL-073"></a>
+### [x] LL-073 — RN app polish: haptics + color wheel
+
+sprint: 6 | priority: medium | deadline: —
+added: 2026-05-07 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resolved: 2026-05-07
+artifacts: [App/v1/src/haptic.ts](App/v1/src/haptic.ts) · [App/v1/scripts/gen-color-wheel.py](App/v1/scripts/gen-color-wheel.py) · [App/v1/assets/color-wheel.png](App/v1/assets/color-wheel.png)
+dependencies: LL-046
+
+**Notes:** Two-feature polish round on the RN app, requested after LL-046 closed. (1) Haptic feedback wired across all the action buttons via a new `src/haptic.ts` helper with three tiers (light/medium/heavy) plus `pattern(id)` and `brightness(level)` content-encoded signatures — tap a pattern → feel a haptic that mirrors that LED pattern's vibe (solid = steady, twinkle = staccato, breathing = slow swell, etc.); tap a brightness step → feel a duration that scales with the level (Android `Vibration` amplitude isn't bridged from RN core, so duration is the perceptual proxy). Pattern haptics tuned to ~50% longer total + ~20% softer per-pulse on second pass for less assault, more vibe. (2) Replaced the 12 brand-color dots with a 512×512 HSV color wheel PNG (generated by `scripts/gen-color-wheel.py`), sized at runtime to fill the screen width minus body padding; touch handler maps polar coords to `#RRGGBB`, throttled to ~10Hz with a final-on-release send. UI extras: a color preview overlay at the top-right corner of the wheel (45° from center), a touch-follow magnifier bubble that floats above the finger so it doesn't block the target, and `onResponderTerminationRequest={() => false}` + `scrollEnabled={wheelTouch === null}` to keep the page from panning during drag. Replaces `BRAND_SWATCHES` in the app — the export stays in `protocol.ts` for the webapp's own use.
 
 ---
 

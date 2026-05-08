@@ -3,11 +3,16 @@
 // the URL explicitly (no defaultDeviceUrl helper).
 
 import {
+  AddWifiNetworkPayload,
+  AddWifiNetworkResult,
+  ConnectWifiNetworkResult,
   DeviceState,
   InboundFrame,
+  RemoveWifiNetworkResult,
   ResponseEnvelope,
   SetWifiCredsPayload,
   StateBroadcast,
+  WifiNetwork,
   isStateBroadcast,
   newReqId,
   nowEpochSeconds,
@@ -144,6 +149,52 @@ export class MirrorClient {
   setWifiCreds(payload: SetWifiCredsPayload): Promise<void> {
     return this.send<SetWifiCredsPayload, { applied: boolean }>('set_wifi_creds', payload).then((r) => {
       if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'set_wifi_creds failed');
+    });
+  }
+
+  // Multi-network store API — LL-046 step 4 / multi-network-design.md §7.
+  // Provisioning uses set_wifi_creds for the legacy first-cred path
+  // (still works for the SoftAP setup flow); add/remove are for managing
+  // additional networks once the device is already online.
+
+  listWifiNetworks(): Promise<WifiNetwork[]> {
+    return this.send<undefined, { networks: WifiNetwork[] }>('list_wifi_networks').then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'list_wifi_networks failed');
+      return r.result.networks;
+    });
+  }
+
+  // Insert-or-update by ssid. Does NOT switch the active connection —
+  // adding a network just adds it to the saved list; the SM picks based
+  // on visibility next time it scans.
+  addWifiNetwork(payload: AddWifiNetworkPayload): Promise<AddWifiNetworkResult> {
+    return this.send<AddWifiNetworkPayload, AddWifiNetworkResult>('add_wifi_network', payload).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'add_wifi_network failed');
+      return r.result;
+    });
+  }
+
+  // Forget a saved network. If `ssid` is the currently-connected one, the
+  // mirror disconnects immediately (per design-doc §4.3) — caller is
+  // responsible for surfacing the confirm dialog before invoking this.
+  removeWifiNetwork(ssid: string): Promise<RemoveWifiNetworkResult> {
+    return this.send<{ ssid: string }, RemoveWifiNetworkResult>('remove_wifi_network', { ssid }).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'remove_wifi_network failed');
+      return r.result;
+    });
+  }
+
+  // Switch the active connection to a user-chosen saved network. Bumps
+  // the entry's priority and forces a fresh scan-and-pick on the device.
+  // Resolves synchronously with `switching: true` — the actual connect
+  // happens async; observe the result via the next state broadcast.
+  // The socket may briefly close mid-switch (the device's STA tear-down
+  // kicks pending HTTP server connections); the auto-reconnect loop
+  // brings it back once the new network has an IP.
+  connectWifiNetwork(ssid: string): Promise<ConnectWifiNetworkResult> {
+    return this.send<{ ssid: string }, ConnectWifiNetworkResult>('connect_wifi_network', { ssid }).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'connect_wifi_network failed');
+      return r.result;
     });
   }
 

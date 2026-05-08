@@ -32,6 +32,21 @@
 esp_err_t ll_ota_init(void);
 
 /*
+ * Subscribe to LL_EV_WIFI_CONNECTED on the state-bus loop. The first
+ * occurrence after boot calls esp_ota_mark_app_valid_cancel_rollback()
+ * — telling the bootloader "this image got online, it's healthy."
+ *
+ * Without this, an OTA-installed image that panics during early boot
+ * (or never reaches the network) gets rolled back to the previous
+ * slot on the next reset. That's the safety net for dev OTAs that
+ * brick the device — see CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE in
+ * sdkconfig.defaults.
+ *
+ * Call after ll_state_bus_init() and ll_ota_init().
+ */
+esp_err_t ll_ota_subscribe(void);
+
+/*
  * Pull `url` and apply as the next-boot firmware. Synchronous — blocks
  * until the binary is fully downloaded + validated + the active
  * partition is swapped, then calls esp_restart() (so the function does
