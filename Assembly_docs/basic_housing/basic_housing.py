@@ -44,9 +44,12 @@ PCB_X_MM = 25.83
 PCB_Y_MM = 21.70
 PCB_T_MM = 1.60
 
-# Mounting holes (PCB-local, USB at bottom edge, BL = origin)
-HOLE_1_PCB = (22.15, 17.50)
-HOLE_2_PCB = (3.25,  9.50)
+# Mounting holes (PCB-local, USB at bottom edge, BL = origin).
+# X-mirrored from Bill's originally-quoted (22.15, 17.5) and (3.25, 9.5) so
+# the pegs align with the PCB when it's installed components-UP (the original
+# values matched a component-DOWN install, which we don't want).
+HOLE_1_PCB = (PCB_X_MM - 22.15, 17.50)   # = (3.68, 17.50)
+HOLE_2_PCB = (PCB_X_MM - 3.25,  9.50)    # = (22.58, 9.50)
 HOLE_DIA_MM = 3.15
 
 # Components (PCB-local center positions, approximate from STEP)
