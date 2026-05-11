@@ -44,12 +44,10 @@ PCB_X_MM = 25.83
 PCB_Y_MM = 21.70
 PCB_T_MM = 1.60
 
-# Mounting holes (PCB-local, USB at bottom edge, BL = origin).
-# X-mirrored from Bill's originally-quoted (22.15, 17.5) and (3.25, 9.5) so
-# the pegs align with the PCB when it's installed components-UP (the original
-# values matched a component-DOWN install, which we don't want).
-HOLE_1_PCB = (PCB_X_MM - 22.15, 17.50)   # = (3.68, 17.50)
-HOLE_2_PCB = (PCB_X_MM - 3.25,  9.50)    # = (22.58, 9.50)
+# Mounting holes (PCB-local coords, in Bill's view: USB at bottom edge,
+# BL = origin, looking at the component side).
+HOLE_1_PCB = (22.15, 17.50)
+HOLE_2_PCB = (3.25,  9.50)
 HOLE_DIA_MM = 3.15
 
 # Components (PCB-local center positions, approximate from STEP)
@@ -120,12 +118,21 @@ RETAINER_PAD_MM = 1.0      # block wall thickness around the button cavity
 # ============================================================
 
 def pcb_to_world(px, py):
-    """PCB-local (x,y) -> world (X,Y). USB edge (y=0) faces world +Y."""
-    return (px, PCB_Y_MM - py)
+    """PCB-local (x,y) -> world (X,Y).
 
-# Housing INTERIOR extents (Z=0 at interior floor)
-INT_X_MIN = -(BUTTON_GAP_FROM_PCB_X + BUTTON_BODY_X_MM + PCB_EDGE_GAP)
-INT_X_MAX = PCB_X_MM + PCB_EDGE_GAP
+    PCB is installed components-UP with:
+      - USB-C edge (PCB y=0) facing world +Y wall   →  world Y = PCB_Y - py
+      - PCB +X axis flipped to world -X             →  world X = PCB_X - px
+        (so the button extension lands at world high X = the FRONT of the
+        frame; back-of-frame is world low X.)
+    """
+    return (PCB_X_MM - px, PCB_Y_MM - py)
+
+# Housing INTERIOR extents (Z=0 at interior floor). The button extension
+# lives on the +X (FRONT of frame) side; -X is just the PCB edge gap.
+INT_X_MIN = -PCB_EDGE_GAP
+INT_X_MAX = (PCB_X_MM + BUTTON_GAP_FROM_PCB_X
+             + BUTTON_BODY_X_MM + PCB_EDGE_GAP)
 INT_Y_MIN = -PCB_EDGE_GAP
 INT_Y_MAX = PCB_Y_MM + PCB_EDGE_GAP
 INT_Z_MIN = 0.0
@@ -142,10 +149,11 @@ EXT_Y_MAX = INT_Y_MAX + WALL_T_MM
 EXT_Z_MIN = INT_Z_MIN - FLOOR_T_MM
 EXT_Z_MAX = INT_Z_MAX + LID_T_MM
 
-# Button placement (world coords). Cap Z is anchored to the USB-C cutout
+# Button placement (world coords). Body lives at the +X end of the housing
+# (the FRONT-of-frame extension). Cap Z is anchored to the USB-C cutout
 # center so the two features sit at the same height on the +Y face.
-BTN_X_MIN  = INT_X_MIN
-BTN_X_MAX  = INT_X_MIN + BUTTON_BODY_X_MM
+BTN_X_MAX  = INT_X_MAX
+BTN_X_MIN  = INT_X_MAX - BUTTON_BODY_X_MM
 BTN_Y_MAX  = INT_Y_MAX
 BTN_Y_MIN  = INT_Y_MAX - BUTTON_BODY_Y_MM
 BTN_CAP_CZ = PCB_TOP_Z + USB_BOX[2] / 2          # = USB cutout center Z (≈ 4.75)
