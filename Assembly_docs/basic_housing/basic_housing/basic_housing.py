@@ -225,12 +225,17 @@ def _cyl_xy(root, cx_mm, cy_mm, z0_mm, dia_mm, dz_mm, name):
     return body
 
 def _cyl_y(root, cx_mm, cz_mm, y0_mm, dia_mm, dy_mm, name):
-    """Cylinder with axis along Y. Sketched on offset XZ plane at y0, extruded +Y."""
+    """Cylinder with axis along Y. Sketched on offset XZ plane at y0, extruded +Y.
+
+    Note: Fusion's xZ plane has sketch local +Y axis pointing in world -Z
+    (the basis is right-handed with normal = world +Y, so sketch +X cross
+    sketch +Y = +Y → sketch +Y = world -Z). We negate cz_mm here so callers
+    can pass world Z directly.
+    """
     plane = offset_xz_plane(root, y0_mm)
     sk = root.sketches.add(plane)
-    # Sketch on XZ plane: sketch's local +X = world +X, local +Y = world +Z
     sk.sketchCurves.sketchCircles.addByCenterRadius(
-        adsk.core.Point3D.create(cm(cx_mm), cm(cz_mm), 0.0),
+        adsk.core.Point3D.create(cm(cx_mm), cm(-cz_mm), 0.0),
         cm(dia_mm / 2))
     body = _extrude_sketch(root, sk, dy_mm)
     body.name = name
