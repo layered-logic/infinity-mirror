@@ -93,15 +93,24 @@ PEG_HEAD_DIA_MM  = 3.80
 PEG_HEAD_T_MM    = 1.20
 PEG_SLIT_W_MM    = 0.50    # split column for compression
 
-# --- Lid snap tabs (hang outside the ±X walls, barbs poke into wall slots) ---
+# --- Lid snap tabs (hang INSIDE the ±X walls, barbs poke OUTWARD into
+#     through-slots cut in the walls). Inside cantilevers are stiffer because
+#     they have to flex in the same direction as the wall they're trying to
+#     pass, so we use a thinner barb and a longer tab vs the v0 outside design. ---
 TAB_WIDTH_MM    = 5.0      # along Y
-TAB_THICK_MM    = 1.2      # along X (away from wall outer face)
-TAB_LENGTH_MM   = 4.0      # along -Z, hanging from lid bottom
-TAB_BARB_PROJ   = 0.8      # how far the barb projects into the wall slot
+TAB_THICK_MM    = 1.2      # along X
+TAB_LENGTH_MM   = 6.0      # along -Z, hanging from lid bottom
+TAB_BARB_PROJ   = 0.5      # how far the barb projects outward into the slot
 TAB_BARB_T_MM   = 1.2      # barb height along Z
+TAB_WALL_GAP_MM = 0.1      # gap between tab outer face and inner wall surface
 SLOT_WIDTH_MM   = TAB_WIDTH_MM + 0.4
 SLOT_HEIGHT_MM  = TAB_BARB_T_MM + 0.4
 SLOT_Z_FROM_TOP = 2.5      # slot center below interior top
+
+# --- Button retainer block (provides cavity walls around the suspended
+#     button body — without it, the body has nothing on top/bottom/sides
+#     since it doesn't sit on the floor) ---
+RETAINER_PAD_MM = 1.0      # block wall thickness around the button cavity
 
 # ============================================================
 # === Coord transforms / derived dims ========================
@@ -130,15 +139,16 @@ EXT_Y_MAX = INT_Y_MAX + WALL_T_MM
 EXT_Z_MIN = INT_Z_MIN - FLOOR_T_MM
 EXT_Z_MAX = INT_Z_MAX + LID_T_MM
 
-# Button placement (world coords)
+# Button placement (world coords). Cap Z is anchored to the USB-C cutout
+# center so the two features sit at the same height on the +Y face.
 BTN_X_MIN  = INT_X_MIN
 BTN_X_MAX  = INT_X_MIN + BUTTON_BODY_X_MM
 BTN_Y_MAX  = INT_Y_MAX
 BTN_Y_MIN  = INT_Y_MAX - BUTTON_BODY_Y_MM
-BTN_Z_MIN  = 0.0
-BTN_Z_MAX  = BUTTON_BODY_Z_MM
+BTN_CAP_CZ = PCB_TOP_Z + USB_BOX[2] / 2          # = USB cutout center Z (≈ 4.75)
+BTN_Z_MIN  = BTN_CAP_CZ - BUTTON_BODY_Z_MM / 2
+BTN_Z_MAX  = BTN_CAP_CZ + BUTTON_BODY_Z_MM / 2
 BTN_CAP_CX = (BTN_X_MIN + BTN_X_MAX) / 2
-BTN_CAP_CZ = (BTN_Z_MIN + BTN_Z_MAX) / 2
 
 # ============================================================
 # === Helpers ================================================
@@ -295,17 +305,37 @@ def build_button_cap_hole(root):
            BUTTON_CAP_DIA_MM + CAP_HOLE_CLEAR * 2, y1 - y0,
            'BTNcap_cutout_tool')
 
+def build_button_retainer(root):
+    """Solid block joined to the tray that provides the pocket walls around
+    the suspended button body. Spans top/bottom/±X of the body. Open on -Y
+    (where the button is inserted from the housing interior); the +Y face
+    of the cavity meets the housing +Y wall (separately cut by the cap hole).
+    """
+    pad = RETAINER_PAD_MM
+    x0 = BTN_X_MIN - pad
+    y0 = BTN_Y_MIN
+    z0 = BTN_Z_MIN - pad
+    _box_xy(root, x0, y0, z0,
+            (BTN_X_MAX + pad) - x0,
+            BTN_Y_MAX - y0,
+            (BTN_Z_MAX + pad) - z0,
+            'BTNretainer_block')
+
 def build_button_pocket(root):
-    """Interior pocket for the button body. Opens onto the +Y inner wall."""
+    """Interior pocket for the button body, carved out of the retainer block.
+
+    Opens on -Y (extends past the retainer's -Y face into housing void so the
+    button slides in from inside). Stops at the +Y inner wall surface — the
+    cap hole is a separate cylindrical cut through the wall.
+    """
     dx = BUTTON_BODY_X_MM + POCKET_CLEAR_XY * 2
-    dy = BUTTON_BODY_Y_MM + POCKET_CLEAR_XY * 2
+    dy = BUTTON_BODY_Y_MM + POCKET_CLEAR_XY * 2 + RETAINER_PAD_MM  # past block
     dz = BUTTON_BODY_Z_MM + POCKET_CLEAR_Z
-    # Pocket abuts +Y interior wall (with 0.3 mm overlap into wall for clean
-    # boolean), cap-side flush with wall, body extending into housing.
-    y1 = INT_Y_MAX + 0.3
+    y1 = INT_Y_MAX                                # flush with inner wall
     y0 = y1 - dy
     x0 = BTN_CAP_CX - dx/2
-    _box_xy(root, x0, y0, 0.0, dx, dy, dz, 'BTNpocket_tool')
+    z0 = BTN_Z_MIN - POCKET_CLEAR_Z / 2
+    _box_xy(root, x0, y0, z0, dx, dy, dz, 'BTNpocket_tool')
 
 def build_jst_lid_hole(root):
     """Rectangular cutout in the lid above the JST plug."""
@@ -362,7 +392,15 @@ def build_tray(root):
              adsk.fusion.FeatureOperations.CutFeatureOperation,
              keep_tool=False)
 
-    # 3. Cutouts (USB, button cap, button pocket, lid-tab slots).
+    # 3. Add the button retainer block back in (it lives inside the void
+    #    but provides the pocket walls around the suspended button).
+    retainer = _find_body(root, 'BTNretainer_block')
+    if retainer is not None:
+        _bool_op(root, tray, retainer,
+                 adsk.fusion.FeatureOperations.JoinFeatureOperation,
+                 keep_tool=False)
+
+    # 4. Cutouts (USB, button cap, button pocket, lid-tab slots).
     #    Keep tool bodies for visual reference.
     for tool_name in (
         'USBcutout_tool',
@@ -378,7 +416,7 @@ def build_tray(root):
                  adsk.fusion.FeatureOperations.CutFeatureOperation,
                  keep_tool=True)
 
-    # 4. Snap pegs through PCB mounting holes
+    # 5. Snap pegs through PCB mounting holes
     _build_snap_pegs(root, tray)
 
 def _build_snap_pegs(root, target):
@@ -442,12 +480,12 @@ def build_lid(root):
     _build_lid_tabs(root, lid)
 
 def _build_lid_tabs(root, lid):
-    """Two tabs hanging from lid bottom, OUTSIDE the ±X walls.
+    """Two tabs hanging from lid bottom, INSIDE the ±X walls.
 
-    Each tab has a barb that projects toward the wall (into the slot).
-    Insertion: tab flexes outward as it slides past the wall, then springs
-    back when barb aligns with slot. Release: pry tab outward to disengage,
-    then lift.
+    Each tab has a barb that projects OUTWARD into a through-slot in the wall.
+    Insertion: tab flexes inward as it slides past the wall above the slot,
+    then springs outward when the barb reaches the slot Z. Release: push the
+    barb back inward from outside through the slot opening, then lift.
     """
     tab_z_top = INT_Z_MAX
     tab_z_bot = tab_z_top - TAB_LENGTH_MM
@@ -455,29 +493,36 @@ def _build_lid_tabs(root, lid):
     tab_y0    = y_center - TAB_WIDTH_MM / 2
     barb_z0   = INT_Z_MAX - SLOT_Z_FROM_TOP - TAB_BARB_T_MM / 2
 
-    # --- Front (-X) tab ---
+    # --- Front (-X) tab, inside the -X wall ---
+    front_tab_x0 = INT_X_MIN + TAB_WALL_GAP_MM
     front_tab = _box_xy(root,
-                        EXT_X_MIN - TAB_THICK_MM, tab_y0, tab_z_bot,
+                        front_tab_x0, tab_y0, tab_z_bot,
                         TAB_THICK_MM, TAB_WIDTH_MM, TAB_LENGTH_MM,
                         '_lid_tab_front_shaft')
     _bool_op(root, lid, front_tab,
              adsk.fusion.FeatureOperations.JoinFeatureOperation)
+    # Barb projects -X (toward wall) from tab outer face into the slot
     front_barb = _box_xy(root,
-                         EXT_X_MIN, tab_y0 + 0.5, barb_z0,
+                         front_tab_x0 - TAB_BARB_PROJ,
+                         tab_y0 + 0.5, barb_z0,
                          TAB_BARB_PROJ, TAB_WIDTH_MM - 1.0, TAB_BARB_T_MM,
                          '_lid_tab_front_barb')
     _bool_op(root, lid, front_barb,
              adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
-    # --- Back (+X) tab ---
+    # --- Back (+X) tab, inside the +X wall ---
+    back_tab_x_max = INT_X_MAX - TAB_WALL_GAP_MM
+    back_tab_x0   = back_tab_x_max - TAB_THICK_MM
     back_tab = _box_xy(root,
-                       EXT_X_MAX, tab_y0, tab_z_bot,
+                       back_tab_x0, tab_y0, tab_z_bot,
                        TAB_THICK_MM, TAB_WIDTH_MM, TAB_LENGTH_MM,
                        '_lid_tab_back_shaft')
     _bool_op(root, lid, back_tab,
              adsk.fusion.FeatureOperations.JoinFeatureOperation)
+    # Barb projects +X (toward wall) from tab outer face into the slot
     back_barb = _box_xy(root,
-                       EXT_X_MAX - TAB_BARB_PROJ, tab_y0 + 0.5, barb_z0,
+                       back_tab_x_max,
+                       tab_y0 + 0.5, barb_z0,
                        TAB_BARB_PROJ, TAB_WIDTH_MM - 1.0, TAB_BARB_T_MM,
                        '_lid_tab_back_barb')
     _bool_op(root, lid, back_barb,
@@ -492,6 +537,7 @@ ENVELOPE_KEYS = [
     'button_env',
 ]
 TRAY_CUT_KEYS = [
+    'button_retainer',  # must come before tray so the join finds it
     'usb_cutout', 'button_cap_hole', 'button_pocket', 'lidtab_slots',
 ]
 LID_CUT_KEYS = ['jst_lid_hole']
@@ -511,7 +557,10 @@ COMPONENTS = {
     'button_env':  build_button_envelope,
 
     # Cut tools (consumed by tray/lid via boolean ops, but kept visible
-    # so the user can see where each cut landed).
+    # so the user can see where each cut landed). The button_retainer is
+    # actually JOINED to the tray rather than cut — it provides the cavity
+    # walls for the suspended button.
+    'button_retainer': build_button_retainer,
     'usb_cutout':      build_usb_cutout,
     'button_cap_hole': build_button_cap_hole,
     'button_pocket':   build_button_pocket,
