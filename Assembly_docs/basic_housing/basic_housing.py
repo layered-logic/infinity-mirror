@@ -83,23 +83,25 @@ BUTTON_BODY_Z_MM = 6.0
 BUTTON_CAP_DIA_MM = 4.0
 BUTTON_GAP_FROM_PCB_X = 0.0
 
-# Button print-clearance
-POCKET_CLEAR_XY = 0.15
-POCKET_CLEAR_Z  = 0.20
-CAP_HOLE_CLEAR  = 0.20
+# Button print-clearance — loosened after second dry-fit (button still
+# wouldn't fit the 6 mm cavity; FDM print tolerance was eating the 0.15 mm).
+POCKET_CLEAR_XY = 0.30
+POCKET_CLEAR_Z  = 0.30
+CAP_HOLE_CLEAR  = 0.30
 
 # --- JST plug pull-out hole in lid ---
 JST_PLUG_HOLE_DX = 9.0
 JST_PLUG_HOLE_DY = 7.0
 
 # --- Snap peg through 3.15 mm PCB mounting hole. Peg is split into 3 prongs
-#     by a Y-shaped cut (3 slits at 0°/120°/240°). 3-way Y compresses more
-#     evenly than a 2-way slit; switched after first dry-fit (the 2-way
-#     wouldn't push through the PCB). ---
-PEG_SHAFT_DIA_MM = 2.95
-PEG_HEAD_DIA_MM  = 3.80
+#     by a Y-shaped cut (3 slits at 0°/120°/240°). After 2nd dry-fit the
+#     Y-split still wouldn't push through, so head dia dropped 3.80→3.50
+#     (less interference) and slit width 0.50→0.80 (thinner prongs flex
+#     more easily). Shaft also dropped 2.95→2.80 in case it was binding. ---
+PEG_SHAFT_DIA_MM = 2.80
+PEG_HEAD_DIA_MM  = 3.50
 PEG_HEAD_T_MM    = 1.20
-PEG_SLIT_W_MM    = 0.50    # width of each of the 3 Y-arms
+PEG_SLIT_W_MM    = 0.80    # width of each of the 3 Y-arms
 
 # --- Lid snap tabs (hang INSIDE the ±X walls, barbs poke OUTWARD into
 #     through-slots cut in the walls). Inside cantilevers are stiffer because
