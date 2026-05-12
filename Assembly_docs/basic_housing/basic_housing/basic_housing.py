@@ -73,9 +73,13 @@ FLOOR_T_MM   = 1.5
 LID_T_MM     = 1.5
 
 # --- Button (5x6x5 in world: cap on +Y face) ---
-BUTTON_BODY_X_MM = 5.0
+# NOTE: the body cross-section perpendicular to the press direction is 6 mm,
+# not the 5 mm shown on the photo — the metal flange clips around the body
+# extend the effective footprint. Bumped from 5 to 6 after first dry-fit
+# (Bill: "the face forward orientation necessitates a 6x6 cutout").
+BUTTON_BODY_X_MM = 6.0
 BUTTON_BODY_Y_MM = 6.0
-BUTTON_BODY_Z_MM = 5.0
+BUTTON_BODY_Z_MM = 6.0
 BUTTON_CAP_DIA_MM = 4.0
 BUTTON_GAP_FROM_PCB_X = 0.0
 
@@ -88,11 +92,14 @@ CAP_HOLE_CLEAR  = 0.20
 JST_PLUG_HOLE_DX = 9.0
 JST_PLUG_HOLE_DY = 7.0
 
-# --- Snap peg through 3.15 mm PCB mounting hole ---
+# --- Snap peg through 3.15 mm PCB mounting hole. Peg is split into 3 prongs
+#     by a Y-shaped cut (3 slits at 0°/120°/240°). 3-way Y compresses more
+#     evenly than a 2-way slit; switched after first dry-fit (the 2-way
+#     wouldn't push through the PCB). ---
 PEG_SHAFT_DIA_MM = 2.95
 PEG_HEAD_DIA_MM  = 3.80
 PEG_HEAD_T_MM    = 1.20
-PEG_SLIT_W_MM    = 0.50    # split column for compression
+PEG_SLIT_W_MM    = 0.50    # width of each of the 3 Y-arms
 
 # --- Lid snap tabs (hang INSIDE the ±X walls, barbs poke OUTWARD into
 #     through-slots cut in the walls). Inside cantilevers are stiffer because
@@ -436,15 +443,18 @@ def build_tray(root):
     _build_snap_pegs(root, tray)
 
 def _build_snap_pegs(root, target):
-    """Two compression snap pegs at the PCB mounting hole positions.
+    """Two Y-split compression snap pegs at the PCB mounting hole positions.
 
     Geometry per peg:
       - cylindrical shaft (PEG_SHAFT_DIA), height = PCB_TOP_Z (joins floor up
         to PCB top surface)
       - head cylinder (PEG_HEAD_DIA), sitting on top of shaft by PEG_HEAD_T
-      - axial slit (PEG_SLIT_W) through both, oriented along world X so the
-        peg's two halves can flex in ±Y to compress through the hole.
+      - 3-way Y-split (3 radial slits at 0°/120°/240°) through full peg height,
+        leaving 3 prongs that compress evenly inward to pass through the
+        3.15 mm PCB hole, then spring back out to retain the PCB.
     """
+    arm_len  = PEG_HEAD_DIA_MM / 2 + 0.4   # extends slightly past peg radius
+    arm_z    = PCB_TOP_Z + PEG_HEAD_T_MM + 0.4
     for label, (hx_pcb, hy_pcb) in (('peg1', HOLE_1_PCB), ('peg2', HOLE_2_PCB)):
         wx, wy = pcb_to_world(hx_pcb, hy_pcb)
 
@@ -455,23 +465,48 @@ def _build_snap_pegs(root, target):
         _bool_op(root, target, shaft,
                  adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
-        # Head (slightly oversized — will get the slit cut so each half acts
-        # as a flexing finger)
+        # Head
         head = _cyl_xy(root, wx, wy, PCB_TOP_Z,
                        PEG_HEAD_DIA_MM, PEG_HEAD_T_MM,
                        f'_{label}_head')
         _bool_op(root, target, head,
                  adsk.fusion.FeatureOperations.JoinFeatureOperation)
 
-        # Slit: thin slab cut along world X axis, through full peg height
-        slit_x = PEG_HEAD_DIA_MM + 0.6
-        slit = _box_xy(root,
-                       wx - slit_x/2, wy - PEG_SLIT_W_MM/2, 0.0,
-                       slit_x, PEG_SLIT_W_MM,
-                       PCB_TOP_Z + PEG_HEAD_T_MM + 0.4,
-                       f'_{label}_slit')
-        _bool_op(root, target, slit,
-                 adsk.fusion.FeatureOperations.CutFeatureOperation)
+        # Y-split: three radial slits, 120° apart, all meeting at peg axis
+        for i, angle_deg in enumerate((0.0, 120.0, 240.0)):
+            slit = _radial_slit(root, wx, wy, 0.0,
+                                arm_len, PEG_SLIT_W_MM, arm_z, angle_deg,
+                                f'_{label}_slit{i}')
+            _bool_op(root, target, slit,
+                     adsk.fusion.FeatureOperations.CutFeatureOperation)
+
+
+def _radial_slit(root, cx_mm, cy_mm, z0_mm, length_mm, width_mm,
+                 height_mm, angle_deg, name):
+    """Thin rectangular slit with one short edge AT (cx,cy), extending
+    outward along the direction at angle_deg (CCW from world +X). Width is
+    perpendicular. The inner end actually starts at -width/2 so adjacent
+    slits in a Y-pattern overlap cleanly at the center.
+    """
+    angle = math.radians(angle_deg)
+    cos_a, sin_a = math.cos(angle), math.sin(angle)
+    half_w = width_mm / 2
+    # Local rect: (-w/2, -w/2) -> (length, +w/2). The -w/2 inner extension
+    # makes the 3 slits overlap at the center so no residual material.
+    local = [(-half_w, -half_w),
+             (length_mm, -half_w),
+             (length_mm,  half_w),
+             (-half_w,    half_w)]
+    pts = [(cx_mm + cos_a * x - sin_a * y,
+            cy_mm + sin_a * x + cos_a * y) for (x, y) in local]
+    plane = offset_xy_plane(root, z0_mm)
+    sk = root.sketches.add(plane)
+    lines = sk.sketchCurves.sketchLines
+    for i in range(4):
+        lines.addByTwoPoints(pt3d(*pts[i]), pt3d(*pts[(i + 1) % 4]))
+    body = _extrude_sketch(root, sk, height_mm)
+    body.name = name
+    return body
 
 # ============================================================
 # === Builders: lid ==========================================
