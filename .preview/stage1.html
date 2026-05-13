@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Stage 1 — Discover (preview v6 · Graphviz)</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f5f0;
+    --ink: #0b0a0f;
+    --muted: #6e6e73;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 48px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  header { max-width: 1800px; margin: 0 auto 24px; }
+  h1 { font-weight: 300; font-style: italic; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .sub { color: var(--muted); font-size: 14px; }
+  .card {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 24px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+    overflow-x: auto;
+  }
+  .legend {
+    max-width: 1800px;
+    margin: 16px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .swatch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+  .rect {
+    width: 18px; height: 12px;
+    border-radius: 2px;
+    border: 2px solid;
+  }
+  .diamond {
+    width: 12px; height: 12px;
+    transform: rotate(45deg);
+    border: 2px solid;
+  }
+  #chart { text-align: center; min-height: 200px; }
+  #chart svg { max-width: 100%; height: auto; }
+  .v6 {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    background: #4527a0;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .status {
+    max-width: 1800px;
+    margin: 8px auto 0;
+    padding: 8px 14px;
+    background: #fff;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  .err {
+    color: #b71c1c;
+    background: #ffebee;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stage 1 — Discover <span class="v6">v6.1 · per-column rank groups</span></h1>
+  <div class="sub">Service Blueprint flow preview · Layered Logic · 2026-05-13 · <em>Graphviz with rankdir=LR. Per-column rank=same groups (each pain diamond stacked with its bounce/recovery/missing) so the happy path falls on the top row.</em></div>
+</header>
+
+<div class="card">
+  <div id="chart">Loading Graphviz…</div>
+</div>
+
+<div class="legend">
+  <span class="swatch"><span class="dot" style="background:#b39ddb;border-color:#4527a0;"></span>Start</span>
+  <span class="swatch"><span class="dot" style="background:#a5d6a7;border-color:#2e7d32;"></span>Happy end</span>
+  <span class="swatch"><span class="dot" style="background:#ef9a9a;border-color:#b71c1c;"></span>Unhappy end (exit)</span>
+  <span class="swatch"><span class="diamond" style="background:#ffcc80;border-color:#ef6c00;"></span>User-voice question (pain or recovery)</span>
+  <span class="swatch"><span class="rect" style="background:#fff59d;border-color:#f9a825;"></span>Missing info / system-fail callout</span>
+  <span class="swatch"><span class="rect" style="background:#fff;border-color:#444;"></span>User action</span>
+</div>
+
+<div class="status" id="status">Initializing renderer…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3/lib/viz-standalone.js"></script>
+<script>
+  const dotSource = `
+digraph stage1 {
+  rankdir=LR;
+  splines=ortho;
+  bgcolor=transparent;
+  nodesep=0.5;
+  ranksep=1.0;
+
+  node [fontname="Helvetica", fontsize=11, margin="0.2,0.12", penwidth=2];
+  edge [fontname="Helvetica", fontsize=10, color="#444", arrowsize=0.8];
+
+  // Top-row happy-path nodes
+  Encounter [shape=oval, style=filled, fillcolor="#b39ddb", color="#4527a0", label="User encounters a\\nLayered Logic\\ninfinity mirror"];
+  Q1 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Does this fit\\nmy vibe?"];
+  Q2 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Can I imagine this\\nin my space?"];
+  Q3 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Is this worth\\nwhat they're asking?"];
+  Q4 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Can I trust\\nthis maker?"];
+  Q5 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Is now a good time\\nfor me to engage?"];
+  Click [shape=box, style="filled,rounded", fillcolor="white", color="#444", label="I click through\\nor engage"];
+  Stage2 [shape=oval, style=filled, fillcolor="#a5d6a7", color="#2e7d32", label="Stage 2\\nConsider"];
+
+  // Bounce ovals
+  LostVibe [shape=oval, style=filled, fillcolor="#ef9a9a", color="#b71c1c", label="Bounce\\nnot my vibe"];
+  LostTime [shape=oval, style=filled, fillcolor="#ef9a9a", color="#b71c1c", label="Bounce\\nnot now"];
+
+  // Recovery diamonds
+  Q2r [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Is there a tool to\\nhelp me visualize it?"];
+  Q3r [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Is there a reason\\nthis is priced this way?"];
+  Q4r [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00", label="Can I find proof of\\nothers' experience?"];
+
+  // Missing-info terminals
+  Missing2 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825", label="Missing: in-room photos\\nwith scale anchor"];
+  Missing3 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825", label="Missing: pricing rationale\\n+ repair / sustainability story"];
+  Missing4 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825", label="Missing: reviews,\\ncreator placement, social proof"];
+
+  // Per-column rank groups (rankdir=LR, so rank=same means same column).
+  // Each pain diamond stays in its own column with its bounce/recovery/missing
+  // stacked below it. The happy-path nodes (Encounter, Click, Stage2) live in
+  // their own columns and end up on the top row by default — no rank group needed.
+  { rank=same; Q1; LostVibe; }
+  { rank=same; Q2; Q2r; Missing2; }
+  { rank=same; Q3; Q3r; Missing3; }
+  { rank=same; Q4; Q4r; Missing4; }
+  { rank=same; Q5; LostTime; }
+
+  // Happy path: east of source -> west of target (Yes, horizontal across the top)
+  // weight=10 keeps these edges short and pulls the row into alignment
+  Encounter:e -> Q1:w [weight=10];
+  Q1:e -> Q2:w [label="  Yes", weight=10];
+  Q2:e -> Q3:w [label="  Yes", weight=10];
+  Q3:e -> Q4:w [label="  Yes", weight=10];
+  Q4:e -> Q5:w [label="  Yes", weight=10];
+  Q5:e -> Click:w [label="  Yes", weight=10];
+  Click:e -> Stage2:w [weight=10];
+
+  // No edges: south of source -> north of target (vertical, within column)
+  Q1:s -> LostVibe:n [label="No"];
+  Q2:s -> Q2r:n [label="No"];
+  Q3:s -> Q3r:n [label="No"];
+  Q4:s -> Q4r:n [label="No"];
+  Q5:s -> LostTime:n [label="No"];
+
+  // Recovery No edges: south of recovery -> north of Missing (vertical)
+  Q2r:s -> Missing2:n [label="No"];
+  Q3r:s -> Missing3:n [label="No"];
+  Q4r:s -> Missing4:n [label="No"];
+
+  // Recovery Yes rejoin: east of recovery -> west of next gate
+  // (Inverted-L since the target is one column right and one row up)
+  Q2r:e -> Q3:w [label="  Yes"];
+  Q3r:e -> Q4:w [label="  Yes"];
+  Q4r:e -> Q5:w [label="  Yes"];
+}
+  `;
+
+  const chart = document.getElementById("chart");
+  const status = document.getElementById("status");
+
+  function fail(msg, err) {
+    status.className = "status err";
+    status.textContent = msg + (err ? ": " + (err.message || err) : "");
+    chart.textContent = "(rendering failed — see status line below)";
+    if (err) console.error(err);
+  }
+
+  if (typeof Viz === "undefined") {
+    fail("Viz library did not load from CDN. Check network / blockers");
+  } else {
+    Viz.instance().then(viz => {
+      try {
+        const svg = viz.renderSVGElement(dotSource);
+        chart.innerHTML = "";
+        chart.appendChild(svg);
+        status.textContent = "Renderer: Graphviz · splines=ortho · port-pinned edges (:e→:w for Yes, :s→:n for No)";
+      } catch (e) {
+        fail("Graphviz render error", e);
+      }
+    }).catch(e => fail("Graphviz instance() failed", e));
+  }
+</script>
+</body>
+</html>
