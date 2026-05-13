@@ -71,7 +71,8 @@ Deferred from Week 3:
 - [User Interview Outlines](docs/user-interview-outline.md) — end-buyer + showcase-partner interview outlines, 20–25 min each · *Week 5*
 - [Button Design Rationale](docs/button-design-rationale.md) — *why an app + physical buttons* portfolio artifact (draft, pre-user-research) · *Week 5*
 - *(pending)* User Repair Guide · *Week 4 → Week 8 final*
-- *(pending)* Service Blueprint · *Week 7*
+- [Service Blueprint](docs/service-blueprint.md) — 10-stage customer journey + custom-order deep dive · *Week 7*
+- [User Flow Authoring](docs/user-flow-authoring.md) — methodology + Graphviz rendering recipe for HCDE user-flow diagrams · *Week 7*
 
 ## Business & Venture
 
