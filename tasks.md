@@ -754,12 +754,24 @@ dependencies: LL-030, LL-031, LL-036
 <a id="LL-043"></a>
 ### [ ] LL-043 — User interview contact list and outreach
 
-sprint: 4 | priority: medium | deadline: 2026-05-09
-added: 2026-04-22 | first_engaged: 2026-04-28
-artifacts: —
+sprint: 4 | priority: medium | deadline: 2026-05-30
+added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-14
+artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
-**Notes:** Interview outline drafted via LL-032 (Apr 28); compiling the contact list and reaching out to 3-5 end-buyers + a few coffee-shop showcase partners still pending. In-progress per Week 4 sprint_log. Active sprint: 5.
+**Notes:** Interview outline drafted via LL-032 (Apr 28). Deadline extended from May 9 to May 30 (Milestone 3) on May 14 to match the actual campaign window. Outreach started cold: 2 YouTubers (Philip DeFranco, Corridor Digital) + 2 Twitch streamers (Aztecross, Jake the Alright) contacted May 14. [docs/outreach-list.md](docs/outreach-list.md) tracks sent + next-round candidates by lane (smart-home, maker, gaming-setup, press, repair voices, cafes, end-buyer recruitment). Content-creator branch spun out as child [LL-043-1](#LL-043-1).
+
+---
+
+<a id="LL-043-1"></a>
+#### [ ] LL-043-1 — Content creator + streamer outreach campaign
+
+parent: LL-043 | sprint: 7 | priority: medium | deadline: 2026-05-30
+added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [docs/outreach-list.md](docs/outreach-list.md)
+dependencies: LL-032
+
+**Notes:** Per-lane scripted cold outreach (streamer / smart-home / maker / press). Ask = 15-20 min on want/need/cool/problematic re: studio backgrounds and functionality. 14-day no-reply window. Streamer/gaming variant uses nano-banana logo-on-prototype render as visual hook — automatable via n8n; smart-home and press variants are manual. Pipeline outlined in [outreach-list.md § n8n workflow](docs/outreach-list.md#n8n-workflow-outline). Verified contacts captured for Smart Home Solver (Reed), DIY Perks, Hardware Haven, Aztecross (fallback); contact-form-only for Hook Up + Everything Smart Home; remaining names pending verification before send.
 
 ---
 
@@ -834,12 +846,12 @@ dependencies: —
 <a id="LL-048"></a>
 ### [ ] LL-048 — Informal end-buyer interviews (3-5 people)
 
-sprint: 4 | priority: high | deadline: 2026-05-09
+sprint: 4 | priority: high | deadline: 2026-05-30
 added: 2026-04-22
 artifacts: —
 dependencies: LL-032, LL-043
 
-**Notes:** Test wireframe concepts informally; gather data on price brackets, customization appetite, control preferences, values alignment, discovery patterns. Per Week 4 plan + Week 5 continuation. Outline ready (LL-032); contact list pending (LL-043). 6 testable hypotheses from button-design rationale (LL-033) tied to specific interview questions.
+**Notes:** Test wireframe concepts informally; gather data on price brackets, customization appetite, control preferences, values alignment, discovery patterns. Per Week 4 plan + Week 5 continuation. Outline ready (LL-032); LL-043 outreach campaign engaged May 14 with 5/day cadence. Deadline extended from May 9 to May 30 to match the campaign's reply window. 6 testable hypotheses from button-design rationale (LL-033) tied to specific interview questions.
 
 ---
 
@@ -882,12 +894,13 @@ dependencies: —
 <a id="LL-052"></a>
 ### [ ] LL-052 — PCB hardware integration and validation
 
-sprint: 6 | priority: medium | deadline: 2026-05-09
+sprint: 6 | priority: medium | deadline: —
 added: 2026-03-30
 artifacts: —
 dependencies: LL-045
+block_reason: Hard-blocked on LL-045 (PCB order slipped out-of-quarter Apr 18). Demo build path locked on XIAO ESP32-C3 dev kit per [project_pcb_status memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md) — no custom PCB to integrate against this quarter. Deadline cleared; revisit if PCB order moves back into scope.
 
-**Notes:** Per Week 6 plan: "PCBs arrive. Solder and test the new board. Validate that the dev board prototyping translates to the custom PCB." Blocked on LL-045 (PCB order slipped). Demo build path is staying on XIAO ESP32-C3 dev kit per [project_pcb_status memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md).
+**Notes:** Per Week 6 plan: "PCBs arrive. Solder and test the new board. Validate that the dev board prototyping translates to the custom PCB." Out-of-quarter unless LL-045 unblocks.
 
 ---
 
@@ -923,11 +936,11 @@ Resolved 2026-05-13 as a dedicated section of [LL-053](#LL-053): 10-step custom-
 ### [ ] LL-055 — Firmware Wi-Fi/BLE resilience stress-test
 
 sprint: 7 | priority: medium | deadline: 2026-05-16
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c)
 dependencies: LL-029, LL-046
 
-**Notes:** Wi-Fi drop handling, BLE reconnection, network jitter under load. Technical "usability" — closes spec §7 of [docs/firmware-spec.md](docs/firmware-spec.md). Includes addressing the parked transient-socket-closed bug from LL-035-4 ([post-mini-sprint-bugs.md #1](docs/post-mini-sprint-bugs.md)). Per Week 7 plan.
+**Notes:** Wi-Fi drop handling, BLE reconnection, network jitter under load. Technical "usability" — exercises resilience behavior currently spread across §4.5 (transport), §4.7 (ota validation), §8 (boot sequence) of [docs/firmware-spec.md](docs/firmware-spec.md); no dedicated resilience section exists yet. Includes addressing the parked transient-socket-closed bug from LL-035-4 ([post-mini-sprint-bugs.md #1](docs/post-mini-sprint-bugs.md)). Per Week 7 plan.
 
 ---
 
@@ -1088,14 +1101,14 @@ dependencies: LL-026
 ---
 
 <a id="LL-069"></a>
-### [ ] LL-069 — Estimated quarterly taxes setup
+### [ ] LL-069 — Tax filing setup (WA DOR + federal 1040-ES)
 
-sprint: 1 | priority: medium | deadline: 2026-04-15
-added: 2026-03-30
+sprint: 1 | priority: medium | deadline: 2026-06-15
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
 artifacts: —
-dependencies: LL-002
+dependencies: LL-002, LL-026
 
-**Notes:** Single-member LLC income passes through to personal return. If expecting to owe >$1,000, IRS expects quarterly estimated payments via Form 1040-ES. Deadlines: Apr 15, Jun 15, Sep 15, Jan 15. First deadline already passed for 2026; recurring obligation.
+**Notes:** Two tracks. **Federal 1040-ES:** not required while expected annual tax <$1K — currently zero income, so deferred until revenue lands. Re-evaluate before Jun 15, Sep 15, Jan 15. **WA DOR:** Layered Logic added to My DOR portal May 14; no immediate action items surfaced (consistent with default annual filing for new low-volume businesses). Filing frequency to be confirmed via the welcome letter / physical license arriving by mail — capture it here when it lands. Likely Jan 31, 2027 for any 2026 activity. If revenue lands mid-year that pushes the projection above WA's quarterly threshold, DOR may reclassify; re-check then.
 
 ---
 

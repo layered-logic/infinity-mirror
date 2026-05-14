@@ -20,6 +20,7 @@
 
 #include "transport.h"
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,13 +44,23 @@ static const char *TAG = "transport";
 #define LL_TRANSPORT_PORT  80
 #define LL_WS_RX_MAX       1024   /* envelope+payload — generous for ping/state */
 
-static httpd_handle_t g_server;
+/* Debounce window for client broadcasts. Long enough to absorb a multi-
+ * field set_state (event-bus dispatch is sub-ms even for 5-field payloads)
+ * and tightly-clustered control clicks; short enough to be imperceptible
+ * to users. Tune via empirical jitter testing if needed. */
+#define LL_BROADCAST_DEBOUNCE_US (30 * 1000)
 
-/* Forward decl — the multi-network ops below trigger broadcasts after
+static httpd_handle_t     g_server;
+static esp_timer_handle_t s_broadcast_timer;
+static atomic_bool        s_broadcast_pending;
+
+/* Forward decls — the multi-network ops below trigger broadcasts after
  * mutating the saved-list (so wifi_saved_count refreshes on connected
- * clients), but the body of broadcast_state lives further down with
- * the rest of the broadcast plumbing. */
+ * clients), but the body of broadcast_state and its helpers live
+ * further down with the rest of the broadcast plumbing. */
 static void broadcast_state(void);
+static void do_broadcast_state(void);
+static void broadcast_timer_cb(void *arg);
 
 /* ---- state object serialization ---------------------------------- */
 
@@ -713,12 +724,6 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
     return err;
 }
 
-/* Forward decl: lifecycle handlers below now broadcast on wifi state
- * changes (since `provisioning_active` and `wifi_ssid` are part of the
- * wire state), and broadcast_state itself is defined further down to
- * keep it adjacent to the LL_EV_STATE_CHANGED subscriber. */
-static void broadcast_state(void);
-
 /* ---- WS URI handler ---------------------------------------------- */
 
 static esp_err_t ws_handler(httpd_req_t *req)
@@ -865,19 +870,47 @@ static void on_wifi_disconnected(void *arg, esp_event_base_t base,
 
 /* ---- state broadcast --------------------------------------------- */
 
-/* Fire on every LL_EV_STATE_CHANGED. Builds the {op:"state",ts,state}
- * envelope once and pushes it to every connected WS client. The same
- * envelope is sent to the client that triggered the change too — set_state's
- * direct response is best-effort/stale, this broadcast is authoritative
- * and clients should rely on it.
+/* Schedule a state broadcast to all connected WS clients. Coalesces
+ * rapid-fire callers within LL_BROADCAST_DEBOUNCE_US — the first call
+ * arms the timer; subsequent calls inside the window return
+ * immediately. The actual broadcast (do_broadcast_state) runs on the
+ * esp_timer task and captures state at fire-time, so intermediate
+ * states from a multi-field set_state burst are dropped and only the
+ * settled state ships to clients.
  *
- * One broadcast per primitive event (not coalesced). For a multi-field
- * set_state ({pattern_id, base_color, brightness}), that's three
- * broadcasts in rapid succession, each carrying the full state at that
- * point. Each frame is consistent on its own; coalescing is a future
- * optimization if the chatter becomes a problem.
+ * Thread-safe across the state-bus, httpd, and esp_timer tasks via
+ * stdatomic.h. Called from on_state_changed (state-bus task),
+ * on_wifi_connected/disconnected (state-bus task), and the multi-network
+ * wifi op handlers (httpd task).
  */
 static void broadcast_state(void)
+{
+    bool was_pending = atomic_exchange(&s_broadcast_pending, true);
+    if (was_pending) return;  /* one already queued — coalesce this one in */
+
+    esp_err_t err = esp_timer_start_once(s_broadcast_timer,
+                                          LL_BROADCAST_DEBOUNCE_US);
+    if (err != ESP_OK) {
+        /* Timer wedged for some reason — fall back to immediate broadcast
+         * so we don't silently drop state updates. */
+        atomic_store(&s_broadcast_pending, false);
+        ESP_LOGW(TAG, "broadcast timer start: %s — falling back to immediate",
+                 esp_err_to_name(err));
+        do_broadcast_state();
+    }
+}
+
+static void broadcast_timer_cb(void *arg)
+{
+    (void)arg;
+    atomic_store(&s_broadcast_pending, false);
+    do_broadcast_state();
+}
+
+/* Actually serialize + push the broadcast envelope to all connected WS
+ * clients. Runs on the esp_timer task; should never be called directly
+ * — go through broadcast_state() so the debounce holds. */
+static void do_broadcast_state(void)
 {
     if (!g_server) return;
 
@@ -942,10 +975,20 @@ static void on_state_changed(void *arg, esp_event_base_t base,
 
 esp_err_t ll_transport_init(void)
 {
-    /* esp_http_server is started lazily on WIFI_CONNECTED. The init
-     * call exists for symmetry with other modules and as a hook for
-     * future per-boot setup (e.g. allocating the broadcast client
-     * list once Session 2 lands). */
+    /* esp_http_server is started lazily on WIFI_CONNECTED. The broadcast
+     * debounce timer is created here so it's ready before the first
+     * LL_EV_STATE_CHANGED can fire — it's a one-shot timer that
+     * broadcast_state() arms on demand. */
+    const esp_timer_create_args_t args = {
+        .callback = broadcast_timer_cb,
+        .name     = "ll_broadcast",
+    };
+    esp_err_t err = esp_timer_create(&args, &s_broadcast_timer);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_timer_create: %s", esp_err_to_name(err));
+        return err;
+    }
+
     ESP_LOGI(TAG, "init: server deferred until wifi up");
     return ESP_OK;
 }
