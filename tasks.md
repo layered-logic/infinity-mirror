@@ -779,12 +779,11 @@ dependencies: LL-032
 ### [ ] LL-044 — Packaging QR code
 
 sprint: 4 | priority: low | deadline: —
-added: 2026-04-27 | first_engaged: 2026-04-27 | last_engaged: 2026-04-28
+added: 2026-04-27 | first_engaged: 2026-04-27 | last_engaged: 2026-05-14
 artifacts: —
 dependencies: LL-051
-block_reason: Needs final packaging design (cardboard stock, dimensions, print/laser process) decided first; concept stays parked until packaging is far enough along to know what surface the QR lives on.
 
-**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Blocked Apr 28 awaiting LL-051 (packaging concept).
+**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Unblocked May 14 (LL-051 resolved with DXF dielines in [Assembly_docs/Packaging_Templates/](Assembly_docs/Packaging_Templates/)) — ready for QR placement work whenever it gets prioritized.
 
 ---
 
@@ -880,14 +879,14 @@ dependencies: LL-010, LL-011
 ---
 
 <a id="LL-051"></a>
-### [ ] LL-051 — Packaging concept
+### [x] LL-051 — Packaging concept
 
 sprint: 6 | priority: medium | deadline: 2026-05-09
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-12 | last_engaged: 2026-05-14 | resolved: 2026-05-14
+artifacts: [Assembly_docs/Packaging_Templates/](Assembly_docs/Packaging_Templates/)
 dependencies: —
 
-**Notes:** Cardboard stock, dimensions, print/laser process. Per Week 6 plan. Blocking dependency for LL-044 (packaging QR code).
+**Notes:** Cardboard stock, dimensions, print/laser process. DXF dielines generated May 12-13 in the gifted-tharp-af5d28 session (parameterized from cefbox.com earLockMailer + insert-with-backing templates): 5 mailer variants across 4 footprints (300×200×80, 300×200×120, 300×250×80, 400×200×80 mm) at 1.5mm corrugated stock + a 3mm variant on the 300×200×80; 5 insert variants across the same footprints with two slot configurations (150×150×25 and 200×100×50). Laser-cut process. Unblocks [LL-044](#LL-044) (packaging QR code) — now has a real surface to land on.
 
 ---
 
