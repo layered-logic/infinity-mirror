@@ -831,14 +831,14 @@ connect_wifi_network UX polish (May 7): first hardware exercise of the Connect b
 ---
 
 <a id="LL-047"></a>
-### [ ] LL-047 — Wireframes in Figma
+### [ ] LL-047 — App design-rationale wireframes (SVG-native, portfolio chapters)
 
-sprint: 5 | priority: medium | deadline: 2026-05-09
-added: 2026-04-22
-artifacts: —
+sprint: 5 | priority: medium | deadline: 2026-06-06
+added: 2026-04-22 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [docs/wireframes/](docs/wireframes/)
 dependencies: —
 
-**Notes:** App UX/UI wireframes informed by user research and informing implementation. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale." Working builds shipped first via LL-035 mini-sprint (5 days early); wireframes still owed for the portfolio retrospective view of the design process.
+**Notes:** Originally scoped as "Figma wireframes" but pivoted May 14 to SVG-native lo-fi wireframes paired with markdown rationale docs — works as portfolio chapters that index into the existing decision docs (multi-network-design, button-design-rationale, service-blueprint) rather than parallel artifacts in Figma. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale" — working builds shipped first via [LL-035](#LL-035) mini-sprint, so this is retrospective. Template established with chapter 1 ([settings-wifi](docs/wireframes/settings-wifi.md)). Deadline extended May 9 → Jun 6 to land alongside Week 10 portfolio assembly. Planned chapters: Wi-Fi (✅), Home/Control (color wheel + brightness + pattern), First-boot Setup (SoftAP captive), Mirror picker (multi-mirror discovery), Custom design request (Stage 2b).
 
 ---
 

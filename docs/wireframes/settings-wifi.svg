@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 920 1320" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" role="img" aria-labelledby="wireframe-title wireframe-desc">
+  <title id="wireframe-title">Layered Logic Mirror — Settings → Wi-Fi screen wireframe</title>
+  <desc id="wireframe-desc">Lo-fi wireframe of the React Native Settings screen's Wi-Fi section in the Layered Logic Mirror app. Shows the resting state (mirror name field, current network with IP, saved-networks list with active/forget/connect controls, add-network button, firmware update check) with 6 numbered callouts pairing each UI decision to its source rationale doc. A 4-thumbnail strip below documents the loading, switching, confirm-forget, and list-full alternate states. Brand indigo (#3214FF) marks the active/primary affordances; everything else is grayscale lo-fi.</desc>
+
+  <defs>
+    <style>
+      .phone-frame { fill: #FAFAFA; stroke: #2A2A2A; stroke-width: 1.5; }
+      .screen-bg { fill: #FFFFFF; }
+      .notch { fill: #1A1A1A; }
+      .section-title { font-size: 15px; font-weight: 700; fill: #1A1A1A; }
+      .subsection-title { font-size: 13px; font-weight: 700; fill: #1A1A1A; }
+      .body { font-size: 11px; fill: #1A1A1A; }
+      .muted { font-size: 10px; fill: #6B6B6B; }
+      .label { font-size: 10px; font-weight: 600; fill: #1A1A1A; letter-spacing: 0.3px; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; fill: #1A1A1A; }
+      .ssid { font-size: 11px; fill: #1A1A1A; }
+      .ssid-active { font-size: 11px; font-weight: 700; fill: #1A1A1A; }
+      .btn-primary-fill { fill: #3214FF; }
+      .btn-secondary-fill { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1; }
+      .btn-text-primary { font-size: 10px; font-weight: 600; fill: #FFFFFF; }
+      .btn-text-secondary { font-size: 10px; font-weight: 600; fill: #3214FF; }
+      .input { fill: #F4F4F6; stroke: #D8D8DC; stroke-width: 0.5; }
+      .placeholder { font-size: 11px; fill: #999999; }
+      .divider { stroke: #E5E5E7; stroke-width: 0.5; }
+      .check { font-size: 14px; font-weight: 700; fill: #3214FF; }
+      .home-indicator { fill: #1A1A1A; }
+      .home-link { font-size: 11px; fill: #3214FF; font-weight: 500; }
+      .callout-circle { fill: #3214FF; }
+      .callout-num { font-size: 11px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; dominant-baseline: middle; }
+      .callout-line { stroke: #3214FF; stroke-width: 0.6; stroke-dasharray: 3,2; fill: none; }
+      .callout-title { font-size: 12px; font-weight: 700; fill: #1A1A1A; }
+      .callout-body { font-size: 11px; fill: #4A4A4A; }
+      .callout-source { font-size: 9px; font-style: italic; fill: #6B6B6B; }
+
+      /* Title block */
+      .doc-title { font-size: 20px; font-weight: 700; fill: #1A1A1A; }
+      .doc-subtitle { font-size: 12px; fill: #4A4A4A; }
+      .doc-meta { font-size: 10px; fill: #6B6B6B; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      /* Alternate states */
+      .alt-section-title { font-size: 14px; font-weight: 700; fill: #1A1A1A; }
+      .alt-frame { fill: #FAFAFA; stroke: #C8C8CE; stroke-width: 0.8; }
+      .alt-state-label { font-size: 10px; font-weight: 700; fill: #3214FF; letter-spacing: 0.6px; }
+      .alt-caption { font-size: 10px; fill: #4A4A4A; }
+      .alt-banner { fill: #EEEAFF; stroke: #3214FF; stroke-width: 0.8; }
+      .alt-banner-text { font-size: 9px; fill: #1A1A1A; }
+      .modal-scrim { fill: #1A1A1A; opacity: 0.45; }
+      .modal-card { fill: #FFFFFF; stroke: #D8D8DC; stroke-width: 0.5; }
+      .modal-title { font-size: 11px; font-weight: 700; fill: #1A1A1A; }
+      .modal-body { font-size: 9px; fill: #4A4A4A; }
+      .err-toast { fill: #FFE5E5; stroke: #C44; stroke-width: 0.8; }
+      .err-toast-text { font-size: 9px; fill: #8B1A1A; }
+    </style>
+  </defs>
+
+  <!-- ==================== Title block ==================== -->
+  <text x="400" y="68" class="doc-title">Settings — Wi-Fi</text>
+  <text x="400" y="88" class="doc-subtitle">Layered Logic Mirror · App/v1 · Mobile (React Native)</text>
+  <text x="400" y="104" class="doc-meta">Version 1.0 · 2026-05-14 · Resting state + 4 alternate states</text>
+  <line x1="400" y1="118" x2="880" y2="118" class="divider" />
+
+  <!-- ==================== Phone frame ==================== -->
+  <rect class="phone-frame" x="40" y="40" width="320" height="840" rx="36" />
+  <rect class="screen-bg" x="52" y="52" width="296" height="816" rx="26" />
+
+  <!-- Notch -->
+  <rect class="notch" x="160" y="58" width="80" height="14" rx="7" />
+
+  <!-- Header bar -->
+  <text x="70" y="105" class="home-link">‹ Home</text>
+  <text x="200" y="105" text-anchor="middle" class="section-title">Settings</text>
+  <line x1="62" y1="118" x2="338" y2="118" class="divider" />
+
+  <!-- Subsection: Mirror name -->
+  <text x="70" y="142" class="subsection-title">Mirror name</text>
+  <text x="70" y="160" class="muted">Hardware ID:</text>
+  <text x="135" y="160" class="mono">a3f2b9</text>
+  <text x="70" y="175" class="muted">Shown when multiple mirrors are on one</text>
+  <text x="70" y="187" class="muted">network. Empty falls back to hardware ID.</text>
+  <rect class="input" x="70" y="198" width="220" height="30" rx="4" />
+  <text x="80" y="218" class="placeholder">Living Room</text>
+  <rect class="btn-primary-fill" x="70" y="238" width="100" height="30" rx="4" />
+  <text x="120" y="257" text-anchor="middle" class="btn-text-primary">Save name</text>
+
+  <line x1="62" y1="290" x2="338" y2="290" class="divider" />
+
+  <!-- Subsection: Wi-Fi -->
+  <text x="70" y="312" class="subsection-title">Wi-Fi</text>
+  <text x="70" y="332" class="muted">Connected:</text>
+  <text x="125" y="332" class="ssid-active">HomeWiFi</text>
+  <text x="70" y="347" class="muted">IP:</text>
+  <text x="92" y="347" class="mono">192.168.5.229</text>
+
+  <!-- Saved networks label -->
+  <text x="70" y="375" class="label">SAVED NETWORKS</text>
+
+  <!-- Row: HomeWiFi (active) -->
+  <text x="74" y="402" class="check">✓</text>
+  <text x="98" y="402" class="ssid-active">HomeWiFi</text>
+  <rect class="btn-secondary-fill" x="240" y="388" width="55" height="22" rx="4" />
+  <text x="267.5" y="402" text-anchor="middle" class="btn-text-secondary">Forget</text>
+
+  <line x1="70" y1="418" x2="295" y2="418" class="divider" />
+
+  <!-- Row: OfficeWiFi -->
+  <text x="98" y="438" class="ssid">OfficeWiFi</text>
+  <rect class="btn-secondary-fill" x="178" y="424" width="55" height="22" rx="4" />
+  <text x="205.5" y="438" text-anchor="middle" class="btn-text-secondary">Connect</text>
+  <rect class="btn-secondary-fill" x="240" y="424" width="55" height="22" rx="4" />
+  <text x="267.5" y="438" text-anchor="middle" class="btn-text-secondary">Forget</text>
+
+  <line x1="70" y1="454" x2="295" y2="454" class="divider" />
+
+  <!-- Row: ParentsWiFi -->
+  <text x="98" y="474" class="ssid">ParentsWiFi</text>
+  <rect class="btn-secondary-fill" x="178" y="460" width="55" height="22" rx="4" />
+  <text x="205.5" y="474" text-anchor="middle" class="btn-text-secondary">Connect</text>
+  <rect class="btn-secondary-fill" x="240" y="460" width="55" height="22" rx="4" />
+  <text x="267.5" y="474" text-anchor="middle" class="btn-text-secondary">Forget</text>
+
+  <line x1="70" y1="490" x2="295" y2="490" class="divider" />
+
+  <!-- Add network button -->
+  <rect class="btn-secondary-fill" x="70" y="502" width="225" height="30" rx="4" />
+  <text x="182.5" y="521" text-anchor="middle" class="btn-text-secondary">+ Add a network</text>
+
+  <!-- Helper text -->
+  <text x="70" y="552" class="muted">Adding a network saves it for later — the</text>
+  <text x="70" y="565" class="muted">mirror won't switch to it until the current</text>
+  <text x="70" y="578" class="muted">network isn't reachable.</text>
+
+  <line x1="62" y1="610" x2="338" y2="610" class="divider" />
+
+  <!-- Subsection: Firmware update -->
+  <text x="70" y="632" class="subsection-title">Firmware update</text>
+  <text x="70" y="650" class="muted">Currently running:</text>
+  <text x="142" y="650" class="mono">b1a2833</text>
+  <text x="70" y="665" class="muted">Last checked: 2 days ago</text>
+
+  <rect class="btn-primary-fill" x="70" y="680" width="160" height="30" rx="4" />
+  <text x="150" y="699" text-anchor="middle" class="btn-text-primary">Check for updates</text>
+
+  <line x1="62" y1="735" x2="338" y2="735" class="divider" />
+  <text x="70" y="757" class="subsection-title" fill="#C44">Factory reset</text>
+  <text x="70" y="774" class="muted" fill="#999">(scrolls below the fold)</text>
+
+  <!-- Home indicator -->
+  <rect class="home-indicator" x="155" y="852" width="90" height="4" rx="2" />
+
+  <!-- ==================== Callouts ==================== -->
+
+  <!-- ① Connection summary -->
+  <line class="callout-line" x1="175" y1="340" x2="490" y2="340" />
+  <circle class="callout-circle" cx="500" cy="340" r="11" />
+  <text class="callout-num" x="500" y="340">1</text>
+  <text x="518" y="332" class="callout-title">Surface the IP, not just the SSID</text>
+  <text x="518" y="348" class="callout-body">Webapp hid IP inside its mDNS hostname URL. With multi-network,</text>
+  <text x="518" y="361" class="callout-body">"which IP did it land on?" matters more — especially across /24s.</text>
+  <text x="518" y="374" class="callout-body">Settings exposes both so cross-subnet lookups don't need ARP</text>
+  <text x="518" y="387" class="callout-body">scans or external tools.</text>
+  <text x="518" y="402" class="callout-source">multi-network-design.md §7.5 · LL-040 (Apr 30)</text>
+
+  <!-- ② Active checkmark -->
+  <line class="callout-line" x1="84" y1="402" x2="490" y2="440" />
+  <circle class="callout-circle" cx="500" cy="440" r="11" />
+  <text class="callout-num" x="500" y="440">2</text>
+  <text x="518" y="432" class="callout-title">Active checkmark = server truth</text>
+  <text x="518" y="448" class="callout-body">is_active comes from firmware, not the app's locally-cached "last</text>
+  <text x="518" y="461" class="callout-body">connected SSID". Covers the cross-client case (webapp adds or</text>
+  <text x="518" y="474" class="callout-body">switches while RN app is open). Re-fetched on state.wifi_ssid</text>
+  <text x="518" y="487" class="callout-body">change so the optimistic-clear settles to truth.</text>
+  <text x="518" y="502" class="callout-source">App.tsx:200-219 · LL-046 step 6 polish</text>
+
+  <!-- ③ Connect per non-active row -->
+  <line class="callout-line" x1="206" y1="438" x2="490" y2="540" />
+  <circle class="callout-circle" cx="500" cy="540" r="11" />
+  <text class="callout-num" x="500" y="540">3</text>
+  <text x="518" y="532" class="callout-title">Connect button per non-active row</text>
+  <text x="518" y="548" class="callout-body">Added during hardware test of LL-046 step 6. "No auto-SoftAP"</text>
+  <text x="518" y="561" class="callout-body">leaves the user stuck if they provision a bad 2nd network and</text>
+  <text x="518" y="574" class="callout-body">forget the 1st. Connect op posts LL_EV_WIFI_REQUEST_SWITCH so</text>
+  <text x="518" y="587" class="callout-body">the STA teardown happens AFTER the response flushes.</text>
+  <text x="518" y="602" class="callout-source">multi-network-design §10 Q3 · post-mini-sprint-bugs.md</text>
+
+  <!-- ④ Forget = confirm + immediate -->
+  <line class="callout-line" x1="295" y1="402" x2="490" y2="640" />
+  <circle class="callout-circle" cx="500" cy="640" r="11" />
+  <text class="callout-num" x="500" y="640">4</text>
+  <text x="518" y="632" class="callout-title">Forget-active = confirm + immediate disconnect</text>
+  <text x="518" y="648" class="callout-body">Departure from iOS's passive "stay connected until natural</text>
+  <text x="518" y="661" class="callout-body">disconnect" pattern. Confirm dialog gates the destructive action;</text>
+  <text x="518" y="674" class="callout-body">on confirm, device drops the connection NOW. Non-active rows</text>
+  <text x="518" y="687" class="callout-body">forget silently — no prompt needed.</text>
+  <text x="518" y="702" class="callout-source">multi-network-design §4.3, §10 Q4 · respect-explicit-actions principle</text>
+
+  <!-- ⑤ Add ≠ join -->
+  <line class="callout-line" x1="295" y1="520" x2="490" y2="740" />
+  <circle class="callout-circle" cx="500" cy="740" r="11" />
+  <text class="callout-num" x="500" y="740">5</text>
+  <text x="518" y="732" class="callout-title">Adding ≠ joining</text>
+  <text x="518" y="748" class="callout-body">Add-network form saves the entry; doesn't switch. Helper text</text>
+  <text x="518" y="761" class="callout-body">below the button explicitly states this so the user knows what</text>
+  <text x="518" y="774" class="callout-body">to expect. New entry sits in the saved list; the connection state</text>
+  <text x="518" y="787" class="callout-body">machine picks it up automatically when the current network drops.</text>
+  <text x="518" y="802" class="callout-source">multi-network-design §4.2</text>
+
+  <!-- ⑥ N_MAX=4 -->
+  <line class="callout-line" x1="120" y1="478" x2="490" y2="840" />
+  <circle class="callout-circle" cx="500" cy="840" r="11" />
+  <text class="callout-num" x="500" y="840">6</text>
+  <text x="518" y="832" class="callout-title">N_MAX = 4 (no implicit eviction)</text>
+  <text x="518" y="848" class="callout-body">Realistic personal-use ceiling: home, work, parents, travel</text>
+  <text x="518" y="861" class="callout-body">hotspot. 5th add returns wifi_list_full — the user picks what to</text>
+  <text x="518" y="874" class="callout-body">evict rather than the firmware deciding for them.</text>
+  <text x="518" y="889" class="callout-source">multi-network-design §5.2, §10 Q2</text>
+
+  <!-- ==================== Alternate states ==================== -->
+  <line x1="30" y1="920" x2="890" y2="920" class="divider" />
+  <text x="30" y="950" class="alt-section-title">Alternate states</text>
+  <text x="30" y="968" class="callout-body">Bug-driven decisions in the callouts above protect against specific failure states. Each thumbnail shows the surface in that state.</text>
+
+  <!-- ===== Alt state 1: Loading ===== -->
+  <text x="30" y="998" class="alt-state-label">① LOADING</text>
+  <rect class="alt-frame" x="30" y="1008" width="200" height="220" rx="6" />
+  <text x="42" y="1028" class="subsection-title">Wi-Fi</text>
+  <text x="42" y="1044" class="muted">Connected:</text>
+  <text x="92" y="1044" class="ssid-active">HomeWiFi</text>
+  <text x="42" y="1058" class="muted">IP:</text>
+  <text x="62" y="1058" class="mono">192.168.5.229</text>
+  <text x="42" y="1080" class="label">SAVED NETWORKS</text>
+  <text x="42" y="1100" class="muted" font-style="italic">Loading…</text>
+  <rect class="btn-secondary-fill" x="42" y="1180" width="176" height="26" rx="4" />
+  <text x="130" y="1197" text-anchor="middle" class="btn-text-secondary">+ Add a network</text>
+  <text x="30" y="1247" class="alt-caption">savedNetworks === null on Settings</text>
+  <text x="30" y="1259" class="alt-caption">entry. Explicit "Loading…" beats a</text>
+  <text x="30" y="1271" class="alt-caption">flash-of-empty that reads as "no</text>
+  <text x="30" y="1283" class="alt-caption">networks" mid-fetch.</text>
+
+  <!-- ===== Alt state 2: Switching ===== -->
+  <text x="250" y="998" class="alt-state-label">② SWITCHING</text>
+  <rect class="alt-frame" x="250" y="1008" width="200" height="220" rx="6" />
+  <text x="262" y="1028" class="subsection-title">Wi-Fi</text>
+  <text x="262" y="1044" class="muted">Connected:</text>
+  <text x="312" y="1044" class="ssid-active">HomeWiFi</text>
+  <text x="262" y="1080" class="label">SAVED NETWORKS</text>
+  <rect class="alt-banner" x="262" y="1088" width="176" height="38" rx="4" />
+  <text x="270" y="1102" class="alt-banner-text">Switching to OfficeWiFi…</text>
+  <text x="270" y="1114" class="alt-banner-text">If different network, match your</text>
+  <text x="270" y="1124" class="alt-banner-text">phone's Wi-Fi + tap Find mirror.</text>
+  <!-- rows with checkmarks cleared (optimistic) -->
+  <text x="266" y="1148" class="ssid">HomeWiFi</text>
+  <text x="266" y="1166" class="ssid">OfficeWiFi</text>
+  <text x="266" y="1184" class="ssid">ParentsWiFi</text>
+  <text x="250" y="1247" class="alt-caption">All checkmarks cleared optimistically</text>
+  <text x="250" y="1259" class="alt-caption">on tap; brand banner + haptic confirm</text>
+  <text x="250" y="1271" class="alt-caption">the gesture landed. Banner clears</text>
+  <text x="250" y="1283" class="alt-caption">when wifi_ssid broadcast settles.</text>
+
+  <!-- ===== Alt state 3: Confirm forget ===== -->
+  <text x="470" y="998" class="alt-state-label">③ CONFIRM FORGET</text>
+  <rect class="alt-frame" x="470" y="1008" width="200" height="220" rx="6" />
+  <!-- background screen (faded) -->
+  <text x="482" y="1028" class="subsection-title" opacity="0.4">Wi-Fi</text>
+  <text x="482" y="1044" class="muted" opacity="0.4">Connected: HomeWiFi</text>
+  <text x="482" y="1064" class="label" opacity="0.4">SAVED NETWORKS</text>
+  <text x="482" y="1082" class="ssid-active" opacity="0.4">✓ HomeWiFi</text>
+  <text x="482" y="1100" class="ssid" opacity="0.4">OfficeWiFi</text>
+  <!-- scrim -->
+  <rect class="modal-scrim" x="470" y="1008" width="200" height="220" rx="6" />
+  <!-- modal -->
+  <rect class="modal-card" x="486" y="1080" width="168" height="120" rx="6" />
+  <text x="496" y="1100" class="modal-title">Forget HomeWiFi?</text>
+  <text x="496" y="1117" class="modal-body">The mirror will disconnect from</text>
+  <text x="496" y="1128" class="modal-body">this network. If it can reach</text>
+  <text x="496" y="1139" class="modal-body">another saved one, it'll switch</text>
+  <text x="496" y="1150" class="modal-body">automatically; otherwise wait.</text>
+  <rect class="btn-secondary-fill" x="496" y="1170" width="60" height="22" rx="3" />
+  <text x="526" y="1184" text-anchor="middle" class="btn-text-secondary">Cancel</text>
+  <rect fill="#C44" x="566" y="1170" width="78" height="22" rx="3" />
+  <text x="605" y="1184" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Forget</text>
+  <text x="470" y="1247" class="alt-caption">Modal gates Forget on the active</text>
+  <text x="470" y="1259" class="alt-caption">network. Non-active rows skip the</text>
+  <text x="470" y="1271" class="alt-caption">prompt — same UX norm as iOS for</text>
+  <text x="470" y="1283" class="alt-caption">networks you're not currently on.</text>
+
+  <!-- ===== Alt state 4: List full ===== -->
+  <text x="690" y="998" class="alt-state-label">④ LIST FULL</text>
+  <rect class="alt-frame" x="690" y="1008" width="200" height="220" rx="6" />
+  <text x="702" y="1028" class="subsection-title">Wi-Fi</text>
+  <text x="702" y="1050" class="label">SAVED NETWORKS</text>
+  <text x="706" y="1068" class="ssid-active">✓ HomeWiFi</text>
+  <text x="706" y="1085" class="ssid">OfficeWiFi</text>
+  <text x="706" y="1102" class="ssid">ParentsWiFi</text>
+  <text x="706" y="1119" class="ssid">TravelHotspot</text>
+  <rect class="err-toast" x="702" y="1135" width="176" height="44" rx="4" />
+  <text x="710" y="1150" class="err-toast-text" font-weight="700">Saved-networks list is full (4/4).</text>
+  <text x="710" y="1163" class="err-toast-text">Remove one before adding another.</text>
+  <text x="710" y="1175" class="err-toast-text" font-style="italic">(wifi_list_full)</text>
+  <text x="690" y="1247" class="alt-caption">5th add returns wifi_list_full error.</text>
+  <text x="690" y="1259" class="alt-caption">User picks what to evict — firmware</text>
+  <text x="690" y="1271" class="alt-caption">never decides. Easy to bump N_MAX</text>
+  <text x="690" y="1283" class="alt-caption">later; hard to lower without migration.</text>
+
+</svg>
