@@ -9,6 +9,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -75,8 +76,28 @@ function rgbHexFromHsv(h: number, s: number, v: number): string {
 }
 
 import { ConnState, MirrorClient } from './src/ws-client';
-import { DeviceState, PatternId, WifiNetwork } from './src/protocol';
+import { DeviceState, OtaPhase, OtaProgressBroadcast, PatternId, WifiNetwork } from './src/protocol';
 import { FindResult, findMirrors } from './src/find-mirror';
+
+// Label shown on the OTA button while otaState === 'rebooting'. Until
+// the first ota_progress arrives we don't know which phase the mirror's
+// in, so we fall back to the pre-streaming label so the button still
+// reads correctly with older firmware that doesn't emit progress.
+function otaProgressLabel(p: { percent: number; phase: OtaPhase } | null): string {
+  if (!p) return 'Mirror downloading + rebooting…';
+  switch (p.phase) {
+    case 'downloading':
+      return p.percent > 0
+        ? `Downloading firmware… ${p.percent}%`
+        : 'Downloading firmware…';
+    case 'verifying':
+      return 'Verifying image…';
+    case 'rebooting':
+      return 'Rebooting…';
+    case 'failed':
+      return 'Update failed';
+  }
+}
 
 // Color wheel asset is 512×512 px (regenerate via scripts/gen-color-wheel.py).
 // Renders at runtime to fit window-width minus the body padding so it
@@ -132,6 +153,10 @@ function App() {
   const [scanning, setScanning] = useState(false);
   const [otaUrl, setOtaUrl] = useState(DEFAULT_OTA_URL);
   const [otaState, setOtaState] = useState<'idle' | 'sending' | 'rebooting'>('idle');
+  // Streaming progress emitted by the device during the OTA's download
+  // and verify phases (LL-057-B). null when no OTA is in flight; reset to
+  // null when otaState returns to 'idle' (post-reboot reconnect or failure).
+  const [otaProgress, setOtaProgress] = useState<{ percent: number; phase: OtaPhase } | null>(null);
   // True when the user manually triggered Wi-Fi reconfigure from
   // Settings (vs. the device-driven "provisioning_active" auto-route).
   // Both cases render the same SSID/password form.
@@ -163,6 +188,23 @@ function App() {
   useEffect(() => {
     return () => clientRef.current?.disconnect();
   }, []);
+
+  // Reset the OTA button after the mirror reboots and the WS reconnects.
+  // Without this the button stays on "Mirror downloading + rebooting…"
+  // forever (LL-040 follow-up, post-mini-sprint-bugs.md). We can't just
+  // watch `conn==='open'` while `otaState==='rebooting'` — when the user
+  // clicks the button conn is *already* open, so the effect would fire
+  // mid-OTA and bounce otaState back to idle before the mirror reboots.
+  // The right trigger is the *transition* from non-open to open while in
+  // the rebooting state, which means we have to track the previous conn.
+  const prevConnRef = useRef<ConnState>(conn);
+  useEffect(() => {
+    if (prevConnRef.current !== 'open' && conn === 'open' && otaState === 'rebooting') {
+      setOtaState('idle');
+      setOtaProgress(null);
+    }
+    prevConnRef.current = conn;
+  }, [conn, otaState]);
 
   useEffect(() => {
     if (conn !== 'open') return;
@@ -236,6 +278,9 @@ function App() {
       onConn: setConn,
       onState: setState,
       onError: setLastError,
+      onOtaProgress: (p: OtaProgressBroadcast) => {
+        setOtaProgress({ percent: p.percent, phase: p.phase });
+      },
     });
     clientRef.current = c;
     c.connect();
@@ -461,12 +506,14 @@ function App() {
             if (!clientRef.current) return;
             haptic.medium();
             setLastError(null);
+            setOtaProgress(null);
             setOtaState('sending');
             try {
               await clientRef.current.startOta(otaUrl);
               setOtaState('rebooting');
             } catch (e) {
               setOtaState('idle');
+              setOtaProgress(null);
               setLastError((e as Error).message);
             }
           },
@@ -1018,9 +1065,25 @@ function App() {
               <Text style={styles.btnText}>
                 {otaState === 'idle' && 'Update firmware'}
                 {otaState === 'sending' && 'Sending request…'}
-                {otaState === 'rebooting' && 'Mirror downloading + rebooting…'}
+                {otaState === 'rebooting' && otaProgressLabel(otaProgress)}
               </Text>
             </Pressable>
+
+            <Text style={styles.subsection}>Telemetry</Text>
+            <View style={styles.row}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={styles.label}>Share anonymous diagnostics</Text>
+                <Text style={styles.muted}>
+                  Lets the mirror send a once-a-day beacon with uptime,
+                  free heap, RSSI, and the last reboot reason. No location,
+                  no usage data, no account link. Opt-in; off by default.
+                </Text>
+              </View>
+              <Switch
+                value={state?.telemetry_enabled ?? false}
+                onValueChange={(v) => apply({ telemetry_enabled: v })}
+              />
+            </View>
 
             <Text style={styles.subsection}>Danger</Text>
             <Pressable onPress={factoryReset} style={[styles.btn, styles.btnDanger]}>

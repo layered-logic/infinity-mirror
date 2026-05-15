@@ -36,6 +36,17 @@ CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
 # downgrade-attack defense, not boot-loop recovery).
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
+# --- TLS root certs bundle (telemetry, future OTA) --------------------
+# Embeds Mozilla's root CA bundle (~64KB compressed) so esp_http_client
+# can validate HTTPS endpoints without per-CA cert pinning. Used by
+# core/telemetry for posts to telemetry.layeredlogic.cc/v1/beacon
+# (CF-fronted; chains to standard roots). Will also be used by the
+# production OTA path when ota.layeredlogic.cc lands. The bundle is
+# pulled into mbedtls at build time; runtime cost is ~3KB RAM during
+# the verify handshake.
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+
 # --- Production hardening (deliberately left disabled this sprint) ----
 # All three of these are eFuse burns and irreversible. Per
 # docs/mini-sprint-app-demo.md §1a, they stay off until production.

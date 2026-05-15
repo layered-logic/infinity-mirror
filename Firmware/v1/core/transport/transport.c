@@ -276,6 +276,16 @@ static void op_set_state(cJSON *resp, const cJSON *payload)
         }
     }
 
+    /* telemetry_enabled — user-facing privacy toggle. State-bus stores
+     * it; core/telemetry/ checks it at fire-time and skips the POST
+     * when false. Default false (opt-in), wired into the app + webapp
+     * Settings pages by LL-057-C. */
+    item = cJSON_GetObjectItem(payload, "telemetry_enabled");
+    if (cJSON_IsBool(item)) {
+        ll_ev_telemetry_payload_t p = { .enabled = cJSON_IsTrue(item) };
+        ll_state_bus_post(LL_EV_TELEMETRY, &p);
+    }
+
     cJSON_AddBoolToObject(resp, "ok", true);
     cJSON_AddItemToObject(resp, "result", state_to_json(ll_state_bus_get()));
     cJSON_AddNullToObject(resp, "error");

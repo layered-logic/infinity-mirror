@@ -131,6 +131,28 @@ export function SettingsPage({ client, state, canSend, err, setErr, onNavigate }
       </section>
 
       <section class="panel">
+        <h2 class="panel-title">telemetry</h2>
+        <p class="hint muted" style={{ margin: '0 0 10px 0' }}>
+          Share anonymous diagnostics: once-a-day beacon with uptime, free heap, RSSI,
+          and the last reboot reason. No location, no usage data, no account link.
+          Opt-in; off by default.
+        </p>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            checked={state?.telemetry_enabled ?? false}
+            disabled={!canSend}
+            onChange={(e) => {
+              const enabled = (e.currentTarget as HTMLInputElement).checked;
+              setErr(null);
+              client.setState({ telemetry_enabled: enabled }).catch((x: Error) => setErr(x.message));
+            }}
+          />
+          <span>share anonymous diagnostics</span>
+        </label>
+      </section>
+
+      <section class="panel">
         <h2 class="panel-title">diagnostics</h2>
         {state ? (
           <dl class="kv">

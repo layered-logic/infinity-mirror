@@ -1,7 +1,7 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-075
+next_id: LL-077
 updated: 2026-05-15
 
 ---
@@ -1001,12 +1001,73 @@ dependencies: LL-001, LL-030
 <a id="LL-057"></a>
 ### [ ] LL-057 — App ↔ hardware integration polish
 
-sprint: 8 | priority: medium | deadline: 2026-05-23
-added: 2026-03-30
-artifacts: —
+sprint: 8 | priority: medium | deadline: 2026-05-23 (will slip — see Notes)
+added: 2026-03-30 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15
+artifacts: [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-035, LL-040
 
-**Notes:** Per Week 8 plan. Most engineering integration was front-loaded into LL-035 mini-sprint and LL-040 hardening. Remaining scope: stuck-OTA-button bug (open from LL-040 follow-ups, in [post-mini-sprint-bugs.md](docs/post-mini-sprint-bugs.md)), open bugs #1, #2, #6 from the bug log, BLE provisioning stretch goal, telemetry/auth surfaces, OTA UI polish.
+**Notes:** Per Week 8 plan. Most engineering integration was front-loaded into LL-035 mini-sprint and LL-040 hardening. **Scope locked 2026-05-15 as "wide"** — telemetry and paired-mode auth stay in-scope rather than spinning out (Bill's call after the scope question). Will slip past May 23; recommend slipping rather than truncating quality. Closed items already crossed off the original notes: bug #1 closed via [LL-055](#LL-055); bug #2 closed via [LL-075](#LL-075); bug #6 is structurally parked on BLE provisioning ([LL-055-1](#LL-055-1)).
+
+**Session plan (locked 2026-05-15):**
+1. **Session A — Stuck-OTA-button bug fix (~30 min).** ✅ Done 2026-05-15 (code; runtime verify pending Bill's next Pixel 9 session). `useEffect` in [App.tsx](App/v1/App.tsx) tracks previous conn state via a ref; resets `otaState` from `'rebooting'` → `'idle'` on the *transition* into `conn === 'open'` (not just the steady state — otherwise it would fire mid-OTA before the mirror reboots).
+2. **Session B — Real OTA progress (~½ day).** 🟡 Partial close 2026-05-15 — bisected as architecturally blocked. Bisect found that any broadcast emitted while `esp_https_ota` is running (or even from the httpd task immediately before it) causes the install to fail with ESP_FAIL or roll back on boot. Firmware-side progress reporting needs to move `ll_ota_start` off the httpd task (dedicated OTA task) before this can ship. App-side wire-type scaffolding (`OtaProgressBroadcast`, `onOtaProgress`, `otaProgressLabel`) shipped as forward-compat in [App/v1/src/protocol.ts](App/v1/src/protocol.ts) + [App.tsx](App/v1/App.tsx) — when firmware progress is fixed later, the app immediately benefits with no further changes. Bisect chain left the mirror's OTA partitions in a refusing-all-installs state; needs USB `erase-flash && flash` to recover (flagged separately). See sprint_log entry for full bisect timeline + design lead for the retry.
+3. **Session C — Telemetry MVP (~1-2 days).** ✅ Done 2026-05-15 (code-complete; E2E verify gated on [LL-076](#LL-076)). New `core/telemetry/` module + Cloudflare Worker at `telemetry.layeredlogic.cc/v1/beacon` + app/webapp settings toggle. Boot-reason-only panic capture (full file:line:task deferred). Binary 1.23 MB / 1.25 MB after embedded CA bundle. See [LL-057-C](#LL-057-C) for full breakdown.
+4. **Session D — Paired-mode auth (~2+ days, design-first).** Per [firmware-spec §4.9](docs/firmware-spec.md). First: scoping doc to pick the pairing UX (QR on label / LED color-code / DH key exchange / WPS-style press-button). Then: `core/auth/` HMAC-SHA256 over WS envelope; transport changes (`ts` + `hmac` fields); NVS `ll_auth` namespace; app pairing flow.
+
+Each session = its own build → OTA → verify cycle + sprint_log entry (per `feedback_verify_each_change` memory). Sub-IDs as we go (LL-057-A through LL-057-D).
+
+---
+
+<a id="LL-057-C"></a>
+#### [x] LL-057-C — Session C: telemetry MVP
+
+parent: LL-057 | sprint: 8
+added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15 | resolved: 2026-05-15
+artifacts: [cloudflare-workers/telemetry/](cloudflare-workers/telemetry/) · [Firmware/v1/core/telemetry/](Firmware/v1/core/telemetry/) · [App/v1/App.tsx](App/v1/App.tsx) · [Firmware/v1/webapp/src/pages/settings.tsx](Firmware/v1/webapp/src/pages/settings.tsx)
+dependencies: LL-076 (resolved 2026-05-15)
+
+**Notes:** End-to-end telemetry path per [firmware-spec §4.10](docs/firmware-spec.md): mirror → POST → Cloudflare Worker → KV. **Three pieces landed:**
+
+1. **Cloudflare Worker** at `telemetry.layeredlogic.cc/v1/beacon`. New project at [cloudflare-workers/telemetry/](cloudflare-workers/telemetry/) — Wrangler-deployable TS Worker that validates a versioned beacon schema (v=1), stores per-timestamp entries with a 90-day TTL plus a no-TTL "latest snapshot per device" pointer, exposes `GET /v1/healthz` + `GET /v1/latest/<device_id>`. README documents the first-time setup (kv create, route, dns) for Bill to deploy.
+2. **App + webapp toggle.** "Share anonymous diagnostics" Switch in [App.tsx](App/v1/App.tsx) Settings + matching checkbox panel in [webapp settings.tsx](Firmware/v1/webapp/src/pages/settings.tsx). Both wired to `set_state {telemetry_enabled: bool}` — uses the existing `DeviceState.telemetry_enabled` field, no new wire op.
+3. **Firmware `core/telemetry/` module.** Builds + posts the beacon on a 24h ± 2h jittered schedule, gated on `state.telemetry_enabled`. First fire 1-5 min after first `LL_EV_WIFI_CONNECTED`. HTTPS via `esp_crt_bundle_attach` (new `CONFIG_MBEDTLS_CERTIFICATE_BUNDLE` enabled in sdkconfig.defaults). Includes a "this boot was a panic" flag when `esp_reset_reason() == ESP_RST_PANIC`; cleared after first successful beacon. Wired into `variants/standard/main.c` with the standard init/subscribe order.
+
+**Build cost:** +74 KB (mostly the embedded Mozilla CA bundle, ~70 KB). Binary now 1.23 MB / 1.25 MB partition — **98.2% utilization, 1.8% headroom.** Tight; flagged for future trimming (CMN-only bundle would halve the cost; CA pinning to CF's specific roots would slim further; or expand the partition slot — needs a partitions.csv change that breaks OTA compatibility).
+
+**End-to-end verified on the live mirror, 2026-05-15 ~13:43** (after [LL-076](#LL-076) USB recovery). Bill deployed the Worker (subdomain `layeredlogic.workers.dev`); the workers.dev URL went live first while DNS for the `telemetry.layeredlogic.cc` custom domain propagated. Beacon arrived at the Worker `/v1/latest/b2332c` ~100s after `set_state {telemetry_enabled:true}` — well within the 1-5 min first-fire window. Real payload: `fw_version=telemetry-fix-1342, uptime_s=103, heap_free_min=163268, boot_reason="OTHER" (now "USB" after the reset-reason expansion), rssi=-72, led_count=66`. **Two bugs caught + fixed during E2E:**
+
+1. **Cloudflare Bot Fight Mode rejects requests with library-default User-Agents** (returns HTTP 403 / CF error code 1010). Added an explicit `User-Agent: ll-mirror/1 esp32c3` header in [telemetry.c](Firmware/v1/core/telemetry/telemetry.c)'s `post_beacon()`. Same trap would have hit any future esp_http_client-using module; flagged for the OTA path when production OTA via CF lands.
+2. **`telemetry_enabled` was silently dropped by `op_set_state`** in [transport.c](Firmware/v1/core/transport/transport.c) — the field is in `ll_state_t`, the event `LL_EV_TELEMETRY` exists in state_bus, but the WS dispatcher had no branch for it. App/webapp toggles were sending the value but the firmware ignored it. Added the missing branch that posts `LL_EV_TELEMETRY`.
+3. (Polish) Expanded `reset_reason_str()` in telemetry.c to cover `ESP_RST_USB / JTAG / EFUSE / PWR_GLITCH / CPU_LOCKUP` — added in IDF 5.x and previously catching-all to "OTHER".
+
+**Deferred from Session C:**
+- Full panic capture (`filename:line:task_name`) — needs `esp_set_panic_handler` hook, more involved than MVP. V1 ships boot-reason-only.
+- Dashboard UI for the Worker side (browse recent beacons / panic timeline).
+- Alerting on panic payloads.
+
+---
+
+<a id="LL-057-B"></a>
+#### [ ] LL-057-B — Session B: real OTA progress (partial close — architecturally blocked)
+
+parent: LL-057 | sprint: 8
+added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15
+artifacts: [App/v1/App.tsx](App/v1/App.tsx) · [App/v1/src/protocol.ts](App/v1/src/protocol.ts) · [Firmware/v1/webapp/src/protocol.ts](Firmware/v1/webapp/src/protocol.ts)
+dependencies: LL-076 (device USB recovery before any retry)
+
+**Notes:** Status = partial close, deferred. Targeted real-time progress reporting via a new `{op:"ota_progress", phase, percent}` wire op. Bisect (May 15) found that emitting WS broadcasts while `esp_https_ota` is running on the httpd task — or even from the httpd task immediately before the call — causes the install to fail with ESP_FAIL or install successfully but fail boot validation (silent rollback). Three approaches tried (begin/perform/finish migration, ESP_HTTPS_OTA_EVENT subscription, op_start_ota wrapper); all blocked on the same constraint. The bisect chain also left the live mirror's otadata/ota_X partitions in a state refusing all OTA installs ([LL-076](#LL-076) tracks USB recovery). **Forward-compat scaffolding shipped:** `OtaPhase` + `OtaProgressBroadcast` + `isOtaProgress` in both [App/v1/src/protocol.ts](App/v1/src/protocol.ts) and [Firmware/v1/webapp/src/protocol.ts](Firmware/v1/webapp/src/protocol.ts); `onOtaProgress` callback in both ws-client.ts; [App.tsx](App/v1/App.tsx) wires `otaProgress` state + `otaProgressLabel` helper. **Design lead for retry:** move `ll_ota_start` off the httpd task — spawn a dedicated OTA worker task that processes start_ota requests from a queue, the same way Session B of LL-055 moved broadcast fanout off `esp_timer`. Then the OTA window and the broadcast window are on separate tasks and the contention disappears. See sprint_log entry for full bisect timeline.
+
+---
+
+<a id="LL-057-A"></a>
+#### [x] LL-057-A — Session A: stuck-OTA-button useEffect reset
+
+parent: LL-057 | sprint: 8
+added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15 | resolved: 2026-05-15
+artifacts: [App/v1/App.tsx](App/v1/App.tsx)
+dependencies: —
+
+**Notes:** Closes the LL-040 follow-up note: app OTA button stuck on "Mirror downloading + rebooting…" forever after a successful OTA. Fix in [App.tsx](App/v1/App.tsx): `prevConnRef` tracks the previous `conn` state; a new `useEffect` fires when the transition is "non-open → open" *and* `otaState === 'rebooting'`, resetting to `'idle'`. The transition-not-steady-state distinction matters: when the user taps the button conn is already `'open'`, so a naive `useEffect` watching just `(conn, otaState)` would reset mid-OTA before the mirror reboots. 13 lines added. `tsc --noEmit` clean on App.tsx (4 pre-existing errors in protocol.ts/ws-client.ts about missing DOM globals — unrelated, predate this change). Runtime verification deferred to Bill's next Pixel 9 session — needs an actual OTA cycle through the app UI to confirm the button auto-resets.
 
 ---
 
@@ -1205,6 +1266,30 @@ artifacts: [docs/user-flow-authoring.md](docs/user-flow-authoring.md) · [docs/s
 dependencies: LL-053
 
 **Notes:** Emerged organically from drilling down on [LL-053](#LL-053) — Bill asked whether the service-blueprint stages could be visualized as user flows in a Figma-style decision tree. Six-iteration drill-down on Stage 1 (Discover) produced both the locked HCDE methodology AND a reusable rendering recipe. Methodology decisions locked: pain points reframed as user-voice diamonds (`Can I imagine this in my space?` instead of `Pain: scale not conveyed`); two-layer pain evaluation (pain → recovery probe → missing-or-rejoin) where recovery is also a user-voice question and the "No" branch terminates at a yellow `Missing: X` build-this callout; orange diamond reserved for friction, red oval reserved for exit; natural cognitive order enforced (vibe → visualize → value → trust → timing for consumer-purchase flows); modality-compression rule (don't fork on channel); recovery is optional, not paired. Rendering: Mermaid ruled out after step-curves and the ELK plugin both failed to produce strict port-pinned orthogonal routing; switched to **Graphviz via `@viz-js/viz@3` (WASM)** with `splines=ortho`, explicit port specifiers (`:e -> :w` for Yes, `:s -> :n` for No), and per-column `rank=same` groups. The non-obvious rendering gotcha worth memorizing: in `rankdir=LR`, `rank=same` means same *column* (vertical strip), not same row — putting the whole happy path in one rank group stacks it vertically and gives top-down primary instead of left-right primary. Two memory entries also added: [feedback_flow_natural_progression](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_flow_natural_progression.md) (always reorder for natural cognition) and [reference_user_flow_authoring](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/reference_user_flow_authoring.md) (pointer to the docs file). Remaining nine stages (2-10) are now follow-on work, ready to scale against the locked grammar.
+
+---
+
+<a id="LL-075"></a>
+### [x] LL-075 — On/brightness wire-state coupling
+
+sprint: 7 | priority: medium | deadline: —
+added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15 | resolved: 2026-05-15
+artifacts: [Firmware/v1/core/state_bus/state_bus.c](Firmware/v1/core/state_bus/state_bus.c) · [Firmware/v1/scripts/ll_on_brightness_invariant_test.py](Firmware/v1/scripts/ll_on_brightness_invariant_test.py)
+dependencies: —
+
+**Notes:** Closes [post-mini-sprint-bugs.md #2](docs/post-mini-sprint-bugs.md) (state.on and state.brightness can disagree). Two coupled invariants enforced in `apply_event`: `LL_EV_BRIGHTNESS` now also sets `on = (value > 0)`; `LL_EV_POWER_TOGGLE{on:true}` auto-restores brightness to 75 if currently 0. Power-off preserves brightness (no UX regression on button-hold-then-single-press). Boot path also self-heals legacy NVS blobs that carry the contradictory (on=true, brightness=0). New host-runnable verification script tests all 6 cases (single-field brightness 0/non-zero, single-field on true/false, coupled webapp envelopes both ways) — all pass on the live mirror. Bug-doc #2 moved to Closed.
+
+---
+
+<a id="LL-076"></a>
+### [x] LL-076 — Mirror OTA partition recovery (USB erase-flash)
+
+sprint: 7 | priority: low | deadline: —
+added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15 | resolved: 2026-05-15
+artifacts: —
+dependencies: —
+
+**Notes:** Resolved 2026-05-15 ~12:40. The May 15 [LL-057-B](#LL-057-B) bisect chain triggered ~5 consecutive OTA install failures on the live mirror at 192.168.5.229. After the last failure the running firmware (`ota-diag-priv-req-1153`) refused all subsequent OTA installs with ESP_FAIL — even installing a fresh build with literally zero behavioral changes from a previously-working baseline (`ota-rollback-1214`). Most likely cause: otadata partition slot bookkeeping corrupted across consecutive partial-write failures. **Recovery executed:** Bill plugged in USB; `idf.py -p COM3 erase-flash` (14.4s chip erase) followed by `idf.py -p COM3 flash` brought the device back. Bill re-provisioned via the SoftAP captive flow, the mirror rejoined his Wi-Fi at the same DHCP lease (192.168.5.229). OTA-flashing not re-tested over the air (no need — USB recovery alone reset the partition state) but a full sequence of subsequent USB reflashes (telemetry-mvp → telemetry-ua → telemetry-fix → telemetry-final) all succeeded cleanly. Unblocks the LL-057-C end-to-end verification path.
 
 ---
 

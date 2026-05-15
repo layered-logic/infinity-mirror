@@ -17,29 +17,6 @@ Each entry should carry: severity, surfaces, first observed, hypothesized cause,
 
 ## Open
 
-### #2 — `state.on` and `state.brightness` can disagree (misleading wire state)
-
-**Severity:** Medium (visible, ergonomic — affects first-impression of any new user)
-**Surfaces:** Webapp control page on initial load; will also surface in the RN app once Sessions 6-8 ship
-**First observed:** Session 5 sub-4 closing UAT, 2026-04-29
-
-**Symptom**
-On a freshly-erased / first-boot device, the wire `state.on` field reports `true` while `state.brightness` is 0 — meaning the LEDs are physically dark but the webapp's "power" toggle (which derives `isOn` from `state.brightness > 0`) shows OFF, and the diagnostics panel's `on` field shows `true`. The two facts contradict each other from the user's point of view.
-
-**Hypothesized root cause**
-`ll_state_t` carries `on` and `brightness` as independent fields, mutated by independent state-bus events (`LL_EV_POWER_TOGGLE` vs `LL_EV_BRIGHTNESS`). The button-firmware's gesture grammar treats them as separate (single-press cycles base color *and* sets `on=true`; long-hold sets `on=false`; brightness gestures don't touch `on`). Defaults from `ll_state_defaults` set `on=true, brightness=50` (or whatever the compiled default is), but the boot path can land in a state where `brightness` got set to 0 from elsewhere (e.g., webapp power-off) without `on` being cleared.
-
-**Reproduction**
-1. `idf.py erase-flash && idf.py flash` to clear NVS.
-2. Boot the device, observe the LED strip — dark.
-3. From the webapp, run `get_state` (e.g. via the diagnostics panel on `#/settings`). Observe `on=true` while `brightness=0` (or some small value).
-4. The webapp's `#/` power toggle reads OFF (because it uses `brightness > 0`), contradicting the diagnostics view.
-
-**Possible fixes (ordered by ROI)**
-1. **Make `on` derived from `brightness`** at the firmware-state level: drop the independent `on` field; serialize `state.on` as `brightness > 0` in `state_to_json()`. Cleaner mental model, removes the contradiction by construction. ~30 minutes. Requires updating the button handler's `LL_EV_POWER_TOGGLE` to set brightness=0 instead of mutating a separate `on` flag.
-2. **Couple them in `apply_event`**: when `brightness` is set to non-zero, also set `on=true`; when `on=false`, also set `brightness=0`. Preserves the field but enforces the invariant. ~15 minutes. Slightly less clean but doesn't ripple to other modules.
-3. **Webapp-side coupling**: ignore the firmware's `on` field, derive everything client-side from `brightness`. Already partially what the webapp does. Doesn't fix the diagnostics view, but the user-visible "power" toggle is consistent.
-
 ### #6 — Error flow during set_wifi_creds is bare-bones
 
 **Severity:** Medium (functional but ergonomic — affects every "wrong password" recovery)
@@ -73,6 +50,30 @@ Document the recovery path: "if the mirror doesn't appear on your network within
 ---
 
 ## Closed
+
+### #2 — `state.on` and `state.brightness` can disagree (misleading wire state)
+
+**Closed:** 2026-05-15 by [LL-075](../tasks.md#LL-075) — fix #2 from the original ROI list (couple them in `apply_event`), with an additional auto-restore on power-on so the button single-press path doesn't strand at brightness=0.
+
+**Severity (at close):** Was Medium (visible, ergonomic). Now eliminated at the data-model layer.
+
+**Symptom (historical)**
+The wire `state.on` field could report `true` while `state.brightness` was 0 — LEDs dark, but the diagnostics panel showed `on=true`. The webapp's power toggle (which uses `state.on` directly per closed bug #3) had already been disambiguated from the brightness-derived inference, so the user-facing impact was mostly diagnostics-view confusion. The data model still permitted the contradictory state, and the symmetric case (`on=false, brightness>0`) also leaked through if a client posted `{on:false}` alone.
+
+**Root cause (historical)**
+`ll_state_t` carried `on` and `brightness` as independent fields mutated by independent state-bus events. No invariant was enforced anywhere — `apply_event` set whichever field the event named and left the other one alone.
+
+**Fix shipped — LL-075** ([Firmware/v1/core/state_bus/state_bus.c](../Firmware/v1/core/state_bus/state_bus.c))
+
+Two coupled invariants in `apply_event`:
+
+- `LL_EV_BRIGHTNESS{value}` now also sets `on = (value > 0)`. brightness=0 implies !on; brightness>0 implies on.
+- `LL_EV_POWER_TOGGLE{on:true}` auto-restores `brightness` to 75 (the `LL_BRIGHTNESS_RESUME_DEFAULT` constant) when current brightness is 0. So a webapp `{brightness:0}` set followed by a button single-press from off leaves the device at (on=true, brightness=75) — not stranded at brightness=0 with LEDs still dark.
+- `LL_EV_POWER_TOGGLE{on:false}` deliberately **preserves brightness** — button long-hold → single-press cycle keeps the user's brightness setting. The renderer gates on `s->on` ([pattern_interp.c:151](../Firmware/v1/core/pattern_interp/pattern_interp.c)) so (on=false, brightness=75) renders dark; brightness is just preserved memory.
+
+Boot self-heal in `ll_state_bus_init` catches legacy NVS blobs that carry the contradictory (on=true, brightness=0) and corrects on first load.
+
+Verified on the live mirror via [ll_on_brightness_invariant_test.py](../Firmware/v1/scripts/ll_on_brightness_invariant_test.py) — all 6 cases pass (single-field brightness 0/non-zero, single-field on true/false, coupled webapp envelopes both ways).
 
 ### #1 — Transient `socket closed` errors under user load
 

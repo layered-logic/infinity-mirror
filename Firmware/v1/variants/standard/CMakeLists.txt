@@ -17,5 +17,6 @@ idf_component_register(
         ota
         pattern_interp
         provisioning
+        telemetry
         transport
 )

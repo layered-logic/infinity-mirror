@@ -1,9 +1,11 @@
 import {
   DeviceState,
   InboundFrame,
+  OtaProgressBroadcast,
   ResponseEnvelope,
   SetWifiCredsPayload,
   StateBroadcast,
+  isOtaProgress,
   isStateBroadcast,
   newReqId,
   nowEpochSeconds,
@@ -16,6 +18,9 @@ export interface MirrorClientOptions {
   onState?: (state: DeviceState) => void;
   onConn?: (s: ConnState) => void;
   onError?: (msg: string) => void;
+  // Streaming OTA progress emitted by the device during esp_https_ota's
+  // perform loop (LL-057 Session B). One-way; clients render percent+phase.
+  onOtaProgress?: (p: OtaProgressBroadcast) => void;
   // Auto-reconnect with exponential backoff (1s → 2s → 4s → 8s capped).
   // Default true. Set false for tests or one-shot scripts.
   autoReconnect?: boolean;
@@ -172,6 +177,10 @@ export class MirrorClient {
     }
     if (isStateBroadcast(frame)) {
       this.opts.onState?.((frame as StateBroadcast).state);
+      return;
+    }
+    if (isOtaProgress(frame)) {
+      this.opts.onOtaProgress?.(frame);
       return;
     }
     const resp = frame as ResponseEnvelope;
