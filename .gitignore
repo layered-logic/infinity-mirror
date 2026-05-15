@@ -18,3 +18,8 @@ __pycache__/
 # raw logs not worth versioning.
 /*.log
 Firmware/v1/*.log
+
+# CEFbox reference DXFs — paid third-party content, used as ground truth
+# for the LL-051 dieline generator. Geometry inferred from these gets
+# committed; the source files do not.
+Assembly_docs/Packaging_Templates/

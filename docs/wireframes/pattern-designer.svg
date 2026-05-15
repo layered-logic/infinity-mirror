@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 1320" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" role="img" aria-labelledby="wireframe-title wireframe-desc">
+  <title id="wireframe-title">Layered Logic Mirror — Pattern Designer screen wireframe (post-V1 mockup)</title>
+  <desc id="wireframe-desc">Speculative V2/post-V1 mockup of a pattern designer screen for the Layered Logic Mirror app. Not built in V1 — V1 ships 7 fixed patterns from firmware (solid, rainbow, scanner, spinner, random, breathing, twinkle). This mockup explores the natural extension: a guided editor where users pick a base pattern algorithm, tune its parameters (speed, hue range, brightness modulation), and save with a name. Shows a live 6x6 LED preview at top, base-pattern chip selector, parameter sliders, and save controls. 6 numbered callouts pairing each design hypothesis to the question it raises. 4 alternate-state thumbnails: solid color, library view, save dialog, blank-canvas "Custom" mode. Visually marked as POST-V1 throughout. Phone proportions match Pixel 9 (360x800 dp).</desc>
+
+  <defs>
+    <style>
+      .phone-frame { fill: #FAFAFA; stroke: #2A2A2A; stroke-width: 1.5; }
+      .screen-bg { fill: #FFFFFF; }
+      .notch { fill: #1A1A1A; }
+      .section-title { font-size: 15px; font-weight: 700; fill: #1A1A1A; }
+      .subsection-title { font-size: 13px; font-weight: 700; fill: #1A1A1A; }
+      .body { font-size: 11px; fill: #1A1A1A; }
+      .muted { font-size: 10px; fill: #6B6B6B; }
+      .label { font-size: 10px; font-weight: 600; fill: #1A1A1A; letter-spacing: 0.3px; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; fill: #1A1A1A; }
+      .btn-primary-fill { fill: #3214FF; }
+      .btn-secondary-fill { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1; }
+      .btn-text-primary { font-size: 12px; font-weight: 600; fill: #FFFFFF; }
+      .btn-text-secondary { font-size: 11px; font-weight: 600; fill: #3214FF; }
+      .input { fill: #F4F4F6; stroke: #D8D8DC; stroke-width: 0.5; }
+      .placeholder { font-size: 11px; fill: #999999; }
+      .divider { stroke: #E5E5E7; stroke-width: 0.5; }
+      .home-indicator { fill: #1A1A1A; }
+      .settings-link { font-size: 11px; fill: #3214FF; font-weight: 500; }
+
+      .callout-circle { fill: #3214FF; }
+      .callout-num { font-size: 11px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; dominant-baseline: middle; }
+      .callout-line { stroke: #3214FF; stroke-width: 0.6; stroke-dasharray: 3,2; fill: none; }
+      .callout-title { font-size: 12px; font-weight: 700; fill: #1A1A1A; }
+      .callout-body { font-size: 11px; fill: #4A4A4A; }
+      .callout-source { font-size: 9px; font-style: italic; fill: #6B6B6B; }
+      .callout-question { font-size: 11px; fill: #4A4A4A; font-style: italic; }
+
+      .doc-title { font-size: 20px; font-weight: 700; fill: #1A1A1A; }
+      .doc-subtitle { font-size: 12px; fill: #4A4A4A; }
+      .doc-meta { font-size: 10px; fill: #6B6B6B; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      .deferred-badge { fill: #6B6B6B; }
+      .deferred-badge-text { font-size: 10px; font-weight: 700; fill: #FFFFFF; letter-spacing: 0.8px; }
+      .speculative-banner { fill: #FFF8E5; stroke: #C49419; stroke-width: 0.6; stroke-dasharray: 3,2; }
+      .speculative-banner-text { font-size: 10px; font-weight: 600; fill: #6B5010; }
+
+      .alt-section-title { font-size: 14px; font-weight: 700; fill: #1A1A1A; }
+      .alt-frame { fill: #FAFAFA; stroke: #8A8A92; stroke-width: 0.8; stroke-dasharray: 4,3; }
+      .alt-state-label { font-size: 10px; font-weight: 700; fill: #6B6B6B; letter-spacing: 0.6px; }
+      .alt-caption { font-size: 10px; fill: #4A4A4A; }
+
+      .chip { fill: #FFFFFF; stroke: #D8D8DC; stroke-width: 0.8; }
+      .chip-active { fill: #3214FF; stroke: #3214FF; stroke-width: 0.8; }
+      .chip-text { font-size: 10px; fill: #1A1A1A; font-weight: 500; }
+      .chip-text-active { font-size: 10px; fill: #FFFFFF; font-weight: 600; }
+
+      .slider-track { stroke: #D8D8DC; stroke-width: 4; stroke-linecap: round; }
+      .slider-fill { stroke: #3214FF; stroke-width: 4; stroke-linecap: round; }
+      .slider-handle { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1.5; }
+      .slider-value { font-size: 10px; font-weight: 600; fill: #3214FF; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      .preview-frame { fill: none; stroke: #2A2A2A; stroke-width: 1; }
+      .preview-inner { fill: #0A0A14; }
+      .motion-arrow { stroke: #FFFFFF; stroke-width: 1; opacity: 0.55; fill: none; }
+    </style>
+  </defs>
+
+  <!-- ==================== Title block ==================== -->
+  <text x="440" y="68" class="doc-title">Pattern Designer</text>
+  <rect class="deferred-badge" x="640" y="52" width="72" height="20" rx="4" />
+  <text x="676" y="66" text-anchor="middle" class="deferred-badge-text">POST-V1</text>
+  <text x="440" y="88" class="doc-subtitle">Speculative · Layered Logic Mirror · App/v2 (not built) · Mobile</text>
+  <text x="440" y="104" class="doc-meta">Mockup · 2026-05-14 · Resting state + 4 alternate states</text>
+  <line x1="440" y1="118" x2="960" y2="118" class="divider" />
+
+  <!-- ==================== Phone frame ==================== -->
+  <rect class="phone-frame" x="40" y="40" width="360" height="800" rx="36" />
+  <rect class="screen-bg" x="54" y="54" width="332" height="772" rx="26" />
+
+  <!-- Notch -->
+  <rect class="notch" x="175" y="60" width="90" height="14" rx="7" />
+
+  <!-- Header bar -->
+  <text x="70" y="105" class="settings-link">‹ Patterns</text>
+  <text x="220" y="105" text-anchor="middle" class="section-title">Pattern Designer</text>
+  <line x1="64" y1="118" x2="376" y2="118" class="divider" />
+
+  <!-- Speculative banner inside the phone -->
+  <rect class="speculative-banner" x="70" y="128" width="300" height="22" rx="3" />
+  <text x="220" y="143" text-anchor="middle" class="speculative-banner-text">POST-V1 mockup · pattern_interp scaffold only</text>
+
+  <!-- ==================== Live Preview ==================== -->
+  <text x="70" y="170" class="subsection-title">Preview</text>
+
+  <!-- Mirror frame outline -->
+  <rect class="preview-frame" x="120" y="180" width="200" height="200" rx="6" />
+  <!-- Inner dark background (mirror's black face) -->
+  <rect class="preview-inner" x="130" y="190" width="180" height="180" rx="3" />
+
+  <!-- 6x6 LED grid showing rainbow pattern (diagonal flow) -->
+  <!-- Each dot at (130 + 10 + col*28, 190 + 10 + row*28); radius 8 -->
+  <g>
+    <!-- Row 0 -->
+    <circle cx="148" cy="208" r="6" fill="#FF1A1A" />
+    <circle cx="176" cy="208" r="6" fill="#FF6E00" />
+    <circle cx="204" cy="208" r="6" fill="#FFD300" />
+    <circle cx="232" cy="208" r="6" fill="#A8E000" />
+    <circle cx="260" cy="208" r="6" fill="#00C24C" />
+    <circle cx="288" cy="208" r="6" fill="#00B8C6" />
+    <!-- Row 1 -->
+    <circle cx="148" cy="236" r="6" fill="#FF6E00" />
+    <circle cx="176" cy="236" r="6" fill="#FFD300" />
+    <circle cx="204" cy="236" r="6" fill="#A8E000" />
+    <circle cx="232" cy="236" r="6" fill="#00C24C" />
+    <circle cx="260" cy="236" r="6" fill="#00B8C6" />
+    <circle cx="288" cy="236" r="6" fill="#0080FF" />
+    <!-- Row 2 -->
+    <circle cx="148" cy="264" r="6" fill="#FFD300" />
+    <circle cx="176" cy="264" r="6" fill="#A8E000" />
+    <circle cx="204" cy="264" r="6" fill="#00C24C" />
+    <circle cx="232" cy="264" r="6" fill="#00B8C6" />
+    <circle cx="260" cy="264" r="6" fill="#0080FF" />
+    <circle cx="288" cy="264" r="6" fill="#3214FF" />
+    <!-- Row 3 -->
+    <circle cx="148" cy="292" r="6" fill="#A8E000" />
+    <circle cx="176" cy="292" r="6" fill="#00C24C" />
+    <circle cx="204" cy="292" r="6" fill="#00B8C6" />
+    <circle cx="232" cy="292" r="6" fill="#0080FF" />
+    <circle cx="260" cy="292" r="6" fill="#3214FF" />
+    <circle cx="288" cy="292" r="6" fill="#7A14FF" />
+    <!-- Row 4 -->
+    <circle cx="148" cy="320" r="6" fill="#00C24C" />
+    <circle cx="176" cy="320" r="6" fill="#00B8C6" />
+    <circle cx="204" cy="320" r="6" fill="#0080FF" />
+    <circle cx="232" cy="320" r="6" fill="#3214FF" />
+    <circle cx="260" cy="320" r="6" fill="#7A14FF" />
+    <circle cx="288" cy="320" r="6" fill="#C414FF" />
+    <!-- Row 5 -->
+    <circle cx="148" cy="348" r="6" fill="#00B8C6" />
+    <circle cx="176" cy="348" r="6" fill="#0080FF" />
+    <circle cx="204" cy="348" r="6" fill="#3214FF" />
+    <circle cx="232" cy="348" r="6" fill="#7A14FF" />
+    <circle cx="260" cy="348" r="6" fill="#C414FF" />
+    <circle cx="288" cy="348" r="6" fill="#FF14C4" />
+  </g>
+
+  <!-- Motion indicator: subtle arrow showing flow direction -->
+  <path class="motion-arrow" d="M 140,195 Q 220,200 296,260" />
+  <polygon points="296,260 290,256 290,264" fill="#FFFFFF" opacity="0.55" />
+
+  <text x="220" y="396" text-anchor="middle" class="muted">Live preview — updates as you tune parameters</text>
+
+  <line x1="64" y1="410" x2="376" y2="410" class="divider" />
+
+  <!-- ==================== Base pattern chips ==================== -->
+  <text x="70" y="432" class="label">BASE PATTERN</text>
+
+  <!-- Chips: 8 across; assuming horizontal scroll. Show 4-5 visible + ... -->
+  <!-- Sizes: chip widths vary by label. Place x positions sequentially with 8px gap -->
+  <g transform="translate(70, 444)">
+    <!-- Solid -->
+    <rect class="chip" x="0" y="0" width="44" height="26" rx="13" />
+    <text x="22" y="17" text-anchor="middle" class="chip-text">Solid</text>
+
+    <!-- Rainbow (active) -->
+    <rect class="chip-active" x="52" y="0" width="64" height="26" rx="13" />
+    <text x="84" y="17" text-anchor="middle" class="chip-text-active">Rainbow</text>
+
+    <!-- Scanner -->
+    <rect class="chip" x="124" y="0" width="64" height="26" rx="13" />
+    <text x="156" y="17" text-anchor="middle" class="chip-text">Scanner</text>
+
+    <!-- Spinner -->
+    <rect class="chip" x="196" y="0" width="58" height="26" rx="13" />
+    <text x="225" y="17" text-anchor="middle" class="chip-text">Spinner</text>
+
+    <!-- More indicator -->
+    <text x="270" y="17" class="chip-text" fill="#6B6B6B">›</text>
+  </g>
+
+  <text x="70" y="490" class="muted">Random · Breathing · Twinkle · + Custom</text>
+
+  <line x1="64" y1="510" x2="376" y2="510" class="divider" />
+
+  <!-- ==================== Parameters ==================== -->
+  <text x="70" y="532" class="subsection-title">Parameters</text>
+
+  <!-- Speed slider -->
+  <text x="70" y="554" class="label">SPEED</text>
+  <line x1="70" y1="572" x2="290" y2="572" class="slider-track" />
+  <line x1="70" y1="572" x2="186" y2="572" class="slider-fill" />
+  <circle cx="186" cy="572" r="8" class="slider-handle" />
+  <text x="305" y="576" class="slider-value">1.2 s/cyc</text>
+
+  <!-- Hue range slider -->
+  <text x="70" y="604" class="label">HUE RANGE</text>
+  <line x1="70" y1="622" x2="290" y2="622" class="slider-track" />
+  <line x1="70" y1="622" x2="290" y2="622" class="slider-fill" />
+  <circle cx="70" cy="622" r="8" class="slider-handle" />
+  <circle cx="290" cy="622" r="8" class="slider-handle" />
+  <text x="305" y="626" class="slider-value">360°</text>
+
+  <!-- Brightness modulation slider -->
+  <text x="70" y="654" class="label">BRIGHTNESS MOD</text>
+  <line x1="70" y1="672" x2="290" y2="672" class="slider-track" />
+  <line x1="70" y1="672" x2="160" y2="672" class="slider-fill" />
+  <circle cx="160" cy="672" r="8" class="slider-handle" />
+  <text x="305" y="676" class="slider-value">30%</text>
+
+  <line x1="64" y1="700" x2="376" y2="700" class="divider" />
+
+  <!-- ==================== Save ==================== -->
+  <text x="70" y="722" class="subsection-title">Save</text>
+
+  <rect class="input" x="70" y="734" width="200" height="32" rx="4" />
+  <text x="80" y="754" class="placeholder">Untitled pattern</text>
+
+  <rect class="btn-primary-fill" x="280" y="734" width="90" height="32" rx="4" />
+  <text x="325" y="754" text-anchor="middle" class="btn-text-primary">Save</text>
+
+  <text x="70" y="788" class="muted">Saves to your library — share/export coming soon.</text>
+
+  <!-- Home indicator -->
+  <rect class="home-indicator" x="175" y="822" width="90" height="4" rx="2" />
+
+  <!-- ==================== Callouts ==================== -->
+
+  <!-- ① Live preview at top -->
+  <line class="callout-line" x1="320" y1="280" x2="540" y2="200" />
+  <circle class="callout-circle" cx="550" cy="200" r="11" />
+  <text class="callout-num" x="550" y="200">1</text>
+  <text x="568" y="192" class="callout-title">Live preview is the central UX</text>
+  <text x="568" y="208" class="callout-body">Without seeing what you're making, the editor is abstract</text>
+  <text x="568" y="221" class="callout-body">parameter knobs. Place preview at top so it stays visible while</text>
+  <text x="568" y="234" class="callout-body">scrolling through params. Updates in real-time as you tune —</text>
+  <text x="568" y="247" class="callout-body">requires firmware-side preview op (cheap WS message, no commit).</text>
+  <text x="568" y="262" class="callout-source">Hypothesis · firmware preview op spec TBD</text>
+
+  <!-- ② Base pattern chip selector -->
+  <line class="callout-line" x1="290" y1="457" x2="540" y2="330" />
+  <circle class="callout-circle" cx="550" cy="330" r="11" />
+  <text class="callout-num" x="550" y="330">2</text>
+  <text x="568" y="322" class="callout-title">Start from a base, don't start blank</text>
+  <text x="568" y="338" class="callout-body">Guided editing: 8 base pattern algorithms (the 7 V1 ship-with</text>
+  <text x="568" y="351" class="callout-body">plus "Custom" for the more abstract V3 path). Each base has its</text>
+  <text x="568" y="364" class="callout-body">own parameter set. Blank-canvas creation is intimidating and the</text>
+  <text x="568" y="377" class="callout-body">time investment isn't worth it for most users (per Govee/Nanoleaf</text>
+  <text x="568" y="390" class="callout-body">precedent — both ship preset-tuning, not blank-canvas).</text>
+  <text x="568" y="405" class="callout-source">Hypothesis · validate with LL-048 interviews</text>
+
+  <!-- ③ Parameters change per base -->
+  <line class="callout-line" x1="370" y1="572" x2="540" y2="450" />
+  <circle class="callout-circle" cx="550" cy="450" r="11" />
+  <text class="callout-num" x="550" y="450">3</text>
+  <text x="568" y="442" class="callout-title">Parameters specific to each base pattern</text>
+  <text x="568" y="458" class="callout-body">Rainbow: Speed + Hue range + Brightness mod. Scanner: Speed +</text>
+  <text x="568" y="471" class="callout-body">Tail + Bounce/Wrap. Solid: just color. Each base exposes the</text>
+  <text x="568" y="484" class="callout-body">parameters that actually matter for that algorithm — not a</text>
+  <text x="568" y="497" class="callout-body">universal "everything" panel. Picking a different base swaps the</text>
+  <text x="568" y="510" class="callout-body">whole param set.</text>
+  <text x="568" y="525" class="callout-source">Open question: do users want to discover params, or is it overwhelming?</text>
+
+  <!-- ④ Real-unit params -->
+  <line class="callout-line" x1="345" y1="576" x2="540" y2="580" />
+  <circle class="callout-circle" cx="550" cy="580" r="11" />
+  <text class="callout-num" x="550" y="580">4</text>
+  <text x="568" y="572" class="callout-title">Real-unit slider values, not abstract 0-100</text>
+  <text x="568" y="588" class="callout-body">"1.2 s/cycle" beats "Speed: 65". Real units give the user a</text>
+  <text x="568" y="601" class="callout-body">concrete model of what's about to happen. Cost: each slider</text>
+  <text x="568" y="614" class="callout-body">needs unit-aware min/max + step. Pays back in fewer</text>
+  <text x="568" y="627" class="callout-body">"is 60 faster or slower than 80?" confusions.</text>
+  <text x="568" y="642" class="callout-source">Hypothesis · check against power-user vs casual segmentation</text>
+
+  <!-- ⑤ Reuse color wheel from V1 -->
+  <line class="callout-line" x1="290" y1="490" x2="540" y2="700" />
+  <circle class="callout-circle" cx="550" cy="700" r="11" />
+  <text class="callout-num" x="550" y="700">5</text>
+  <text x="568" y="692" class="callout-title">Reuse V1 color wheel for color params</text>
+  <text x="568" y="708" class="callout-body">When the base is Solid (or any pattern with a single-color param),</text>
+  <text x="568" y="721" class="callout-body">tap into the parameter row and the existing color wheel from</text>
+  <text x="568" y="734" class="callout-body">Home/Controls slides up. Consistency over parallel implementations —</text>
+  <text x="568" y="747" class="callout-body">the wheel already has scroll-lock, magnifier, hex display.</text>
+  <text x="568" y="762" class="callout-source">Reuses Home/Controls chapter callouts ②③</text>
+
+  <!-- ⑥ Save = named library item -->
+  <line class="callout-line" x1="370" y1="750" x2="540" y2="800" />
+  <circle class="callout-circle" cx="550" cy="800" r="11" />
+  <text class="callout-num" x="550" y="800">6</text>
+  <text x="568" y="792" class="callout-title">Patterns persist as first-class objects</text>
+  <text x="568" y="808" class="callout-body">Save with a name → goes into the user's library → shows up in</text>
+  <text x="568" y="821" class="callout-body">Home/Controls pattern grid alongside the V1 presets. Library</text>
+  <text x="568" y="834" class="callout-body">membership matters because shareable patterns (export/import,</text>
+  <text x="568" y="847" class="callout-body">community gallery — far-future) presume named, addressable units.</text>
+  <text x="568" y="862" class="callout-source">Hypothesis · stakeholder-map §4.4 community sharing future</text>
+
+  <!-- ==================== Alternate states ==================== -->
+  <line x1="30" y1="920" x2="970" y2="920" class="divider" />
+  <text x="30" y="950" class="alt-section-title">Alternate states</text>
+  <text x="30" y="968" class="callout-body">Different base patterns swap the param set. Saved-patterns library, save dialog, and the speculative "Custom" blank-canvas path.</text>
+
+  <!-- 4 thumbnails: 215w, 20gap → x=30, 265, 500, 735 -->
+
+  <!-- ===== Alt state 1: Solid pattern selected ===== -->
+  <text x="30" y="998" class="alt-state-label">① BASE: SOLID</text>
+  <rect class="alt-frame" x="30" y="1008" width="215" height="240" rx="6" />
+
+  <text x="48" y="1028" class="subsection-title">Preview</text>
+  <rect class="preview-frame" x="50" y="1038" width="80" height="80" rx="3" />
+  <rect class="preview-inner" x="55" y="1043" width="70" height="70" rx="2" />
+  <!-- All dots are brand indigo -->
+  <g>
+    <circle cx="68" cy="1056" r="3" fill="#3214FF" />
+    <circle cx="80" cy="1056" r="3" fill="#3214FF" />
+    <circle cx="92" cy="1056" r="3" fill="#3214FF" />
+    <circle cx="104" cy="1056" r="3" fill="#3214FF" />
+    <circle cx="116" cy="1056" r="3" fill="#3214FF" />
+    <circle cx="68" cy="1068" r="3" fill="#3214FF" />
+    <circle cx="80" cy="1068" r="3" fill="#3214FF" />
+    <circle cx="92" cy="1068" r="3" fill="#3214FF" />
+    <circle cx="104" cy="1068" r="3" fill="#3214FF" />
+    <circle cx="116" cy="1068" r="3" fill="#3214FF" />
+    <circle cx="68" cy="1080" r="3" fill="#3214FF" />
+    <circle cx="92" cy="1080" r="3" fill="#3214FF" />
+    <circle cx="116" cy="1080" r="3" fill="#3214FF" />
+    <circle cx="68" cy="1092" r="3" fill="#3214FF" />
+    <circle cx="92" cy="1092" r="3" fill="#3214FF" />
+    <circle cx="116" cy="1092" r="3" fill="#3214FF" />
+    <circle cx="68" cy="1104" r="3" fill="#3214FF" />
+    <circle cx="92" cy="1104" r="3" fill="#3214FF" />
+    <circle cx="116" cy="1104" r="3" fill="#3214FF" />
+  </g>
+
+  <text x="148" y="1052" class="label" font-size="9">PARAMS</text>
+  <text x="148" y="1070" class="muted" font-size="9">Just one:</text>
+  <text x="148" y="1083" class="muted" font-size="9">Color picker</text>
+  <text x="148" y="1100" class="mono" font-size="9">#3214FF</text>
+  <rect x="148" y="1110" width="18" height="18" rx="3" fill="#3214FF" stroke="#2A2A2A" stroke-width="0.5" />
+
+  <text x="50" y="1140" class="label" font-size="9">BASE PATTERN</text>
+  <rect class="chip-active" x="50" y="1148" width="40" height="22" rx="11" />
+  <text x="70" y="1162" text-anchor="middle" class="chip-text-active" font-size="9">Solid</text>
+  <rect class="chip" x="94" y="1148" width="48" height="22" rx="11" />
+  <text x="118" y="1162" text-anchor="middle" class="chip-text" font-size="9">Rainbow</text>
+  <text x="148" y="1162" class="chip-text" fill="#6B6B6B">›</text>
+
+  <text x="30" y="1267" class="alt-caption">Solid has one param: color. The whole</text>
+  <text x="30" y="1279" class="alt-caption">params section collapses to a single</text>
+  <text x="30" y="1291" class="alt-caption">field; tapping it opens the V1 color</text>
+  <text x="30" y="1303" class="alt-caption">wheel (per callout ⑤).</text>
+
+  <!-- ===== Alt state 2: Library / saved patterns ===== -->
+  <text x="265" y="998" class="alt-state-label">② LIBRARY</text>
+  <rect class="alt-frame" x="265" y="1008" width="215" height="240" rx="6" />
+
+  <text x="283" y="1028" class="subsection-title">Saved patterns</text>
+
+  <!-- 4 library rows showing thumbnails + name -->
+  <g transform="translate(283,1040)">
+    <rect fill="#0A0A14" x="0" y="0" width="22" height="22" rx="3" />
+    <circle cx="11" cy="11" r="6" fill="#3214FF" />
+    <text x="30" y="12" class="body" font-weight="600" font-size="10">Indigo Night</text>
+    <text x="30" y="22" class="muted" font-size="8">Solid · base color</text>
+  </g>
+  <g transform="translate(283,1068)">
+    <rect fill="#0A0A14" x="0" y="0" width="22" height="22" rx="3" />
+    <circle cx="6" cy="6" r="3" fill="#FF1A1A" />
+    <circle cx="16" cy="6" r="3" fill="#FFD300" />
+    <circle cx="6" cy="16" r="3" fill="#00C24C" />
+    <circle cx="16" cy="16" r="3" fill="#3214FF" />
+    <text x="30" y="12" class="body" font-weight="600" font-size="10">Slow Rainbow</text>
+    <text x="30" y="22" class="muted" font-size="8">Rainbow · 4s cycle</text>
+  </g>
+  <g transform="translate(283,1096)">
+    <rect fill="#0A0A14" x="0" y="0" width="22" height="22" rx="3" />
+    <circle cx="6" cy="11" r="3" fill="#FF6E00" />
+    <circle cx="16" cy="11" r="3" fill="#FFD300" />
+    <text x="30" y="12" class="body" font-weight="600" font-size="10">Coffeeshop Glow</text>
+    <text x="30" y="22" class="muted" font-size="8">Breathing · warm</text>
+  </g>
+  <g transform="translate(283,1124)">
+    <rect fill="#0A0A14" x="0" y="0" width="22" height="22" rx="3" />
+    <circle cx="11" cy="6" r="3" fill="#A8E000" />
+    <circle cx="11" cy="16" r="3" fill="#A8E000" />
+    <text x="30" y="12" class="body" font-weight="600" font-size="10">Wake Up</text>
+    <text x="30" y="22" class="muted" font-size="8">Twinkle · green palette</text>
+  </g>
+
+  <rect class="btn-secondary-fill" x="283" y="1170" width="180" height="28" rx="5" />
+  <text x="373" y="1188" text-anchor="middle" class="btn-text-secondary">+ New pattern</text>
+
+  <text x="265" y="1267" class="alt-caption">Library lives in Settings or as a tab on</text>
+  <text x="265" y="1279" class="alt-caption">Pattern Designer. Tap a row to edit;</text>
+  <text x="265" y="1291" class="alt-caption">long-press for rename / delete / export.</text>
+  <text x="265" y="1303" class="alt-caption">User-created patterns ship alongside V1.</text>
+
+  <!-- ===== Alt state 3: Save dialog ===== -->
+  <text x="500" y="998" class="alt-state-label">③ SAVE DIALOG</text>
+  <rect class="alt-frame" x="500" y="1008" width="215" height="240" rx="6" />
+
+  <!-- Background screen (faded) -->
+  <text x="518" y="1028" class="subsection-title" opacity="0.3">Pattern Designer</text>
+  <rect class="preview-inner" x="535" y="1040" width="140" height="60" rx="2" opacity="0.3" />
+
+  <!-- Scrim -->
+  <rect fill="#1A1A1A" opacity="0.45" x="500" y="1008" width="215" height="240" rx="6" />
+
+  <!-- Modal -->
+  <rect fill="#FFFFFF" stroke="#D8D8DC" stroke-width="0.5" x="516" y="1086" width="183" height="106" rx="6" />
+  <text x="527" y="1108" class="modal-title">Name this pattern</text>
+  <rect class="input-typed" x="527" y="1118" width="160" height="26" rx="3" />
+  <text x="535" y="1136" font-family="JetBrains Mono, monospace" font-size="10" fill="#1A1A1A">Living Room Glow</text>
+
+  <rect fill="#FFFFFF" stroke="#3214FF" stroke-width="1" x="527" y="1156" width="68" height="26" rx="3" />
+  <text x="561" y="1173" text-anchor="middle" font-size="10" font-weight="600" fill="#3214FF">Cancel</text>
+  <rect fill="#3214FF" x="603" y="1156" width="86" height="26" rx="3" />
+  <text x="646" y="1173" text-anchor="middle" font-size="10" font-weight="600" fill="#FFFFFF">Save</text>
+
+  <text x="500" y="1267" class="alt-caption">Modal over the designer; default name</text>
+  <text x="500" y="1279" class="alt-caption">"Living Room Glow" pre-filled if the</text>
+  <text x="500" y="1291" class="alt-caption">mirror has a name set. Saving routes</text>
+  <text x="500" y="1303" class="alt-caption">user back to Home/Controls with the</text>
+
+  <!-- ===== Alt state 4: Custom (blank canvas) ===== -->
+  <text x="735" y="998" class="alt-state-label">④ CUSTOM (V3+)</text>
+  <rect class="alt-frame" x="735" y="1008" width="215" height="240" rx="6" />
+
+  <text x="753" y="1028" class="subsection-title">Custom</text>
+  <rect class="speculative-banner" x="753" y="1038" width="180" height="20" rx="3" />
+  <text x="843" y="1052" text-anchor="middle" class="speculative-banner-text" font-size="9">V3+ · even more speculative</text>
+
+  <!-- Empty 6x6 grid (paintable canvas) -->
+  <rect class="preview-frame" x="785" y="1068" width="100" height="100" rx="3" />
+  <rect class="preview-inner" x="790" y="1073" width="90" height="90" rx="2" />
+  <g>
+    <!-- Empty dots — just outlines, suggesting they're paintable -->
+    <circle cx="800" cy="1083" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+    <circle cx="812" cy="1083" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+    <circle cx="824" cy="1083" r="3" fill="#3214FF" />
+    <circle cx="836" cy="1083" r="3" fill="#3214FF" />
+    <circle cx="848" cy="1083" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+    <circle cx="860" cy="1083" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+    <circle cx="800" cy="1098" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+    <circle cx="812" cy="1098" r="3" fill="#3214FF" />
+    <circle cx="824" cy="1098" r="3" fill="#3214FF" />
+    <circle cx="836" cy="1098" r="3" fill="#3214FF" />
+    <circle cx="848" cy="1098" r="3" fill="#3214FF" />
+    <circle cx="860" cy="1098" r="3" fill="none" stroke="#444" stroke-width="0.5" />
+  </g>
+
+  <text x="753" y="1180" class="muted" font-size="9">Per-LED paint + timeline keyframes.</text>
+  <text x="753" y="1192" class="muted" font-size="9">For users who outgrow base-pattern</text>
+  <text x="753" y="1204" class="muted" font-size="9">tuning. Out of scope until V2 ships.</text>
+
+  <text x="735" y="1267" class="alt-caption">Blank-canvas path is a real V3+ thing</text>
+  <text x="735" y="1279" class="alt-caption">but speculative even relative to V2.</text>
+  <text x="735" y="1291" class="alt-caption">Showing it here so the design rationale</text>
+  <text x="735" y="1303" class="alt-caption">captures the full vision, not just V2.</text>
+
+</svg>

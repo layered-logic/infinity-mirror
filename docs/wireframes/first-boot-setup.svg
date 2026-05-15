@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 1600" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" role="img" aria-labelledby="wireframe-title wireframe-desc">
+  <title id="wireframe-title">Layered Logic Mirror — First-boot Setup (SoftAP captive) screen wireframe</title>
+  <desc id="wireframe-desc">Lo-fi wireframe of the first-time-user Wi-Fi provisioning screen in the Layered Logic Mirror app. Shows the resting state (connection-to-mirror status pill, "Mirror needs Wi-Fi setup" prompt with skip-this-step option, SSID + password inputs with show/hide, WPA2 length validation, primary "Connect to Wi-Fi" submit button) with 6 numbered callouts pairing each design decision to its source rationale. A 4-thumbnail strip below documents the initial empty, password-shown, submitting/countdown, and timeout-recovery alternate states. A separate "Deferred — BLE provisioning" section at the bottom documents the post-V1 path with a dashed-border placeholder mockup of in-app success confirmation, the key advantage BLE has over SoftAP (where teardown kills the WS link before success/failure can be reported). Phone proportions match Pixel 9 (360x800 dp, 9:20 ratio). Brand indigo (#3214FF) marks the primary affordances.</desc>
+
+  <defs>
+    <style>
+      .phone-frame { fill: #FAFAFA; stroke: #2A2A2A; stroke-width: 1.5; }
+      .screen-bg { fill: #FFFFFF; }
+      .notch { fill: #1A1A1A; }
+      .section-title { font-size: 15px; font-weight: 700; fill: #1A1A1A; }
+      .subsection-title { font-size: 13px; font-weight: 700; fill: #1A1A1A; }
+      .body { font-size: 11px; fill: #1A1A1A; }
+      .muted { font-size: 10px; fill: #6B6B6B; }
+      .label { font-size: 10px; font-weight: 600; fill: #1A1A1A; letter-spacing: 0.3px; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; fill: #1A1A1A; }
+      .bold { font-weight: 700; }
+      .btn-primary-fill { fill: #3214FF; }
+      .btn-secondary-fill { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1; }
+      .btn-text-primary { font-size: 12px; font-weight: 600; fill: #FFFFFF; }
+      .btn-text-secondary { font-size: 11px; font-weight: 600; fill: #3214FF; }
+      .input { fill: #F4F4F6; stroke: #D8D8DC; stroke-width: 0.5; }
+      .input-typed { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1; }
+      .placeholder { font-size: 11px; fill: #999999; }
+      .typed { font-size: 11px; fill: #1A1A1A; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+      .divider { stroke: #E5E5E7; stroke-width: 0.5; }
+      .home-indicator { fill: #1A1A1A; }
+      .err { font-size: 10px; fill: #C44; }
+      .pill { fill: #E5FFE5; stroke: #1A8C1A; stroke-width: 0.6; }
+      .pill-text { font-size: 10px; font-weight: 600; fill: #1A8C1A; }
+      .callout-circle { fill: #3214FF; }
+      .callout-num { font-size: 11px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; dominant-baseline: middle; }
+      .callout-line { stroke: #3214FF; stroke-width: 0.6; stroke-dasharray: 3,2; fill: none; }
+      .callout-title { font-size: 12px; font-weight: 700; fill: #1A1A1A; }
+      .callout-body { font-size: 11px; fill: #4A4A4A; }
+      .callout-source { font-size: 9px; font-style: italic; fill: #6B6B6B; }
+
+      /* Title block */
+      .doc-title { font-size: 20px; font-weight: 700; fill: #1A1A1A; }
+      .doc-subtitle { font-size: 12px; fill: #4A4A4A; }
+      .doc-meta { font-size: 10px; fill: #6B6B6B; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      /* Alternate states */
+      .alt-section-title { font-size: 14px; font-weight: 700; fill: #1A1A1A; }
+      .alt-frame { fill: #FAFAFA; stroke: #C8C8CE; stroke-width: 0.8; }
+      .alt-state-label { font-size: 10px; font-weight: 700; fill: #3214FF; letter-spacing: 0.6px; }
+      .alt-caption { font-size: 10px; fill: #4A4A4A; }
+      .countdown-num { font-size: 26px; font-weight: 700; fill: #3214FF; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+      .warn-box { fill: #FFF8E5; stroke: #C49419; stroke-width: 0.8; }
+      .warn-text { font-size: 9px; fill: #6B5010; }
+
+      /* Deferred / future section */
+      .deferred-frame { fill: #FAFAFA; stroke: #8A8A92; stroke-width: 0.8; stroke-dasharray: 4,3; }
+      .deferred-screen { fill: #F8F8FA; stroke: #8A8A92; stroke-width: 0.5; stroke-dasharray: 3,2; }
+      .deferred-badge { fill: #6B6B6B; }
+      .deferred-badge-text { font-size: 9px; font-weight: 700; fill: #FFFFFF; letter-spacing: 0.8px; }
+      .deferred-title { font-size: 14px; font-weight: 700; fill: #4A4A4A; }
+      .deferred-body { font-size: 11px; fill: #4A4A4A; }
+      .success-pill { fill: #E5FFE5; stroke: #1A8C1A; stroke-width: 0.8; }
+      .success-text { font-size: 10px; font-weight: 600; fill: #1A8C1A; }
+    </style>
+  </defs>
+
+  <!-- ==================== Title block ==================== -->
+  <text x="440" y="68" class="doc-title">First-boot Setup — Wi-Fi Provisioning</text>
+  <text x="440" y="88" class="doc-subtitle">Layered Logic Mirror · App/v1 · Mobile (React Native, Pixel 9)</text>
+  <text x="440" y="104" class="doc-meta">Version 1.0 · 2026-05-14 · Resting state + 4 alternate states</text>
+  <line x1="440" y1="118" x2="960" y2="118" class="divider" />
+
+  <!-- ==================== Phone frame ==================== -->
+  <rect class="phone-frame" x="40" y="40" width="360" height="800" rx="36" />
+  <rect class="screen-bg" x="54" y="54" width="332" height="772" rx="26" />
+
+  <!-- Notch -->
+  <rect class="notch" x="175" y="60" width="90" height="14" rx="7" />
+
+  <!-- Header -->
+  <text x="220" y="105" text-anchor="middle" class="section-title">Layered Logic</text>
+  <line x1="64" y1="118" x2="376" y2="118" class="divider" />
+
+  <!-- Connection status banner -->
+  <rect class="pill" x="70" y="130" width="300" height="28" rx="14" />
+  <circle cx="86" cy="144" r="4" fill="#1A8C1A" />
+  <text x="98" y="148" class="pill-text">Connected to mirror</text>
+  <text x="248" y="148" class="muted" font-size="9">LL-Mirror-a3f2b9 (SoftAP)</text>
+
+  <!-- ==================== Setup section ==================== -->
+  <text x="70" y="184" class="subsection-title">Mirror needs Wi-Fi setup</text>
+  <text x="70" y="204" class="muted">You're connected to the mirror's SoftAP. Give it</text>
+  <text x="70" y="217" class="muted">credentials for your home Wi-Fi to join, or tap</text>
+  <text x="70" y="230" class="muted">below to skip and control it directly over the SoftAP.</text>
+
+  <!-- Skip button (secondary, full content width) -->
+  <rect class="btn-secondary-fill" x="70" y="244" width="300" height="34" rx="5" />
+  <text x="220" y="266" text-anchor="middle" class="btn-text-secondary">Control directly (skip Wi-Fi setup)</text>
+
+  <!-- SSID label + input -->
+  <text x="70" y="304" class="label">SSID</text>
+  <rect class="input-typed" x="70" y="312" width="300" height="34" rx="4" />
+  <text x="80" y="334" class="typed">HomeWiFi</text>
+
+  <!-- Password label + input + Show button -->
+  <text x="70" y="368" class="label">PASSWORD</text>
+  <rect class="input-typed" x="70" y="376" width="222" height="34" rx="4" />
+  <text x="80" y="398" class="typed">••••••••••••</text>
+  <rect class="btn-secondary-fill" x="300" y="376" width="70" height="34" rx="4" />
+  <text x="335" y="398" text-anchor="middle" class="btn-text-secondary">Show</text>
+
+  <!-- Helper text under password -->
+  <text x="70" y="426" class="muted">WPA2: empty (open) or 8-64 characters.</text>
+
+  <!-- Submit button (primary CTA) -->
+  <rect class="btn-primary-fill" x="70" y="446" width="300" height="38" rx="6" />
+  <text x="220" y="471" text-anchor="middle" class="btn-text-primary">Connect to Wi-Fi</text>
+
+  <!-- Below-fold preview: countdown / fallback section that appears post-submit -->
+  <line x1="64" y1="510" x2="376" y2="510" class="divider" />
+  <text x="70" y="532" class="subsection-title" fill="#999999">After submit: countdown + recovery</text>
+  <text x="70" y="548" class="muted" fill="#AAAAAA">(see alternate states below)</text>
+
+  <!-- Home indicator -->
+  <rect class="home-indicator" x="175" y="822" width="90" height="4" rx="2" />
+
+  <!-- ==================== Callouts ==================== -->
+
+  <!-- ① SoftAP not BLE -->
+  <line class="callout-line" x1="370" y1="144" x2="540" y2="170" />
+  <circle class="callout-circle" cx="550" cy="170" r="11" />
+  <text class="callout-num" x="550" y="170">1</text>
+  <text x="568" y="162" class="callout-title">SoftAP captive, not BLE provisioning</text>
+  <text x="568" y="178" class="callout-body">V1 ships SoftAP-only — works without an app (any browser at</text>
+  <text x="568" y="191" class="callout-body">192.168.4.1 reaches the captive webapp). BLE provisioning would</text>
+  <text x="568" y="204" class="callout-body">avoid the SoftAP-teardown error problem (see ④) but adds Bluetooth</text>
+  <text x="568" y="217" class="callout-body">scan-permission UX + a parallel pairing flow. Deferred to post-V1.</text>
+  <text x="568" y="232" class="callout-source">post-mini-sprint-bugs.md #6 · firmware-spec §4.5.3</text>
+
+  <!-- ② Skip button -->
+  <line class="callout-line" x1="370" y1="261" x2="540" y2="290" />
+  <circle class="callout-circle" cx="550" cy="290" r="11" />
+  <text class="callout-num" x="550" y="290">2</text>
+  <text x="568" y="282" class="callout-title">Skip path → works out of the box</text>
+  <text x="568" y="298" class="callout-body">"Control directly" bypasses Wi-Fi setup entirely — user keeps</text>
+  <text x="568" y="311" class="callout-body">their phone on the mirror's SoftAP and controls it from there.</text>
+  <text x="568" y="324" class="callout-body">Aligns with the locked product principle: works out of the box</text>
+  <text x="568" y="337" class="callout-body">with no required smart-home connection. Home Wi-Fi is opt-in.</text>
+  <text x="568" y="352" class="callout-source">sprint_plan.md (Apr 22 firmware design principles)</text>
+
+  <!-- ③ Show/Hide password -->
+  <line class="callout-line" x1="370" y1="393" x2="540" y2="400" />
+  <circle class="callout-circle" cx="550" cy="400" r="11" />
+  <text class="callout-num" x="550" y="400">3</text>
+  <text x="568" y="392" class="callout-title">Show/Hide password toggle</text>
+  <text x="568" y="408" class="callout-body">WPA2 passwords are usually 12-30 chars of mixed entropy; typos</text>
+  <text x="568" y="421" class="callout-body">are the dominant failure mode for first-cred submission. Show</text>
+  <text x="568" y="434" class="callout-body">button is per-field (only password, not SSID), and reverts to</text>
+  <text x="568" y="447" class="callout-body">Hide after a successful submit so re-attempts start safe.</text>
+  <text x="568" y="462" class="callout-source">App.tsx:706-726</text>
+
+  <!-- ④ Inline WPA2 validation -->
+  <line class="callout-line" x1="295" y1="426" x2="540" y2="500" />
+  <circle class="callout-circle" cx="550" cy="500" r="11" />
+  <text class="callout-num" x="550" y="500">4</text>
+  <text x="568" y="492" class="callout-title">Inline WPA2 length validation</text>
+  <text x="568" y="508" class="callout-body">Static helper line below the password field; flips to an inline</text>
+  <text x="568" y="521" class="callout-body">error ("WPA2 passwords are at least 8 characters") when length</text>
+  <text x="568" y="534" class="callout-body">is 1-7. Catches the most common pre-submit error without sending</text>
+  <text x="568" y="547" class="callout-body">a fail to the firmware (where the SoftAP teardown amplifies it).</text>
+  <text x="568" y="562" class="callout-source">App.tsx:727-729 · WPA2 spec (IEEE 802.11i)</text>
+
+  <!-- ⑤ Connection pill -->
+  <line class="callout-line" x1="370" y1="144" x2="540" y2="600" />
+  <circle class="callout-circle" cx="550" cy="600" r="11" />
+  <text class="callout-num" x="550" y="600">5</text>
+  <text x="568" y="592" class="callout-title">Status pill anchors the mental model</text>
+  <text x="568" y="608" class="callout-body">"Connected to mirror via SoftAP" tells the user they're talking</text>
+  <text x="568" y="621" class="callout-body">to the device, not their home network — critical because the next</text>
+  <text x="568" y="634" class="callout-body">step (submit) tears that connection down. Setting expectation</text>
+  <text x="568" y="647" class="callout-body">here reduces the "did something break?" reaction to the disconnect.</text>
+  <text x="568" y="662" class="callout-source">App.tsx URL+pill row (lines 614-632)</text>
+
+  <!-- ⑥ Submit CTA copy -->
+  <line class="callout-line" x1="370" y1="465" x2="540" y2="700" />
+  <circle class="callout-circle" cx="550" cy="700" r="11" />
+  <text class="callout-num" x="550" y="700">6</text>
+  <text x="568" y="692" class="callout-title">"Connect to Wi-Fi" not "Save" or "Submit"</text>
+  <text x="568" y="708" class="callout-body">Verb describes what the device will do (attempt to join), not</text>
+  <text x="568" y="721" class="callout-body">what the form will do (persist creds). On submit, button text</text>
+  <text x="568" y="734" class="callout-body">switches to "Connecting…" — confirms the gesture landed and</text>
+  <text x="568" y="747" class="callout-body">disables to prevent double-submit during the 15s window.</text>
+  <text x="568" y="762" class="callout-source">App.tsx:731-740</text>
+
+  <!-- ==================== Alternate states ==================== -->
+  <line x1="30" y1="900" x2="970" y2="900" class="divider" />
+  <text x="30" y="930" class="alt-section-title">Alternate states</text>
+  <text x="30" y="948" class="callout-body">Pre-input, password-visible, in-flight, and post-failure states the resting wireframe doesn't show.</text>
+
+  <!-- 4 thumbnails at x=30, 265, 500, 735, w=215, h=240 -->
+
+  <!-- ===== Alt state 1: Initial empty form ===== -->
+  <text x="30" y="978" class="alt-state-label">① INITIAL (EMPTY)</text>
+  <rect class="alt-frame" x="30" y="988" width="215" height="240" rx="6" />
+  <rect class="pill" x="50" y="1000" width="175" height="22" rx="11" />
+  <circle cx="62" cy="1011" r="3" fill="#1A8C1A" />
+  <text x="71" y="1015" class="pill-text" font-size="9">Connected to mirror</text>
+
+  <text x="50" y="1042" class="subsection-title" font-size="11">Mirror needs setup</text>
+  <text x="50" y="1057" class="muted" font-size="9">Provide your home Wi-Fi creds</text>
+  <text x="50" y="1068" class="muted" font-size="9">— or skip to use SoftAP-only.</text>
+
+  <rect class="btn-secondary-fill" x="50" y="1080" width="175" height="28" rx="5" />
+  <text x="137.5" y="1099" text-anchor="middle" class="btn-text-secondary" font-size="9">Skip Wi-Fi setup</text>
+
+  <text x="50" y="1124" class="label" font-size="9">SSID</text>
+  <rect class="input" x="50" y="1130" width="175" height="26" rx="3" />
+  <text x="58" y="1148" class="placeholder">MyWiFi</text>
+
+  <text x="50" y="1168" class="label" font-size="9">PASSWORD</text>
+  <rect class="input" x="50" y="1174" width="120" height="26" rx="3" />
+  <text x="58" y="1192" class="placeholder">(empty = open)</text>
+  <rect class="btn-secondary-fill" x="174" y="1174" width="50" height="26" rx="3" />
+  <text x="199" y="1192" text-anchor="middle" class="btn-text-secondary" font-size="9">Show</text>
+
+  <text x="30" y="1247" class="alt-caption">First view after the user joins the</text>
+  <text x="30" y="1259" class="alt-caption">SoftAP. Fields empty; placeholders</text>
+  <text x="30" y="1271" class="alt-caption">show example values. Submit button</text>
+  <text x="30" y="1283" class="alt-caption">disabled until SSID has 1+ char.</text>
+
+  <!-- ===== Alt state 2: Password shown ===== -->
+  <text x="265" y="978" class="alt-state-label">② PASSWORD SHOWN</text>
+  <rect class="alt-frame" x="265" y="988" width="215" height="240" rx="6" />
+
+  <text x="285" y="1015" class="subsection-title" font-size="11">Form filled</text>
+
+  <text x="285" y="1045" class="label" font-size="9">SSID</text>
+  <rect class="input-typed" x="285" y="1052" width="175" height="26" rx="3" />
+  <text x="293" y="1070" class="typed">HomeWiFi</text>
+
+  <text x="285" y="1095" class="label" font-size="9">PASSWORD</text>
+  <rect class="input-typed" x="285" y="1102" width="120" height="26" rx="3" />
+  <text x="293" y="1120" class="typed">MyP@ss12!</text>
+  <rect class="btn-primary-fill" x="409" y="1102" width="50" height="26" rx="3" />
+  <text x="434" y="1120" text-anchor="middle" class="btn-text-primary" font-size="9">Hide</text>
+
+  <text x="285" y="1146" class="muted" font-size="9">WPA2: empty (open) or 8-64 chars.</text>
+
+  <rect class="btn-primary-fill" x="285" y="1162" width="175" height="32" rx="5" />
+  <text x="372.5" y="1183" text-anchor="middle" class="btn-text-primary">Connect to Wi-Fi</text>
+
+  <text x="265" y="1247" class="alt-caption">Show button flips to brand-indigo</text>
+  <text x="265" y="1259" class="alt-caption">when password is visible. Lets user</text>
+  <text x="265" y="1271" class="alt-caption">verify before submit — typos in long</text>
+  <text x="265" y="1283" class="alt-caption">WPA2 passwords are the #1 fail mode.</text>
+
+  <!-- ===== Alt state 3: Submitting / countdown ===== -->
+  <text x="500" y="978" class="alt-state-label">③ SUBMITTED / 15s</text>
+  <rect class="alt-frame" x="500" y="988" width="215" height="240" rx="6" />
+
+  <text x="607.5" y="1018" text-anchor="middle" class="subsection-title" font-size="12">Credentials sent</text>
+  <text x="520" y="1044" class="muted" font-size="9">The mirror is leaving its setup</text>
+  <text x="520" y="1056" class="muted" font-size="9">network and joining</text>
+  <text x="520" y="1068" class="muted" font-size="9"><tspan class="bold" fill="#1A1A1A">HomeWiFi</tspan>.</text>
+
+  <text x="607.5" y="1118" text-anchor="middle" class="countdown-num">12s</text>
+
+  <text x="520" y="1148" class="muted" font-size="9">If the credentials are wrong, the</text>
+  <text x="520" y="1160" class="muted" font-size="9">mirror returns to setup mode</text>
+  <text x="520" y="1172" class="muted" font-size="9">when this counter hits 0.</text>
+
+  <text x="500" y="1247" class="alt-caption">15s = FALLBACK_SECONDS (matches</text>
+  <text x="500" y="1259" class="alt-caption">firmware's LL_APPLY_FALLBACK_US).</text>
+  <text x="500" y="1271" class="alt-caption">WS already dead by now — countdown</text>
+  <text x="500" y="1283" class="alt-caption">is the only feedback channel left.</text>
+
+  <!-- ===== Alt state 4: Timeout / recovery ===== -->
+  <text x="735" y="978" class="alt-state-label">④ TIMEOUT / RECOVERY</text>
+  <rect class="alt-frame" x="735" y="988" width="215" height="240" rx="6" />
+
+  <text x="842.5" y="1018" text-anchor="middle" class="subsection-title" font-size="12">No confirmation</text>
+
+  <rect class="warn-box" x="755" y="1032" width="180" height="68" rx="4" />
+  <text x="765" y="1046" class="warn-text" font-weight="700">If you don't see the mirror on your</text>
+  <text x="765" y="1058" class="warn-text" font-weight="700">network, the creds were wrong.</text>
+  <text x="765" y="1073" class="warn-text">Re-join LL-Mirror-a3f2b9 SoftAP</text>
+  <text x="765" y="1085" class="warn-text">and tap Connect to retry.</text>
+
+  <text x="755" y="1120" class="label" font-size="9">NEXT STEPS</text>
+  <text x="755" y="1138" class="muted" font-size="9">1. Switch this phone's Wi-Fi back</text>
+  <text x="755" y="1150" class="muted" font-size="9">    to HomeWiFi.</text>
+  <text x="755" y="1166" class="muted" font-size="9">2. Tap Home above, set URL to your</text>
+  <text x="755" y="1178" class="muted" font-size="9">    home-network mirror IP, Connect.</text>
+
+  <text x="735" y="1247" class="alt-caption">SoftAP teardown kills the WS before</text>
+  <text x="735" y="1259" class="alt-caption">success/failure can be reported back.</text>
+  <text x="735" y="1271" class="alt-caption">App can only infer "didn't work" from</text>
+  <text x="735" y="1283" class="alt-caption">timeout — BLE provisioning fixes this.</text>
+
+  <!-- ==================== Deferred — BLE provisioning (post-V1) ==================== -->
+  <line x1="30" y1="1330" x2="970" y2="1330" class="divider" />
+  <text x="30" y="1360" class="alt-section-title">Deferred — BLE provisioning path</text>
+  <rect class="deferred-badge" x="320" y="1346" width="68" height="16" rx="3" />
+  <text x="354" y="1357" text-anchor="middle" class="deferred-badge-text">POST-V1</text>
+
+  <text x="30" y="1382" class="callout-body">Not built in V1. Documented here so the design rationale captures the path we'd take rather than pretending it doesn't exist.</text>
+  <text x="30" y="1397" class="callout-body">BLE provisioning fixes the bug #6 root cause: the comm channel doesn't depend on Wi-Fi state, so the device CAN report success</text>
+  <text x="30" y="1412" class="callout-body">or failure of the join attempt back to the app in real time.</text>
+
+  <!-- BLE pairing placeholder (left panel) -->
+  <rect class="deferred-frame" x="30" y="1432" width="280" height="150" rx="6" />
+  <text x="170" y="1452" text-anchor="middle" class="deferred-title">BLE pair + cred submit</text>
+  <text x="170" y="1470" text-anchor="middle" class="muted">(form similar to SoftAP path)</text>
+  <rect class="deferred-screen" x="50" y="1484" width="240" height="32" rx="4" />
+  <text x="170" y="1505" text-anchor="middle" class="muted">SSID: HomeWiFi</text>
+  <rect class="deferred-screen" x="50" y="1522" width="240" height="32" rx="4" />
+  <text x="170" y="1543" text-anchor="middle" class="muted">Password: ••••••••••••</text>
+
+  <!-- Arrow / flow indicator between panels -->
+  <line x1="320" y1="1507" x2="370" y2="1507" stroke="#6B6B6B" stroke-width="1.2" />
+  <polygon points="370,1503 380,1507 370,1511" fill="#6B6B6B" />
+  <text x="345" y="1495" text-anchor="middle" class="muted" font-size="9">submit</text>
+  <text x="345" y="1525" text-anchor="middle" class="muted" font-size="9">over BLE</text>
+
+  <!-- Success confirmation placeholder (right panel) -->
+  <rect class="deferred-frame" x="390" y="1432" width="320" height="150" rx="6" />
+  <text x="550" y="1452" text-anchor="middle" class="deferred-title">In-app confirmation</text>
+  <text x="550" y="1470" text-anchor="middle" class="muted">(impossible on SoftAP — BLE's key advantage)</text>
+
+  <rect class="success-pill" x="410" y="1486" width="280" height="32" rx="16" />
+  <circle cx="430" cy="1502" r="6" fill="#1A8C1A" />
+  <text x="437" y="1506" class="success-text" font-size="11">✓</text>
+  <text x="452" y="1506" class="success-text">Joined HomeWiFi</text>
+  <text x="450" y="1518" class="muted" font-size="9">IP: 192.168.5.229 · signal: -52 dBm</text>
+
+  <text x="410" y="1542" class="muted" font-size="10">No SoftAP teardown blind-spot — the BLE link</text>
+  <text x="410" y="1556" class="muted" font-size="10">survives the cred-test and surfaces the real reason</text>
+  <text x="410" y="1570" class="muted" font-size="10">code (WIFI_REASON_AUTH_EXPIRE, etc.) on failure.</text>
+
+  <!-- Right-side annotation: why deferred -->
+  <text x="730" y="1452" class="callout-title" fill="#4A4A4A">Why post-V1</text>
+  <text x="730" y="1470" class="callout-body">Cost: parallel pairing flow + Bluetooth</text>
+  <text x="730" y="1483" class="callout-body">permission UX (location on Android,</text>
+  <text x="730" y="1496" class="callout-body">find-devices on iOS) + dual-radio init.</text>
+  <text x="730" y="1518" class="callout-body">Win: clean error surface; eliminates</text>
+  <text x="730" y="1531" class="callout-body">post-mini-sprint #6 entirely.</text>
+  <text x="730" y="1553" class="callout-body">Trigger to build: real user friction</text>
+  <text x="730" y="1566" class="callout-body">from the bare-bones SoftAP error flow.</text>
+
+</svg>

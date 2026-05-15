@@ -9,39 +9,30 @@ tags: [moc, home]
 
 > Home note. Start here for any session. Links fan out to every other doc.
 
-**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-04-28 · **Current week:** 5 of 11
+**Company:** Layered Logic LLC (WA) · **Quarter:** Spring 2026 (Mar 30 – Jun 12) · **Today:** 2026-05-14 · **Current week:** 7 of 11
 
 ---
 
-## Right Now (Week 5: Apr 28 – May 2)
+## Right Now (Week 7: May 12 – May 16)
 
-**App UX/UI Design week.** Three parallel tracks: Figma wireframes, user research kickoff, design rationale documentation. Week 4 closed with Right-to-Repair philosophy locked + 17-file failure mode inventory; firmware bring-up reached provisioning + NVS persistence.
+**Service Blueprinting & The Custom Experience.** Anchor deliverables landed on May 13; firmware resilience work + user-research outreach run in parallel through the end of the week.
 
 **This week's deliverables:**
-- ✅ Design Rationale doc — *why an app + physical buttons* drafted today at [button-design-rationale.md](docs/button-design-rationale.md); pairs with [button-interface.md](docs/button-interface.md) spec. Pre-user-research; revises after Week 5 interviews
-- *(pending)* Figma wireframes — color picker, schedules/timers, custom-design request flow
-- *(pending)* User interviews — outlines drafted at [docs/user-interview-outline.md](docs/user-interview-outline.md); contact list + first 3 sessions still TBD
+- ✅ [Service Blueprint](docs/service-blueprint.md) — 10-stage customer journey with custom-order deep dive ([LL-053](tasks.md#LL-053) [LL-054](tasks.md#LL-054)) landed May 13
+- ✅ User-flow authoring methodology + Stage 1 (Discover) rendered ([LL-074](tasks.md#LL-074), [docs/user-flow-authoring.md](docs/user-flow-authoring.md))
+- 🚧 Cold outreach campaign engaged ([LL-043](tasks.md#LL-043) [LL-043-1](tasks.md#LL-043-1)) — 5 sends today (Reed Kleinman, Matt Perks, Robert Tait, Lewis, Joe Barnard), 5/day cadence going forward; tracked in [docs/outreach-list.md](docs/outreach-list.md)
+- *(pending)* [LL-055](tasks.md#LL-055) firmware Wi-Fi/BLE resilience stress-test + transient-socket bug fix — Sat May 16 deadline
 
-**Parked decision blocking app work:**
-- The Apr 22 four-path call (native Android / Flutter / webapp / step-off-engineering) was never formally resolved — engineering pivoted to provisioning + NVS, then graded work. `Firmware/v1/core/transport/` and `Firmware/v1/webapp/` are still empty. This decision is upstream of the wireframes — pick the platform first.
-
-**Carryover from Week 4 (still open):**
-- *(pending)* User Repair Guide — customer-facing wrapper around the [right-to-repair philosophy](docs/right-to-repair-philosophy.md) + [Failure_Modes/](Failure_Modes/) inventory
-- *(blocked)* Packaging QR code — laser-etch into cardboard concept; **blocked Apr 28** awaiting final packaging design (stock/dimensions/process)
-- *(pending)* Logo P5 source sync — outer L `#420AFF → #4A25FF`
-- *(pending)* Type specimen SVGs → [assets/brand/type/](assets/brand/type/)
-- *(pending)* Moodboard reference image captures → [assets/moodboards/](assets/moodboards/)
+**Carryover (status needs Bill's review):**
+- *(pending)* User Repair Guide ([LL-042](tasks.md#LL-042))
+- *(blocked)* Packaging QR code ([LL-044](tasks.md#LL-044)) — awaiting packaging concept
+- *(pending)* Logo P5 source sync, Type specimen SVGs, Moodboard captures
 
 **Compliance follow-ups:**
-- *(waiting)* Reseller permit application — once UBI from Apr 22 BLS filing is confirmed (~Apr 30 – May 5)
 - *(reminder)* Re-check FinCEN BOI guidance before Jun 21 in case the interim rule reverses
+- *(active)* Reseller permit follow-up tracked as [LL-068](tasks.md#LL-068)
 
-**This week's wins (Apr 28):**
-- ✅ Business banking fully operational — external accounts linked + initial funding deposit cleared, account safe from inactivity closure
-- ✅ User interview outlines drafted — two audiences (end-buyer + showcase partner)
-
-Deferred from Week 3:
-- PCB schematic update and production order — unblocked by 5 test boards in hand; not critical path (see [project_pcb_status memory](../../../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md))
+**Next-up after Week 7:** Week 8 (May 19-23) — Sustainability Deep Dive + Legal (ToS, warranty, LLC compliance verification) + App↔hardware integration ([LL-057](tasks.md#LL-057)).
 
 ---
 

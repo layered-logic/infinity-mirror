@@ -754,12 +754,24 @@ dependencies: LL-030, LL-031, LL-036
 <a id="LL-043"></a>
 ### [ ] LL-043 — User interview contact list and outreach
 
-sprint: 4 | priority: medium | deadline: 2026-05-09
-added: 2026-04-22 | first_engaged: 2026-04-28
-artifacts: —
+sprint: 4 | priority: medium | deadline: 2026-05-30
+added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-14
+artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
-**Notes:** Interview outline drafted via LL-032 (Apr 28); compiling the contact list and reaching out to 3-5 end-buyers + a few coffee-shop showcase partners still pending. In-progress per Week 4 sprint_log. Active sprint: 5.
+**Notes:** Interview outline drafted via LL-032 (Apr 28). Deadline extended from May 9 to May 30 (Milestone 3) on May 14 to match the actual campaign window. Outreach started cold: 2 YouTubers (Philip DeFranco, Corridor Digital) + 2 Twitch streamers (Aztecross, Jake the Alright) contacted May 14. [docs/outreach-list.md](docs/outreach-list.md) tracks sent + next-round candidates by lane (smart-home, maker, gaming-setup, press, repair voices, cafes, end-buyer recruitment). Content-creator branch spun out as child [LL-043-1](#LL-043-1).
+
+---
+
+<a id="LL-043-1"></a>
+#### [ ] LL-043-1 — Content creator + streamer outreach campaign
+
+parent: LL-043 | sprint: 7 | priority: medium | deadline: 2026-05-30
+added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [docs/outreach-list.md](docs/outreach-list.md)
+dependencies: LL-032
+
+**Notes:** Per-lane scripted cold outreach (streamer / smart-home / maker / press). Ask = 15-20 min on want/need/cool/problematic re: studio backgrounds and functionality. 14-day no-reply window. Streamer/gaming variant uses nano-banana logo-on-prototype render as visual hook — automatable via n8n; smart-home and press variants are manual. Pipeline outlined in [outreach-list.md § n8n workflow](docs/outreach-list.md#n8n-workflow-outline). Verified contacts captured for Smart Home Solver (Reed), DIY Perks, Hardware Haven, Aztecross (fallback); contact-form-only for Hook Up + Everything Smart Home; remaining names pending verification before send.
 
 ---
 
@@ -767,12 +779,11 @@ dependencies: LL-032
 ### [ ] LL-044 — Packaging QR code
 
 sprint: 4 | priority: low | deadline: —
-added: 2026-04-27 | first_engaged: 2026-04-27 | last_engaged: 2026-04-28
+added: 2026-04-27 | first_engaged: 2026-04-27 | last_engaged: 2026-05-14
 artifacts: —
 dependencies: LL-051
-block_reason: Needs final packaging design (cardboard stock, dimensions, print/laser process) decided first; concept stays parked until packaging is far enough along to know what surface the QR lives on.
 
-**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Blocked Apr 28 awaiting LL-051 (packaging concept).
+**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Unblocked once LL-051 resolved (parametric dieline generators in [Assembly_docs/packaging/](Assembly_docs/packaging/) emit insert backer + mailer cuts with raster regions available for QR placement). Ready for QR raster wiring whenever it gets prioritized.
 
 ---
 
@@ -820,26 +831,26 @@ connect_wifi_network UX polish (May 7): first hardware exercise of the Connect b
 ---
 
 <a id="LL-047"></a>
-### [ ] LL-047 — Wireframes in Figma
+### [ ] LL-047 — App design-rationale wireframes (SVG-native, portfolio chapters)
 
-sprint: 5 | priority: medium | deadline: 2026-05-09
-added: 2026-04-22
-artifacts: —
+sprint: 5 | priority: medium | deadline: 2026-06-06
+added: 2026-04-22 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [docs/wireframes/](docs/wireframes/)
 dependencies: —
 
-**Notes:** App UX/UI wireframes informed by user research and informing implementation. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale." Working builds shipped first via LL-035 mini-sprint (5 days early); wireframes still owed for the portfolio retrospective view of the design process.
+**Notes:** Originally scoped as "Figma wireframes" but pivoted May 14 to SVG-native lo-fi wireframes paired with markdown rationale docs — works as portfolio chapters that index into the existing decision docs (multi-network-design, button-design-rationale, service-blueprint) rather than parallel artifacts in Figma. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale" — working builds shipped first via [LL-035](#LL-035) mini-sprint, so this is retrospective. Template established with chapter 1 ([settings-wifi](docs/wireframes/settings-wifi.md)). Deadline extended May 9 → Jun 6 to land alongside Week 10 portfolio assembly. Planned chapters: Wi-Fi (✅), Home/Control (color wheel + brightness + pattern), First-boot Setup (SoftAP captive), Mirror picker (multi-mirror discovery), Custom design request (Stage 2b).
 
 ---
 
 <a id="LL-048"></a>
 ### [ ] LL-048 — Informal end-buyer interviews (3-5 people)
 
-sprint: 4 | priority: high | deadline: 2026-05-09
+sprint: 4 | priority: high | deadline: 2026-05-30
 added: 2026-04-22
 artifacts: —
 dependencies: LL-032, LL-043
 
-**Notes:** Test wireframe concepts informally; gather data on price brackets, customization appetite, control preferences, values alignment, discovery patterns. Per Week 4 plan + Week 5 continuation. Outline ready (LL-032); contact list pending (LL-043). 6 testable hypotheses from button-design rationale (LL-033) tied to specific interview questions.
+**Notes:** Test wireframe concepts informally; gather data on price brackets, customization appetite, control preferences, values alignment, discovery patterns. Per Week 4 plan + Week 5 continuation. Outline ready (LL-032); LL-043 outreach campaign engaged May 14 with 5/day cadence. Deadline extended from May 9 to May 30 to match the campaign's reply window. 6 testable hypotheses from button-design rationale (LL-033) tied to specific interview questions.
 
 ---
 
@@ -868,26 +879,50 @@ dependencies: LL-010, LL-011
 ---
 
 <a id="LL-051"></a>
-### [ ] LL-051 — Packaging concept
+### [x] LL-051 — Packaging concept
 
 sprint: 6 | priority: medium | deadline: 2026-05-09
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-12 | last_engaged: 2026-05-12 | resolved: 2026-05-12
+artifacts: [docs/packaging-dielines.md](docs/packaging-dielines.md) · [Assembly_docs/packaging/](Assembly_docs/packaging/)
 dependencies: —
 
-**Notes:** Cardboard stock, dimensions, print/laser process. Per Week 6 plan. Blocking dependency for LL-044 (packaging QR code).
+**Notes:** Cardboard stock, dimensions, print/laser process. Per Week 6 plan. Blocking dependency for LL-044 (packaging QR code). Slipped — started Week 7 (active sprint: 7).
+
+**Reference templates captured 2026-05-12** (CEFbox parametric dielines, starting point for the custom infinity-mirror packaging):
+- **Outer box** — [Ear-Lock Mailer](https://www.cefbox.com/dielines/mailerBox/earLockMailers). One-piece foldable mailer with locking ear flaps on the lid; no tape or glue needed once folded. Industry-standard name: Roll End Front Tuck (REFT).
+- **Insert** — [Insert with Backing](https://www.cefbox.com/dielines/insert/withBacking). Tray + backer card that holds the product in place; backer is the planned raster surface for the right-to-repair QR ([LL-044](#LL-044)).
+
+**Approach 2026-05-12 — Path B: hand-derive from industry-standard names.** CEFbox's geometry isn't exposed server-side; rather than scrape, hand-derive parametric flat patterns and validate against a CEFbox-generated DXF for the same dimensions. First artifacts landed:
+- [docs/packaging-dielines.md](docs/packaging-dielines.md) — design doc with parametric math for both templates, SVG layer conventions, validation plan, and open decisions list (flute weight, score style, ear-lock shape, insert sizing tied to mirror not box).
+- [Assembly_docs/packaging/sketch_dielines.py](Assembly_docs/packaging/sketch_dielines.py) — matplotlib preview generator. Renders both flat patterns at default 8×8×3" outer with cut/score/raster layers visually separated. Mirrors the [basic_housing](Assembly_docs/basic_housing/) precedent of sketch-first, production-CAD-after.
+
+**Next milestones (sequenced):** (1) Bill sign-off on the sketch geometry, (2) CEFbox DXF cross-check (parse with `ezdxf`, overlay), (3) Python SVG generator (per-template module emitting cut/score/raster layers), (4) `nest.py` bin-packing onto standard sheet sizes via `rectpack`, (5) first physical test cut + fold + fit, (6) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
+
+**Update 2026-05-12 (afternoon).** v1 sketch was structurally wrong — caught when Bill compared to CEFbox screenshots. Pivoted to Path A: 10 reference DXFs from CEFbox at controlled dimension variations (5 mailer + 5 insert, one parameter varied at a time per the [DOE table](packaging-dielines.md)). Built and ran [dxf_analyze.py](Assembly_docs/packaging/dxf_analyze.py) (per-template summary + score-line position diffs) and [dxf_recover.py](Assembly_docs/packaging/dxf_recover.py) (per-coordinate parametric recovery — searches for the simplest clean formula `a·L + b·W + c·H + d·t + const` that matches each baseline coord across all variation samples). Output [coord_formulas.json](Assembly_docs/packaging/coord_formulas.json). Results: ~60% of unique coords resolve to clean formulas (constants, ±L, ±W, L/2±k, L+k·t variants for various integer k); the remaining ~40% are arc-endpoint coordinates that need separate recovery as (center, radius, start_angle, end_angle) tuples. Structural topology now understood: mailer is a 5-panel REFT spine (tuck + W + H + W + lid-tuck) with 2H-wide roll-end side walls (the "2H" coefficient confirms the side wall is a doubled-fold roll); insert is backer + floor + 4 down-folding walls with a centered slot cradle. Reference DXFs are in `Assembly_docs/Packaging_Templates/` (gitignored — paid CEFbox content). Next step: arc-parameter recovery + parametric SVG generator using the JSON formulas.
+
+**Update 2026-05-12 (evening).** Pivoted again from per-coord formula recovery to a NAMED-PARTS architecture (graph of structural pieces with rules, mirror-symmetry as a hard constraint). Both generators landed and pass strict validation:
+
+- **[mailer_reft.py](Assembly_docs/packaging/mailer_reft.py)** — Roll End Front Tuck mailer in 6 incremental phases: spine + scores → roll-end side walls with W-conditional tooth pattern → dust flaps (case A vs case B at H ≈ 100−2.5t threshold) → ear-lock arcs with horns + score-tangents + tangent diagonals → finger holes scaled with W → cleanup pass with 14 panel-fold scores + corner connectors. Bug caught mid-build: dieline is mirror-symmetric about `x = L/2 + 5t`, NOT `x = L/2` (every right-side coord was off by 10t until fixed).
+- **[insert_tray.py](Assembly_docs/packaging/insert_tray.py)** — backer + floor + slot cradle + side walls + front wall + corner arcs + tangents in 5 phases. Supports N-slot configurations via `Slot(cx, cy, SL, SW, SH)` records; `single_slot()` and `n_slot()` constructors for convenience. Degenerate-cradle handling for SH = SL/2 or SW/2 (collapses to a Line; effective SH clamped per-slot).
+- **[validation.py](Assembly_docs/packaging/validation.py)** — entity-count + Y-symmetry tests against the 5 reference DXFs per template. Arc canonicalization via `(midpoint, sweep)` to handle 0/360 wrap; polyline canonicalization dedupes explicit closing points; 0.01mm rounding precision avoids FP drift between left/right mirrored values. Result: **10/10 reference tests PASS** (5 mailer + 5 insert).
+- **[cefbox_render.py](Assembly_docs/packaging/cefbox_render.py)** — solid-line PNG renderer (cut=red, score=blue, color-only differentiation per Bill's style fix).
+- **[dxf_to_png.py](Assembly_docs/packaging/dxf_to_png.py)** — passthrough renderer for verifying reference DXFs against my generator output.
+- **CEFbox-style geometric rules** added to both Specs as `validate()` methods: insert enforces 5mm slot-edge buffer + 5mm slot-to-slot gap; mailer enforces W ≥ 180 (tooth pattern lower bound), L ≥ 60, H ∈ [20, 200], t ∈ [0.5, 5.0], H ≥ 2t (case A non-degenerate). Bad inputs raise `ValueError` with specific actionable messages.
+
+**Open follow-ons**: (1) `nest.py` for sheet-size optimization via `rectpack`, flagged as ready-to-build separate workstream; (2) first physical test cut + fold + fit; (3) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
 
 ---
 
 <a id="LL-052"></a>
 ### [ ] LL-052 — PCB hardware integration and validation
 
-sprint: 6 | priority: medium | deadline: 2026-05-09
+sprint: 6 | priority: medium | deadline: —
 added: 2026-03-30
 artifacts: —
 dependencies: LL-045
+block_reason: Hard-blocked on LL-045 (PCB order slipped out-of-quarter Apr 18). Demo build path locked on XIAO ESP32-C3 dev kit per [project_pcb_status memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md) — no custom PCB to integrate against this quarter. Deadline cleared; revisit if PCB order moves back into scope.
 
-**Notes:** Per Week 6 plan: "PCBs arrive. Solder and test the new board. Validate that the dev board prototyping translates to the custom PCB." Blocked on LL-045 (PCB order slipped). Demo build path is staying on XIAO ESP32-C3 dev kit per [project_pcb_status memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/project_pcb_status.md).
+**Notes:** Per Week 6 plan: "PCBs arrive. Solder and test the new board. Validate that the dev board prototyping translates to the custom PCB." Out-of-quarter unless LL-045 unblocks.
 
 ---
 
@@ -923,11 +958,11 @@ Resolved 2026-05-13 as a dedicated section of [LL-053](#LL-053): 10-step custom-
 ### [ ] LL-055 — Firmware Wi-Fi/BLE resilience stress-test
 
 sprint: 7 | priority: medium | deadline: 2026-05-16
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+artifacts: [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c)
 dependencies: LL-029, LL-046
 
-**Notes:** Wi-Fi drop handling, BLE reconnection, network jitter under load. Technical "usability" — closes spec §7 of [docs/firmware-spec.md](docs/firmware-spec.md). Includes addressing the parked transient-socket-closed bug from LL-035-4 ([post-mini-sprint-bugs.md #1](docs/post-mini-sprint-bugs.md)). Per Week 7 plan.
+**Notes:** Wi-Fi drop handling, BLE reconnection, network jitter under load. Technical "usability" — exercises resilience behavior currently spread across §4.5 (transport), §4.7 (ota validation), §8 (boot sequence) of [docs/firmware-spec.md](docs/firmware-spec.md); no dedicated resilience section exists yet. Includes addressing the parked transient-socket-closed bug from LL-035-4 ([post-mini-sprint-bugs.md #1](docs/post-mini-sprint-bugs.md)). Per Week 7 plan.
 
 ---
 
@@ -1088,14 +1123,14 @@ dependencies: LL-026
 ---
 
 <a id="LL-069"></a>
-### [ ] LL-069 — Estimated quarterly taxes setup
+### [ ] LL-069 — Tax filing setup (WA DOR + federal 1040-ES)
 
-sprint: 1 | priority: medium | deadline: 2026-04-15
-added: 2026-03-30
+sprint: 1 | priority: medium | deadline: 2026-06-15
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
 artifacts: —
-dependencies: LL-002
+dependencies: LL-002, LL-026
 
-**Notes:** Single-member LLC income passes through to personal return. If expecting to owe >$1,000, IRS expects quarterly estimated payments via Form 1040-ES. Deadlines: Apr 15, Jun 15, Sep 15, Jan 15. First deadline already passed for 2026; recurring obligation.
+**Notes:** Two tracks. **Federal 1040-ES:** not required while expected annual tax <$1K — currently zero income, so deferred until revenue lands. Re-evaluate before Jun 15, Sep 15, Jan 15. **WA DOR:** Layered Logic added to My DOR portal May 14; no immediate action items surfaced (consistent with default annual filing for new low-volume businesses). Filing frequency to be confirmed via the welcome letter / physical license arriving by mail — capture it here when it lands. Likely Jan 31, 2027 for any 2026 activity. If revenue lands mid-year that pushes the projection above WA's quarterly threshold, DOR may reclassify; re-check then.
 
 ---
 
