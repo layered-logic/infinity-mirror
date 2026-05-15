@@ -783,7 +783,7 @@ added: 2026-04-27 | first_engaged: 2026-04-27 | last_engaged: 2026-05-14
 artifacts: —
 dependencies: LL-051
 
-**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Unblocked May 14 (LL-051 resolved with DXF dielines in [Assembly_docs/Packaging_Templates/](Assembly_docs/Packaging_Templates/)) — ready for QR placement work whenever it gets prioritized.
+**Notes:** Laser-etch or perforate into outer cardboard in the same cutting pass; zero extra material, surfaces the repair philosophy at unboxing rather than hiding it on a marketing page. Captured in [docs/right-to-repair-philosophy.md](docs/right-to-repair-philosophy.md). Unblocked once LL-051 resolved (parametric dieline generators in [Assembly_docs/packaging/](Assembly_docs/packaging/) emit insert backer + mailer cuts with raster regions available for QR placement). Ready for QR raster wiring whenever it gets prioritized.
 
 ---
 
@@ -882,11 +882,34 @@ dependencies: LL-010, LL-011
 ### [x] LL-051 — Packaging concept
 
 sprint: 6 | priority: medium | deadline: 2026-05-09
-added: 2026-03-30 | first_engaged: 2026-05-12 | last_engaged: 2026-05-14 | resolved: 2026-05-14
-artifacts: [Assembly_docs/Packaging_Templates/](Assembly_docs/Packaging_Templates/)
+added: 2026-03-30 | first_engaged: 2026-05-12 | last_engaged: 2026-05-12 | resolved: 2026-05-12
+artifacts: [docs/packaging-dielines.md](docs/packaging-dielines.md) · [Assembly_docs/packaging/](Assembly_docs/packaging/)
 dependencies: —
 
-**Notes:** Cardboard stock, dimensions, print/laser process. DXF dielines generated May 12-13 in the gifted-tharp-af5d28 session (parameterized from cefbox.com earLockMailer + insert-with-backing templates): 5 mailer variants across 4 footprints (300×200×80, 300×200×120, 300×250×80, 400×200×80 mm) at 1.5mm corrugated stock + a 3mm variant on the 300×200×80; 5 insert variants across the same footprints with two slot configurations (150×150×25 and 200×100×50). Laser-cut process. Unblocks [LL-044](#LL-044) (packaging QR code) — now has a real surface to land on.
+**Notes:** Cardboard stock, dimensions, print/laser process. Per Week 6 plan. Blocking dependency for LL-044 (packaging QR code). Slipped — started Week 7 (active sprint: 7).
+
+**Reference templates captured 2026-05-12** (CEFbox parametric dielines, starting point for the custom infinity-mirror packaging):
+- **Outer box** — [Ear-Lock Mailer](https://www.cefbox.com/dielines/mailerBox/earLockMailers). One-piece foldable mailer with locking ear flaps on the lid; no tape or glue needed once folded. Industry-standard name: Roll End Front Tuck (REFT).
+- **Insert** — [Insert with Backing](https://www.cefbox.com/dielines/insert/withBacking). Tray + backer card that holds the product in place; backer is the planned raster surface for the right-to-repair QR ([LL-044](#LL-044)).
+
+**Approach 2026-05-12 — Path B: hand-derive from industry-standard names.** CEFbox's geometry isn't exposed server-side; rather than scrape, hand-derive parametric flat patterns and validate against a CEFbox-generated DXF for the same dimensions. First artifacts landed:
+- [docs/packaging-dielines.md](docs/packaging-dielines.md) — design doc with parametric math for both templates, SVG layer conventions, validation plan, and open decisions list (flute weight, score style, ear-lock shape, insert sizing tied to mirror not box).
+- [Assembly_docs/packaging/sketch_dielines.py](Assembly_docs/packaging/sketch_dielines.py) — matplotlib preview generator. Renders both flat patterns at default 8×8×3" outer with cut/score/raster layers visually separated. Mirrors the [basic_housing](Assembly_docs/basic_housing/) precedent of sketch-first, production-CAD-after.
+
+**Next milestones (sequenced):** (1) Bill sign-off on the sketch geometry, (2) CEFbox DXF cross-check (parse with `ezdxf`, overlay), (3) Python SVG generator (per-template module emitting cut/score/raster layers), (4) `nest.py` bin-packing onto standard sheet sizes via `rectpack`, (5) first physical test cut + fold + fit, (6) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
+
+**Update 2026-05-12 (afternoon).** v1 sketch was structurally wrong — caught when Bill compared to CEFbox screenshots. Pivoted to Path A: 10 reference DXFs from CEFbox at controlled dimension variations (5 mailer + 5 insert, one parameter varied at a time per the [DOE table](packaging-dielines.md)). Built and ran [dxf_analyze.py](Assembly_docs/packaging/dxf_analyze.py) (per-template summary + score-line position diffs) and [dxf_recover.py](Assembly_docs/packaging/dxf_recover.py) (per-coordinate parametric recovery — searches for the simplest clean formula `a·L + b·W + c·H + d·t + const` that matches each baseline coord across all variation samples). Output [coord_formulas.json](Assembly_docs/packaging/coord_formulas.json). Results: ~60% of unique coords resolve to clean formulas (constants, ±L, ±W, L/2±k, L+k·t variants for various integer k); the remaining ~40% are arc-endpoint coordinates that need separate recovery as (center, radius, start_angle, end_angle) tuples. Structural topology now understood: mailer is a 5-panel REFT spine (tuck + W + H + W + lid-tuck) with 2H-wide roll-end side walls (the "2H" coefficient confirms the side wall is a doubled-fold roll); insert is backer + floor + 4 down-folding walls with a centered slot cradle. Reference DXFs are in `Assembly_docs/Packaging_Templates/` (gitignored — paid CEFbox content). Next step: arc-parameter recovery + parametric SVG generator using the JSON formulas.
+
+**Update 2026-05-12 (evening).** Pivoted again from per-coord formula recovery to a NAMED-PARTS architecture (graph of structural pieces with rules, mirror-symmetry as a hard constraint). Both generators landed and pass strict validation:
+
+- **[mailer_reft.py](Assembly_docs/packaging/mailer_reft.py)** — Roll End Front Tuck mailer in 6 incremental phases: spine + scores → roll-end side walls with W-conditional tooth pattern → dust flaps (case A vs case B at H ≈ 100−2.5t threshold) → ear-lock arcs with horns + score-tangents + tangent diagonals → finger holes scaled with W → cleanup pass with 14 panel-fold scores + corner connectors. Bug caught mid-build: dieline is mirror-symmetric about `x = L/2 + 5t`, NOT `x = L/2` (every right-side coord was off by 10t until fixed).
+- **[insert_tray.py](Assembly_docs/packaging/insert_tray.py)** — backer + floor + slot cradle + side walls + front wall + corner arcs + tangents in 5 phases. Supports N-slot configurations via `Slot(cx, cy, SL, SW, SH)` records; `single_slot()` and `n_slot()` constructors for convenience. Degenerate-cradle handling for SH = SL/2 or SW/2 (collapses to a Line; effective SH clamped per-slot).
+- **[validation.py](Assembly_docs/packaging/validation.py)** — entity-count + Y-symmetry tests against the 5 reference DXFs per template. Arc canonicalization via `(midpoint, sweep)` to handle 0/360 wrap; polyline canonicalization dedupes explicit closing points; 0.01mm rounding precision avoids FP drift between left/right mirrored values. Result: **10/10 reference tests PASS** (5 mailer + 5 insert).
+- **[cefbox_render.py](Assembly_docs/packaging/cefbox_render.py)** — solid-line PNG renderer (cut=red, score=blue, color-only differentiation per Bill's style fix).
+- **[dxf_to_png.py](Assembly_docs/packaging/dxf_to_png.py)** — passthrough renderer for verifying reference DXFs against my generator output.
+- **CEFbox-style geometric rules** added to both Specs as `validate()` methods: insert enforces 5mm slot-edge buffer + 5mm slot-to-slot gap; mailer enforces W ≥ 180 (tooth pattern lower bound), L ≥ 60, H ∈ [20, 200], t ∈ [0.5, 5.0], H ≥ 2t (case A non-degenerate). Bad inputs raise `ValueError` with specific actionable messages.
+
+**Open follow-ons**: (1) `nest.py` for sheet-size optimization via `rectpack`, flagged as ready-to-build separate workstream; (2) first physical test cut + fold + fit; (3) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
 
 ---
 

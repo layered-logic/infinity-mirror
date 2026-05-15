@@ -1,0 +1,1351 @@
+{
+  "insert": {
+    "baseline_params": {
+      "L": 300.0,
+      "W": 200.0,
+      "H": 80.0,
+      "t": 1.5,
+      "SL": 150.0,
+      "SW": 150.0,
+      "SH": 25.0,
+      "IH": 55.0
+    },
+    "param_names": [
+      "L",
+      "W",
+      "H",
+      "t",
+      "SL",
+      "SW",
+      "SH",
+      "IH"
+    ],
+    "x_coords": [
+      {
+        "index": 0,
+        "baseline": -83.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -83.0,
+        "slot_delta": null,
+        "formula": "-83"
+      },
+      {
+        "index": 1,
+        "baseline": -76.38919,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -76.38919,
+        "slot_delta": null,
+        "formula": "-76.389"
+      },
+      {
+        "index": 2,
+        "baseline": -0.75,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -0.75,
+        "slot_delta": null,
+        "formula": "-0.750"
+      },
+      {
+        "index": 3,
+        "baseline": 0.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "0"
+      },
+      {
+        "index": 4,
+        "baseline": 0.13225,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.13225,
+        "slot_delta": null,
+        "formula": "0.132"
+      },
+      {
+        "index": 5,
+        "baseline": 13.46947,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 6,
+        "baseline": 14.50289,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 7,
+        "baseline": 21.34794,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 8,
+        "baseline": 75.0,
+        "coefs": [
+          0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -75.0,
+        "slot_delta": -25.0,
+        "formula": "L/2 - 75 [slot_d=-25.00]"
+      },
+      {
+        "index": 9,
+        "baseline": 100.0,
+        "coefs": [
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 400.0,
+        "slot_delta": null,
+        "formula": "-L + +400"
+      },
+      {
+        "index": 10,
+        "baseline": 200.0,
+        "coefs": [
+          0.5,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 50.0,
+        "slot_delta": null,
+        "formula": "L/2 + +50"
+      },
+      {
+        "index": 11,
+        "baseline": 225.0,
+        "coefs": [
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 525.0,
+        "slot_delta": -25.0,
+        "formula": "-L + +525 [slot_d=-25.00]"
+      },
+      {
+        "index": 12,
+        "baseline": 278.6520558112098,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 13,
+        "baseline": 285.49711,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 14,
+        "baseline": 286.53052153918,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 15,
+        "baseline": 299.86775,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -0.1322499999999991,
+        "slot_delta": null,
+        "formula": "L - 0.132"
+      },
+      {
+        "index": 16,
+        "baseline": 300.0,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "L"
+      },
+      {
+        "index": 17,
+        "baseline": 300.75,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.75,
+        "slot_delta": null,
+        "formula": "L + +0.750"
+      },
+      {
+        "index": 18,
+        "baseline": 376.38918542133547,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 76.38918542133547,
+        "slot_delta": null,
+        "formula": "L + +76.389"
+      },
+      {
+        "index": 19,
+        "baseline": 382.99999999999807,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 82.99999999999807,
+        "slot_delta": null,
+        "formula": "L + +83"
+      }
+    ],
+    "y_coords": [
+      {
+        "index": 0,
+        "baseline": -283.0,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -83.0,
+        "slot_delta": null,
+        "formula": "-W - 83"
+      },
+      {
+        "index": 1,
+        "baseline": -276.38919,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -76.38918999999999,
+        "slot_delta": null,
+        "formula": "-W - 76.389"
+      },
+      {
+        "index": 2,
+        "baseline": -200.75,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -0.75,
+        "slot_delta": null,
+        "formula": "-W - 0.750"
+      },
+      {
+        "index": 3,
+        "baseline": -200.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -200.0,
+        "slot_delta": null,
+        "formula": "-200"
+      },
+      {
+        "index": 4,
+        "baseline": -199.86775,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.1322499999999991,
+        "slot_delta": null,
+        "formula": "-W + +0.132"
+      },
+      {
+        "index": 5,
+        "baseline": -186.53053,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 6,
+        "baseline": -178.65206,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 7,
+        "baseline": -175.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -175.0,
+        "slot_delta": -3.652060000000006,
+        "formula": "-175 [slot_d=-3.65]"
+      },
+      {
+        "index": 8,
+        "baseline": -150.0,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 50.0,
+        "slot_delta": null,
+        "formula": "-W + +50"
+      },
+      {
+        "index": 9,
+        "baseline": -50.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -50.0,
+        "slot_delta": null,
+        "formula": "-50"
+      },
+      {
+        "index": 10,
+        "baseline": -25.0,
+        "coefs": [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 175.0,
+        "slot_delta": 3.6520599999999988,
+        "formula": "-W + +175 [slot_d=+3.65]"
+      },
+      {
+        "index": 11,
+        "baseline": -21.34794,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 12,
+        "baseline": -13.469477975902336,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 13,
+        "baseline": -0.13225,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": -0.13225,
+        "slot_delta": null,
+        "formula": "-0.132"
+      },
+      {
+        "index": 14,
+        "baseline": 0.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "0"
+      },
+      {
+        "index": 15,
+        "baseline": 0.75,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.75,
+        "slot_delta": null,
+        "formula": "0.750"
+      },
+      {
+        "index": 16,
+        "baseline": 82.25,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 82.25,
+        "slot_delta": null,
+        "formula": "82.250"
+      },
+      {
+        "index": 17,
+        "baseline": 137.25,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 137.25,
+        "slot_delta": -25.0,
+        "formula": "137.250 [slot_d=-25.00]"
+      },
+      {
+        "index": 18,
+        "baseline": 334.25,
+        "coefs": [
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 134.25,
+        "slot_delta": 5.75,
+        "formula": "W + +134.250 [slot_d=+5.75]"
+      },
+      {
+        "index": 19,
+        "baseline": 390.0,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      }
+    ],
+    "matched_all": false
+  },
+  "mailer": {
+    "baseline_params": {
+      "L": 300.0,
+      "W": 200.0,
+      "H": 80.0,
+      "t": 1.5
+    },
+    "param_names": [
+      "L",
+      "W",
+      "H",
+      "t"
+    ],
+    "x_coords": [
+      {
+        "index": 0,
+        "baseline": -169.25,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 1,
+        "baseline": -166.75,
+        "coefs": [
+          0.0,
+          0.0,
+          -2.0,
+          -4.5
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "-2*H - 4.500*t"
+      },
+      {
+        "index": 2,
+        "baseline": -97.75,
+        "coefs": [
+          0.0,
+          -0.5,
+          0.0,
+          1.5
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "-W/2 + +1.500*t"
+      },
+      {
+        "index": 3,
+        "baseline": -86.0,
+        "coefs": [
+          0.0,
+          0.0,
+          -1.0,
+          2.0
+        ],
+        "const": -9.0,
+        "slot_delta": null,
+        "formula": "-H + 2*t - 9"
+      },
+      {
+        "index": 4,
+        "baseline": -81.5,
+        "coefs": [
+          0.0,
+          0.0,
+          -1.0,
+          -1.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "-H - t"
+      },
+      {
+        "index": 5,
+        "baseline": -77.62671626052874,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 6,
+        "baseline": -74.91467,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 7,
+        "baseline": -74.0,
+        "coefs": [
+          0.0,
+          0.0,
+          -1.0,
+          4.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "-H + 4*t"
+      },
+      {
+        "index": 8,
+        "baseline": -41.98774,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 9,
+        "baseline": -33.62500000000001,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 10,
+        "baseline": 0.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "0"
+      },
+      {
+        "index": 11,
+        "baseline": 1.5,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "t"
+      },
+      {
+        "index": 12,
+        "baseline": 2.25,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          1.5
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "1.500*t"
+      },
+      {
+        "index": 13,
+        "baseline": 3.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 3.0,
+        "slot_delta": null,
+        "formula": "3"
+      },
+      {
+        "index": 14,
+        "baseline": 4.7993,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 15,
+        "baseline": 5.0594,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 16,
+        "baseline": 5.25,
+        "coefs": [
+          0.0,
+          0.0,
+          -0.0009770691018139211,
+          -1.5
+        ],
+        "const": 7.578165528145114,
+        "slot_delta": null,
+        "formula": "-1.500*t + +7.578"
+      },
+      {
+        "index": 17,
+        "baseline": 6.75,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          -1.5
+        ],
+        "const": 9.0,
+        "slot_delta": null,
+        "formula": "-1.500*t + +9"
+      },
+      {
+        "index": 18,
+        "baseline": 308.25,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 19,
+        "baseline": 309.75,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          4.5
+        ],
+        "const": 3.0,
+        "slot_delta": null,
+        "formula": "L + +4.500*t + +3"
+      },
+      {
+        "index": 20,
+        "baseline": 309.94059992738414,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 21,
+        "baseline": 310.2007,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 22,
+        "baseline": 312.0,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          3.0
+        ],
+        "const": 7.5,
+        "slot_delta": null,
+        "formula": "L + 3*t + +7.500"
+      },
+      {
+        "index": 23,
+        "baseline": 312.75,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          4.5
+        ],
+        "const": 6.0,
+        "slot_delta": null,
+        "formula": "L + +4.500*t + +6"
+      },
+      {
+        "index": 24,
+        "baseline": 313.5,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          2.0
+        ],
+        "const": 10.5,
+        "slot_delta": null,
+        "formula": "L + 2*t + +10.500"
+      },
+      {
+        "index": 25,
+        "baseline": 315.0,
+        "coefs": [
+          1.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "const": 13.5,
+        "slot_delta": null,
+        "formula": "L + t + +13.500"
+      },
+      {
+        "index": 26,
+        "baseline": 348.625,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 27,
+        "baseline": 356.9877388234513,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 28,
+        "baseline": 388.9999999999994,
+        "coefs": [
+          1.0,
+          1.2505552149377763e-14,
+          1.0000000000000155,
+          6.0000000000004166
+        ],
+        "const": -5.002220859751105e-12,
+        "slot_delta": null,
+        "formula": "L + H + 6*t"
+      },
+      {
+        "index": 29,
+        "baseline": 389.9146699685983,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 30,
+        "baseline": 392.62671234368065,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 31,
+        "baseline": 396.5,
+        "coefs": [
+          1.0,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "const": 15.0,
+        "slot_delta": null,
+        "formula": "L + H + t + +15"
+      },
+      {
+        "index": 32,
+        "baseline": 401.0,
+        "coefs": [
+          1.0,
+          0.0,
+          1.0,
+          -2.0
+        ],
+        "const": 24.0,
+        "slot_delta": null,
+        "formula": "L + H - 2*t + +24"
+      },
+      {
+        "index": 33,
+        "baseline": 412.75,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 34,
+        "baseline": 481.75,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 35,
+        "baseline": 484.25,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      }
+    ],
+    "y_coords": [
+      {
+        "index": 0,
+        "baseline": -80.0,
+        "coefs": [
+          0.0,
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "-H"
+      },
+      {
+        "index": 1,
+        "baseline": -4.07375,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 2,
+        "baseline": -1.5,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "const": -3.0,
+        "slot_delta": null,
+        "formula": "t - 3"
+      },
+      {
+        "index": 3,
+        "baseline": 0.0,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "0"
+      },
+      {
+        "index": 4,
+        "baseline": 0.75,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          1.5
+        ],
+        "const": -1.5,
+        "slot_delta": null,
+        "formula": "1.500*t - 1.500"
+      },
+      {
+        "index": 5,
+        "baseline": 1.5,
+        "coefs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "const": 1.5,
+        "slot_delta": null,
+        "formula": "1.500"
+      },
+      {
+        "index": 6,
+        "baseline": 40.6,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 7,
+        "baseline": 41.85,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 8,
+        "baseline": 79.95,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 9,
+        "baseline": 81.2,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 10,
+        "baseline": 121.8,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 11,
+        "baseline": 123.05,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 12,
+        "baseline": 161.15,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 13,
+        "baseline": 162.4,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 14,
+        "baseline": 201.5,
+        "coefs": [
+          0.0,
+          1.0,
+          0.0,
+          1.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "W + t"
+      },
+      {
+        "index": 15,
+        "baseline": 202.25,
+        "coefs": [
+          0.0,
+          1.0,
+          0.0,
+          1.5
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "W + +1.500*t"
+      },
+      {
+        "index": 16,
+        "baseline": 203.0,
+        "coefs": [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        "const": 3.0,
+        "slot_delta": null,
+        "formula": "W + +3"
+      },
+      {
+        "index": 17,
+        "baseline": 204.5,
+        "coefs": [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        "const": 4.5,
+        "slot_delta": null,
+        "formula": "W + +4.500"
+      },
+      {
+        "index": 18,
+        "baseline": 207.07375,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 19,
+        "baseline": 283.0,
+        "coefs": [
+          0.0,
+          1.0,
+          1.0,
+          2.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "W + H + 2*t"
+      },
+      {
+        "index": 20,
+        "baseline": 283.75,
+        "coefs": [
+          0.0,
+          1.0,
+          1.0,
+          1.5
+        ],
+        "const": 1.5,
+        "slot_delta": null,
+        "formula": "W + H + +1.500*t + +1.500"
+      },
+      {
+        "index": 21,
+        "baseline": 285.25,
+        "coefs": [
+          0.0,
+          1.0,
+          1.0,
+          1.5
+        ],
+        "const": 3.0,
+        "slot_delta": null,
+        "formula": "W + H + +1.500*t + +3"
+      },
+      {
+        "index": 22,
+        "baseline": 325.625,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 23,
+        "baseline": 434.6819129532331,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 24,
+        "baseline": 474.18135,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 25,
+        "baseline": 484.14207,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 26,
+        "baseline": 486.75,
+        "coefs": [
+          0.0,
+          2.0,
+          1.0,
+          1.0166763865588184
+        ],
+        "const": 5.224985420161772,
+        "slot_delta": null,
+        "formula": "2*W + H + +1.017*t + +5.225"
+      },
+      {
+        "index": 27,
+        "baseline": 488.35260695339684,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 28,
+        "baseline": 488.57046,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 29,
+        "baseline": 495.1646,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 30,
+        "baseline": 498.5937040306186,
+        "coefs": null,
+        "const": null,
+        "slot_delta": null,
+        "formula": "?(no clean match)"
+      },
+      {
+        "index": 31,
+        "baseline": 567.5,
+        "coefs": [
+          0.0,
+          2.0,
+          2.0,
+          5.0
+        ],
+        "const": 0.0,
+        "slot_delta": null,
+        "formula": "2*W + 2*H + 5*t"
+      },
+      {
+        "index": 32,
+        "baseline": 568.25,
+        "coefs": [
+          0.0,
+          2.0,
+          2.0,
+          4.5
+        ],
+        "const": 1.5,
+        "slot_delta": null,
+        "formula": "2*W + 2*H + +4.500*t + +1.500"
+      }
+    ],
+    "matched_all": false
+  }
+}
