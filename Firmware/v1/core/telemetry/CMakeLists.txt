@@ -1,0 +1,17 @@
+idf_component_register(
+    SRCS
+        "telemetry.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        json
+        esp_event
+        esp_http_client
+        esp-tls
+        esp_wifi
+        esp_system
+        state_bus
+    PRIV_REQUIRES
+        esp_app_format
+        esp_timer
+)

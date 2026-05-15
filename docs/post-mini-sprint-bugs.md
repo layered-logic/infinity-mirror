@@ -17,60 +17,6 @@ Each entry should carry: severity, surfaces, first observed, hypothesized cause,
 
 ## Open
 
-### #1 — Transient `socket closed` errors under user load
-
-**Severity:** Low (cosmetic + auto-recoverable)
-**Surfaces:** Webapp during rapid clicks across multiple controls; will likely also surface in the RN app once Sessions 6-8 ship
-**First observed:** Session 4, 2026-04-29 ([sprint_log.md Week 5](../sprint_log.md#week-5-apr-28--may-5-app-uxui-design--app-demo-mini-sprint))
-
-**Symptom**
-"socket closed" or "not connected" briefly flashes in the connection-status panel of the webapp when the user clicks several controls in rapid succession. The webapp's reconnect-with-backoff (1s → 2s → 4s → 8s capped, [Firmware/v1/webapp/src/ws-client.ts](../Firmware/v1/webapp/src/ws-client.ts)) recovers within 1-8s and the demo stays functional, but the error is visible long enough to be noticed.
-
-**Initial discovery**
-The bug surfaced under the brightness slider's first implementation (live-during-drag with a 100ms throttle, ~10 msg/sec). Backing off to commit-on-release sliding eliminated the *bulk* of the issue, but it can still trigger when the user clicks color presets or toggles power+pattern in fast sequence — i.e. the issue isn't slider-specific, it's load-tolerance-of-the-firmware.
-
-**Hypothesized root cause**
-`esp_http_server`'s WS handler is single-task and serializes both inbound dispatch *and* outbound broadcasts. Any state change (even one inbound `set_state`) triggers a fanout to all connected clients via `broadcast_state` ([transport.c](../Firmware/v1/core/transport/transport.c)), so a single inbound message produces N+1 frames worth of work on that one task. Add network jitter on the SoftAP and the framework's send queue can fill, dropping the connection. Spec §7.1's 10 msg/sec rate limit is documented but not actually enforced in transport.c — there's no policy doing the closing, just backpressure.
-
-**Reproduction**
-1. Connect dev PC to `LL-Mirror-XXXXXX` SoftAP, open the webapp dev server (`npm run dev` in `Firmware/v1/webapp/`).
-2. Hard-reload the page so the reconnect-equipped client is active.
-3. Click 6-8 color preset swatches in fast succession (one per ~100ms).
-4. Watch the "last error" line in the connection panel — "socket closed" appears intermittently. Badge transitions briefly to amber/red and returns to green within seconds.
-
-**Possible fixes (ordered by ROI)**
-1. **Coalesce broadcasts when `set_state` carries multiple fields.** Already noted as TODO in the Session 2c sprint_log entry — multi-field set_state currently broadcasts N times for N fields, all carrying the same final state. One broadcast per inbound dispatch is sufficient. Easiest win, ~1 hour.
-2. **Move broadcast fanout to a separate task / queue.** So inbound dispatch on the httpd task doesn't block on outbound socket writes. Lets bursts of inbound work proceed even if the outbound side is slow. Medium effort, ~1 day. Probably the *right* fix.
-3. **Implement spec §7.1 rate limit (10 msg/sec per IP)** so the device proactively rejects flood traffic with close code 1008 before backpressure builds. Doesn't help the steady-state case; helps malicious / buggy clients. Easy, ~half day.
-4. **Investigate SoftAP power management.** ESP32 power-save modes can introduce latency that compounds with the queue-fill issue. Audit `esp_wifi_set_ps(WIFI_PS_NONE)` for the SoftAP path. Diagnostic, ~half day.
-
-**Webapp side already does the right things** — commit-on-release sliders, reconnect with backoff, no flood traffic. The bug is firmware-side capacity.
-
-**Demo-day workaround if it bites during the May 5 advisor demo:** reload the page once at the start to ensure a fresh socket; avoid rapid-fire clicks across controls during the 3-4 minute demo window.
-
-### #2 — `state.on` and `state.brightness` can disagree (misleading wire state)
-
-**Severity:** Medium (visible, ergonomic — affects first-impression of any new user)
-**Surfaces:** Webapp control page on initial load; will also surface in the RN app once Sessions 6-8 ship
-**First observed:** Session 5 sub-4 closing UAT, 2026-04-29
-
-**Symptom**
-On a freshly-erased / first-boot device, the wire `state.on` field reports `true` while `state.brightness` is 0 — meaning the LEDs are physically dark but the webapp's "power" toggle (which derives `isOn` from `state.brightness > 0`) shows OFF, and the diagnostics panel's `on` field shows `true`. The two facts contradict each other from the user's point of view.
-
-**Hypothesized root cause**
-`ll_state_t` carries `on` and `brightness` as independent fields, mutated by independent state-bus events (`LL_EV_POWER_TOGGLE` vs `LL_EV_BRIGHTNESS`). The button-firmware's gesture grammar treats them as separate (single-press cycles base color *and* sets `on=true`; long-hold sets `on=false`; brightness gestures don't touch `on`). Defaults from `ll_state_defaults` set `on=true, brightness=50` (or whatever the compiled default is), but the boot path can land in a state where `brightness` got set to 0 from elsewhere (e.g., webapp power-off) without `on` being cleared.
-
-**Reproduction**
-1. `idf.py erase-flash && idf.py flash` to clear NVS.
-2. Boot the device, observe the LED strip — dark.
-3. From the webapp, run `get_state` (e.g. via the diagnostics panel on `#/settings`). Observe `on=true` while `brightness=0` (or some small value).
-4. The webapp's `#/` power toggle reads OFF (because it uses `brightness > 0`), contradicting the diagnostics view.
-
-**Possible fixes (ordered by ROI)**
-1. **Make `on` derived from `brightness`** at the firmware-state level: drop the independent `on` field; serialize `state.on` as `brightness > 0` in `state_to_json()`. Cleaner mental model, removes the contradiction by construction. ~30 minutes. Requires updating the button handler's `LL_EV_POWER_TOGGLE` to set brightness=0 instead of mutating a separate `on` flag.
-2. **Couple them in `apply_event`**: when `brightness` is set to non-zero, also set `on=true`; when `on=false`, also set `brightness=0`. Preserves the field but enforces the invariant. ~15 minutes. Slightly less clean but doesn't ripple to other modules.
-3. **Webapp-side coupling**: ignore the firmware's `on` field, derive everything client-side from `brightness`. Already partially what the webapp does. Doesn't fix the diagnostics view, but the user-visible "power" toggle is consistent.
-
 ### #6 — Error flow during set_wifi_creds is bare-bones
 
 **Severity:** Medium (functional but ergonomic — affects every "wrong password" recovery)
@@ -104,6 +50,50 @@ Document the recovery path: "if the mirror doesn't appear on your network within
 ---
 
 ## Closed
+
+### #2 — `state.on` and `state.brightness` can disagree (misleading wire state)
+
+**Closed:** 2026-05-15 by [LL-075](../tasks.md#LL-075) — fix #2 from the original ROI list (couple them in `apply_event`), with an additional auto-restore on power-on so the button single-press path doesn't strand at brightness=0.
+
+**Severity (at close):** Was Medium (visible, ergonomic). Now eliminated at the data-model layer.
+
+**Symptom (historical)**
+The wire `state.on` field could report `true` while `state.brightness` was 0 — LEDs dark, but the diagnostics panel showed `on=true`. The webapp's power toggle (which uses `state.on` directly per closed bug #3) had already been disambiguated from the brightness-derived inference, so the user-facing impact was mostly diagnostics-view confusion. The data model still permitted the contradictory state, and the symmetric case (`on=false, brightness>0`) also leaked through if a client posted `{on:false}` alone.
+
+**Root cause (historical)**
+`ll_state_t` carried `on` and `brightness` as independent fields mutated by independent state-bus events. No invariant was enforced anywhere — `apply_event` set whichever field the event named and left the other one alone.
+
+**Fix shipped — LL-075** ([Firmware/v1/core/state_bus/state_bus.c](../Firmware/v1/core/state_bus/state_bus.c))
+
+Two coupled invariants in `apply_event`:
+
+- `LL_EV_BRIGHTNESS{value}` now also sets `on = (value > 0)`. brightness=0 implies !on; brightness>0 implies on.
+- `LL_EV_POWER_TOGGLE{on:true}` auto-restores `brightness` to 75 (the `LL_BRIGHTNESS_RESUME_DEFAULT` constant) when current brightness is 0. So a webapp `{brightness:0}` set followed by a button single-press from off leaves the device at (on=true, brightness=75) — not stranded at brightness=0 with LEDs still dark.
+- `LL_EV_POWER_TOGGLE{on:false}` deliberately **preserves brightness** — button long-hold → single-press cycle keeps the user's brightness setting. The renderer gates on `s->on` ([pattern_interp.c:151](../Firmware/v1/core/pattern_interp/pattern_interp.c)) so (on=false, brightness=75) renders dark; brightness is just preserved memory.
+
+Boot self-heal in `ll_state_bus_init` catches legacy NVS blobs that carry the contradictory (on=true, brightness=0) and corrects on first load.
+
+Verified on the live mirror via [ll_on_brightness_invariant_test.py](../Firmware/v1/scripts/ll_on_brightness_invariant_test.py) — all 6 cases pass (single-field brightness 0/non-zero, single-field on true/false, coupled webapp envelopes both ways).
+
+### #1 — Transient `socket closed` errors under user load
+
+**Closed:** 2026-05-15 across [LL-055](../tasks.md#LL-055) Sessions A-C (all four proposed fixes shipped).
+
+**Severity (at close):** Was Low (cosmetic + auto-recoverable). Now fixed end-to-end at the firmware capacity layer.
+
+**Symptom (historical)**
+"socket closed" or "not connected" briefly flashes in the connection-status panel of the webapp when the user clicks several controls in rapid succession. Webapp reconnect-with-backoff (1-8s) recovers, but the error was user-visible.
+
+**Root cause (historical)**
+`esp_http_server`'s WS handler is single-task and serializes inbound dispatch + outbound broadcasts. Any state change triggers a fanout to all connected clients via `broadcast_state`, so one inbound message → N+1 frames of work on that one task. Network jitter on the SoftAP filled the framework's send queue and dropped connections. Spec §7.1's 10 msg/sec rate limit was documented but not enforced.
+
+**Fixes shipped (chronological)**
+1. **Coalesce broadcasts within a debounce window** — May 14 ([sprint_log entry](../sprint_log.md), commit on `claude/happy-lehmann-907629`). 30ms one-shot timer in [transport.c](../Firmware/v1/core/transport/transport.c); first call arms the timer, subsequent calls within the window coalesce. 3-field set_state went from 3 broadcasts → 1; 6 rapid clicks at ~30ms went from 6 → 2.
+2. **Move broadcast fanout to a dedicated FreeRTOS task** — May 15 (LL-055 Session B). New `ll_broadcast` task (4 KB stack, prio 4) consumes a depth-2 queue of broadcast tokens; debounce timer cb posts to the queue instead of running do_broadcast_state synchronously. Verified via [ll_slow_client_test.py](../Firmware/v1/scripts/ll_slow_client_test.py): a slow client pinning a socket no longer affects inbound RTT (median 72→71 ms, 20/20 responses in both phases).
+3. **Implement spec §7.1 rate limit** — May 15 (LL-055 Session C). Per-IP token bucket (10 msg/s, burst 10) in WS receive path; overrun → close 1008 + `httpd_sess_trigger_close`. Verified via [ll_ratelimit_test.py](../Firmware/v1/scripts/ll_ratelimit_test.py): steady 10 msg/s = 30/30 clean; flood 50 msg/s = close 1008 at 0.43s.
+4. **Disable Wi-Fi power-save on the STA path** — May 15 (LL-055 Session A). Audit found zero `esp_wifi_set_ps` calls; new `ll_wifi_disable_ps()` helper + `WIFI_PS_NONE` at all four `esp_wifi_start` sites in [provisioning.c](../Firmware/v1/core/provisioning/provisioning.c). First-response latency dropped 155 → 84 ms (Test A, −46%) and 136 → 64 ms (Test B, −53%).
+
+The full resilience characterization suite from LL-055 Session D (reconnect hammer, latency/loss proxy, 5-minute soak) confirms the firmware now handles realistic user loads without the originating symptom. Webapp-side mitigations (commit-on-release sliders, reconnect-with-backoff) remain in place as defense-in-depth.
 
 ### #3 — Color / pattern controls don't auto-power-on the device when LEDs are off
 

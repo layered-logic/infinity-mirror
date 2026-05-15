@@ -103,6 +103,24 @@ static void build_ap_ssid(char *out, size_t out_len)
              mac[3], mac[4], mac[5]);
 }
 
+/* IDF default for STA is WIFI_PS_MIN_MODEM (radio sleeps between DTIM
+ * intervals, ~100ms typical). That's the right call for battery-powered
+ * devices, but the mirror is mains-powered and the latency it adds to
+ * inbound WS frames is the variable bug-doc fix #4 calls out
+ * (post-mini-sprint-bugs.md). Force WIFI_PS_NONE after each successful
+ * esp_wifi_start so the radio stays on. AP-only mode is unaffected
+ * (beacons must run); APSTA, when it lands, gets the STA side covered. */
+static void ll_wifi_disable_ps(const char *where)
+{
+    esp_err_t err = esp_wifi_set_ps(WIFI_PS_NONE);
+    if (err == ESP_OK) {
+        ESP_LOGI(TAG, "wifi power-save: NONE (%s)", where);
+    } else {
+        ESP_LOGW(TAG, "wifi power-save NONE failed at %s: %s — continuing with default",
+                 where, esp_err_to_name(err));
+    }
+}
+
 /* ---- ll_wifi bridge helpers ---------------------------------------------- *
  * Step 2 of LL-046: provisioning now drives STA from the ll_wifi store
  * instead of esp_wifi's saved cred. ll_wifi is the source of truth;
@@ -763,6 +781,7 @@ static void on_wifi_apply_creds(void *arg, esp_event_base_t base,
         return;
     }
     g_station_started = true;
+    ll_wifi_disable_ps("apply_creds STA");
 
     /* Arm the fallback timer. If STA hasn't connected by the time it
      * fires, the new ll_wifi entry gets removed and the SoftAP comes
@@ -879,6 +898,7 @@ static esp_err_t bring_up_softap_runtime(void)
     if (err != ESP_OK) return err;
     err = esp_wifi_start();
     if (err != ESP_OK) return err;
+    ll_wifi_disable_ps("SoftAP fallback");
 
     ESP_LOGW(TAG, "fallback: SoftAP restarted, awaiting fresh creds");
     return ESP_OK;
@@ -1039,6 +1059,7 @@ esp_err_t ll_provisioning_init(void)
         err = esp_wifi_start();
         if (err != ESP_OK) return err;
         g_station_started = true;
+        ll_wifi_disable_ps("init STA");
     } else {
         ESP_LOGI(TAG, "ll_wifi empty — radios dark (awaiting LL_EV_PROVISION_START)");
 #if LL_SOFTAP_PROVISIONING
@@ -1125,6 +1146,7 @@ esp_err_t ll_provisioning_kick_softap(void)
         ESP_LOGE(TAG, "SoftAP esp_wifi_start: %s", esp_err_to_name(err));
         return err;
     }
+    ll_wifi_disable_ps("init SoftAP");
     return ESP_OK;
 #else
     return ESP_OK;

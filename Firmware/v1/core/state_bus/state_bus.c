@@ -55,12 +55,29 @@ static size_t payload_size_for(ll_event_t ev)
     return 0;
 }
 
+/* Brightness restored on power-on when current brightness is 0 (e.g.
+ * after a webapp `{brightness: 0}` set, then a button single-press to
+ * power back on). Matches the boot default so first-power-on after a
+ * factory reset behaves consistently. Closes the on/brightness wire
+ * contradiction from post-mini-sprint-bugs.md #2. */
+#define LL_BRIGHTNESS_RESUME_DEFAULT 75
+
 static void apply_event(ll_event_t ev, const void *payload)
 {
     switch (ev) {
     case LL_EV_POWER_TOGGLE: {
         const ll_ev_power_toggle_payload_t *p = payload;
         g_state.on = p->on;
+        /* Invariant: on == true ⟹ brightness > 0. If we're powering on
+         * but brightness is currently 0 (e.g. last action was webapp
+         * `{brightness: 0}` which couples to !on), restore to the
+         * resume default rather than render a dark "on" state.
+         * Power-off does NOT zero brightness — UX preserves the user's
+         * setting across power-cycle; the renderer gates on `on` so a
+         * preserved brightness with on=false still renders dark. */
+        if (p->on && g_state.brightness == 0) {
+            g_state.brightness = LL_BRIGHTNESS_RESUME_DEFAULT;
+        }
         break;
     }
     case LL_EV_BASE_COLOR: {
@@ -77,6 +94,11 @@ static void apply_event(ll_event_t ev, const void *payload)
     case LL_EV_BRIGHTNESS: {
         const ll_ev_brightness_payload_t *p = payload;
         g_state.brightness = p->value;
+        /* Invariant: brightness == 0 ⟺ !on. Treat brightness=0 as an
+         * implicit power-off; treat brightness>0 as an implicit
+         * power-on. Lets clients send a single-field `{brightness: 0}`
+         * without having to also send `{on: false}` and vice versa. */
+        g_state.on = (p->value > 0);
         break;
     }
     case LL_EV_AUTH_MODE: {
@@ -148,6 +170,21 @@ void ll_state_bus_init(const ll_state_t *initial)
     } else {
         ll_state_defaults(&g_state);
     }
+
+    /* Self-heal the on/brightness invariant on boot. A legacy NVS blob
+     * from a pre-fix era (post-mini-sprint-bugs.md #2, fixed via
+     * apply_event coupling) could carry the contradictory state where
+     * on==true with brightness==0. apply_event prevents any new mutation
+     * from producing that state, but the boot path skips apply_event —
+     * so we correct it here once. Mirrors the LL_EV_POWER_TOGGLE branch
+     * of apply_event: if on but brightness=0, restore to resume default. */
+    if (g_state.on && g_state.brightness == 0) {
+        g_state.brightness = LL_BRIGHTNESS_RESUME_DEFAULT;
+    }
+    /* Symmetric case (on=false, brightness>0) is fine — it represents
+     * "powered off but the user's brightness setting is preserved",
+     * which is a valid intentional state. The renderer gates on `on`
+     * so this still renders dark. */
 
     /* Cache the MAC-derived id suffix for lookups via ll_device_id_get().
      * Same form as ll_mdns publishes: lower 3 bytes, lowercase hex. */

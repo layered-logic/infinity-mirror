@@ -111,10 +111,32 @@ export interface StateBroadcast {
   state: DeviceState;
 }
 
-export type InboundFrame = ResponseEnvelope | StateBroadcast;
+// Asynchronous progress events emitted by the device during esp_https_ota's
+// perform loop (LL-057 Session B). Throttled to ~5% increments on the
+// firmware side. Clients consume these to render a percent + phase in
+// place of the static "Mirror downloading…" string.
+//
+//   phase = 'downloading' — bytes are streaming in, percent advances 0→99
+//   phase = 'verifying'   — perform loop done, esp_https_ota_finish running
+//   phase = 'rebooting'   — finish OK, about to esp_restart
+//   phase = 'failed'      — abort path; client should surface the error
+export type OtaPhase = 'downloading' | 'verifying' | 'rebooting' | 'failed';
+
+export interface OtaProgressBroadcast {
+  op: 'ota_progress';
+  ts: number;
+  percent: number;
+  phase: OtaPhase;
+}
+
+export type InboundFrame = ResponseEnvelope | StateBroadcast | OtaProgressBroadcast;
 
 export function isStateBroadcast(frame: InboundFrame): frame is StateBroadcast {
   return frame.op === 'state' && 'state' in frame;
+}
+
+export function isOtaProgress(frame: InboundFrame): frame is OtaProgressBroadcast {
+  return frame.op === 'ota_progress' && 'percent' in frame;
 }
 
 export function newReqId(): string {

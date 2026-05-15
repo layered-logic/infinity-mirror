@@ -37,6 +37,7 @@
 #include "provisioning.h"
 #include "state_bus.h"
 #include "state_bus_events.h"
+#include "telemetry.h"
 #include "transport.h"
 
 static const char *TAG = "main";
@@ -87,6 +88,12 @@ void app_main(void)
      * CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE in sdkconfig.defaults. */
     ESP_ERROR_CHECK(ll_ota_init());
     ESP_ERROR_CHECK(ll_ota_subscribe());
+
+    /* Telemetry: 24h jittered beacon to telemetry.layeredlogic.cc/v1/beacon.
+     * Gated by state.telemetry_enabled — first beacon fires 1-5 min
+     * after the first WIFI_CONNECTED. Per firmware-spec §4.10 / LL-057-C. */
+    ESP_ERROR_CHECK(ll_telemetry_init());
+    ESP_ERROR_CHECK(ll_telemetry_subscribe());
 
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(
         ll_state_bus_get_loop(),

@@ -1,0 +1,39 @@
+# Cloudflare Worker config for telemetry.layeredlogic.cc/v1/beacon.
+#
+# Deploy:
+#   cd cloudflare-workers/telemetry
+#   npx wrangler deploy
+#
+# Local dev (no real KV writes — uses local miniflare KV):
+#   npx wrangler dev
+#
+# The route + KV namespace are wired by name; before the first deploy
+# Bill needs to:
+#   1. Create the KV namespace:
+#      npx wrangler kv namespace create LL_TELEMETRY_KV
+#      → copy the id into the [[kv_namespaces]] block below.
+#   2. Add the route in the Cloudflare dash:
+#      telemetry.layeredlogic.cc/v1/*  -> ll-mirror-telemetry
+#   3. Add the DNS record (CNAME telemetry → workers).
+#
+# Storage model (LL-057-C MVP):
+#   beacon:<device_id>:<unix_ms>  → full beacon JSON, TTL 90 days
+#   latest:<device_id>            → snapshot of the most recent beacon, no TTL
+#
+# Latest enables "is device X alive?" lookups in O(1); the per-timestamp
+# entries enable a future "last N beacons" query without paginating.
+
+name = "ll-mirror-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-05-15"
+
+# KV binding — Bill fills `id` in after the namespace is created.
+[[kv_namespaces]]
+binding = "LL_TELEMETRY_KV"
+id = "7df6b426a78a4b73a0ff68cc41a6cd46"
+
+# Route — set in the dashboard once the DNS + Worker are deployed.
+# Listed here for documentation; routes can also be managed in-dash.
+# [[routes]]
+# pattern = "telemetry.layeredlogic.cc/v1/*"
+# custom_domain = true
