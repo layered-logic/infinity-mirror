@@ -15,7 +15,11 @@
  * loop (single task → no races). The WS handler runs on the httpd
  * task; it only reads g_server transitively via the framework's
  * sockfd table, never touches it directly. Open auth mode means no
- * shared mutable state to guard yet.
+ * shared mutable state to guard yet. State broadcasts run on a
+ * dedicated ll_broadcast task: the debounce timer fires on the
+ * esp_timer task and posts a token to s_broadcast_q; the broadcast
+ * task consumes tokens and runs the fanout loop, so socket sends to
+ * slow clients can't stall the timer task or block inbound dispatch.
  */
 
 #include "transport.h"
@@ -31,6 +35,10 @@
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+#include "lwip/sockets.h"
 
 #include "ll_wifi.h"
 #include "ota.h"
@@ -44,15 +52,54 @@ static const char *TAG = "transport";
 #define LL_TRANSPORT_PORT  80
 #define LL_WS_RX_MAX       1024   /* envelope+payload — generous for ping/state */
 
+/* Per-IP rate limit per control-protocol-spec.md §7.1: 10 msg/sec with
+ * burst capacity 10. Token bucket math uses milli-tokens (1 message =
+ * 1000 milli-tokens) to avoid float arithmetic on the C3. Refill rate
+ * is 10 milli-tokens per ms, i.e. 1 milli-token per 100us.
+ *
+ * Table is sized to match the spec's 8-client cap; eviction policy on
+ * full is "oldest last_refill" so a dormant attacker IP can't squat
+ * the table forever. Single-task access (httpd's WS handler runs on
+ * one task) → no locking needed. */
+#define LL_RL_TABLE_SIZE      8
+#define LL_RL_BURST_MILLI     10000   /* 10 tokens * 1000 milli */
+#define LL_RL_COST_MILLI      1000    /* 1 message = 1000 milli-tokens */
+#define LL_RL_REFILL_PER_US   1       /* 1 milli-token per 100us → divide delta_us by 100 */
+
+typedef struct {
+    uint32_t ip_be;             /* peer IPv4, network byte order. 0 = entry unused. */
+    int64_t  last_refill_us;
+    uint32_t tokens_milli;
+} rl_entry_t;
+
+static rl_entry_t s_rl_table[LL_RL_TABLE_SIZE];
+
 /* Debounce window for client broadcasts. Long enough to absorb a multi-
  * field set_state (event-bus dispatch is sub-ms even for 5-field payloads)
  * and tightly-clustered control clicks; short enough to be imperceptible
  * to users. Tune via empirical jitter testing if needed. */
 #define LL_BROADCAST_DEBOUNCE_US (30 * 1000)
 
+/* Broadcast fanout task — owns the do_broadcast_state() loop so that
+ * slow socket sends (TCP buffer full, congested client) can't stall
+ * the esp_timer task or the httpd inbound dispatch. The debounce
+ * timer becomes a pure enqueuer; this task consumes tokens from
+ * s_broadcast_q and runs the fanout on its own stack + priority.
+ *
+ * Queue depth 2: one in-flight + one pending is enough since each
+ * dequeue captures the latest state at fire-time (snapshot via
+ * ll_state_bus_get inside do_broadcast_state). A queue-full drop is
+ * benign — the next state-change will re-trigger the debounce timer
+ * and a fresh token will land. */
+#define LL_BROADCAST_TASK_STACK    4096
+#define LL_BROADCAST_TASK_PRIO     4    /* below httpd's default (7) so inbound work wins contention */
+#define LL_BROADCAST_QUEUE_LEN     2
+
 static httpd_handle_t     g_server;
 static esp_timer_handle_t s_broadcast_timer;
 static atomic_bool        s_broadcast_pending;
+static QueueHandle_t      s_broadcast_q;
+static TaskHandle_t       s_broadcast_task;
 
 /* Forward decls — the multi-network ops below trigger broadcasts after
  * mutating the saved-list (so wifi_saved_count refreshes on connected
@@ -61,6 +108,8 @@ static atomic_bool        s_broadcast_pending;
 static void broadcast_state(void);
 static void do_broadcast_state(void);
 static void broadcast_timer_cb(void *arg);
+static void broadcast_task_fn(void *arg);
+static void enqueue_broadcast(const char *where);
 
 /* ---- state object serialization ---------------------------------- */
 
@@ -724,6 +773,111 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
     return err;
 }
 
+/* ---- Per-IP rate limiter (spec §7.1) ----------------------------- */
+
+/* Look up or allocate the bucket for ip_be. Returns index in s_rl_table.
+ * Eviction policy on full: replace the entry with the oldest
+ * last_refill_us (the one least likely to still be active). */
+static int rl_lookup_or_alloc(uint32_t ip_be, int64_t now_us)
+{
+    int free_slot = -1;
+    int oldest_slot = 0;
+    int64_t oldest_us = s_rl_table[0].last_refill_us;
+    for (int i = 0; i < LL_RL_TABLE_SIZE; i++) {
+        if (s_rl_table[i].ip_be == ip_be && ip_be != 0) {
+            return i;
+        }
+        if (s_rl_table[i].ip_be == 0 && free_slot < 0) {
+            free_slot = i;
+        }
+        if (s_rl_table[i].last_refill_us < oldest_us) {
+            oldest_us = s_rl_table[i].last_refill_us;
+            oldest_slot = i;
+        }
+    }
+    int slot = (free_slot >= 0) ? free_slot : oldest_slot;
+    s_rl_table[slot].ip_be          = ip_be;
+    s_rl_table[slot].last_refill_us = now_us;
+    s_rl_table[slot].tokens_milli   = LL_RL_BURST_MILLI;  /* fresh bucket starts full */
+    return slot;
+}
+
+/* Refill + consume one message's worth of tokens for the peer behind fd.
+ * Returns true if the message is allowed, false if it should be rejected
+ * (caller closes the socket with code 1008). */
+static bool rate_limit_check(int fd)
+{
+    struct sockaddr_in6 sa = {0};
+    socklen_t sa_len = sizeof(sa);
+    if (getpeername(fd, (struct sockaddr *)&sa, &sa_len) != 0) {
+        /* getpeername should never fail on a live WS socket. If it does,
+         * allow the message — failing-open here is safer than dropping
+         * legitimate traffic. The flood path is still bounded by the
+         * 8-client cap and httpd's own work queue. */
+        ESP_LOGW(TAG, "getpeername(fd=%d) failed; rate-limit bypassed", fd);
+        return true;
+    }
+
+    uint32_t ip_be;
+    if (sa.sin6_family == AF_INET) {
+        struct sockaddr_in *sa4 = (struct sockaddr_in *)&sa;
+        ip_be = sa4->sin_addr.s_addr;
+    } else if (sa.sin6_family == AF_INET6) {
+        /* lwip in IDF gives IPv4 as v4-mapped IPv6 by default. Pull the
+         * last 32 bits when the mapped prefix matches; otherwise hash
+         * the high half into ip_be so distinct v6 peers don't collide. */
+        const uint32_t *w = (const uint32_t *)&sa.sin6_addr;
+        if (w[0] == 0 && w[1] == 0 && w[2] == htonl(0xFFFF)) {
+            ip_be = w[3];
+        } else {
+            ip_be = w[0] ^ w[1] ^ w[2] ^ w[3];
+        }
+    } else {
+        ESP_LOGW(TAG, "getpeername family=%d; rate-limit bypassed", sa.sin6_family);
+        return true;
+    }
+
+    if (ip_be == 0) ip_be = 0xFFFFFFFFu;  /* reserve 0 as "slot unused" */
+
+    int64_t now_us = esp_timer_get_time();
+    int slot = rl_lookup_or_alloc(ip_be, now_us);
+    rl_entry_t *e = &s_rl_table[slot];
+
+    int64_t delta_us = now_us - e->last_refill_us;
+    if (delta_us > 0) {
+        uint32_t add = (uint32_t)(delta_us / 100);  /* 1 milli-token per 100us == 10 tokens/sec */
+        uint64_t refilled = (uint64_t)e->tokens_milli + add;
+        e->tokens_milli   = (refilled > LL_RL_BURST_MILLI) ? LL_RL_BURST_MILLI : (uint32_t)refilled;
+        e->last_refill_us = now_us;
+    }
+
+    if (e->tokens_milli < LL_RL_COST_MILLI) {
+        return false;
+    }
+    e->tokens_milli -= LL_RL_COST_MILLI;
+    return true;
+}
+
+/* Send WS close frame with the supplied code (RFC 6455). Best-effort —
+ * we're about to drop the socket anyway. */
+static void ws_send_close(httpd_req_t *req, uint16_t code)
+{
+    uint8_t payload[2];
+    payload[0] = (uint8_t)((code >> 8) & 0xff);
+    payload[1] = (uint8_t)(code & 0xff);
+    httpd_ws_frame_t close = {
+        .final      = true,
+        .fragmented = false,
+        .type       = HTTPD_WS_TYPE_CLOSE,
+        .payload    = payload,
+        .len        = sizeof(payload),
+    };
+    esp_err_t err = httpd_ws_send_frame(req, &close);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "ws close send (code=%u): %s", code, esp_err_to_name(err));
+    }
+}
+
 /* ---- WS URI handler ---------------------------------------------- */
 
 static esp_err_t ws_handler(httpd_req_t *req)
@@ -767,6 +921,17 @@ static esp_err_t ws_handler(httpd_req_t *req)
     }
 
     if (frame.type == HTTPD_WS_TYPE_TEXT) {
+        /* Per-IP rate limit (spec §7.1) — counted on app-layer text
+         * frames only. Control frames (ping/pong/close) are handled by
+         * httpd directly and don't consume tokens. */
+        int fd = httpd_req_to_sockfd(req);
+        if (!rate_limit_check(fd)) {
+            ESP_LOGW(TAG, "rate-limit overrun on fd=%d → close 1008", fd);
+            ws_send_close(req, 1008);
+            httpd_sess_trigger_close(req->handle, fd);
+            free(buf);
+            return ESP_OK;
+        }
         err = handle_envelope(req, (const char *)buf);
     }
     /* Binary / ping / pong frames: ignored at the app layer for
@@ -874,14 +1039,15 @@ static void on_wifi_disconnected(void *arg, esp_event_base_t base,
  * rapid-fire callers within LL_BROADCAST_DEBOUNCE_US — the first call
  * arms the timer; subsequent calls inside the window return
  * immediately. The actual broadcast (do_broadcast_state) runs on the
- * esp_timer task and captures state at fire-time, so intermediate
- * states from a multi-field set_state burst are dropped and only the
- * settled state ships to clients.
+ * dedicated broadcast task (see broadcast_task_fn) and captures state
+ * at fire-time, so intermediate states from a multi-field set_state
+ * burst are dropped and only the settled state ships to clients.
  *
- * Thread-safe across the state-bus, httpd, and esp_timer tasks via
- * stdatomic.h. Called from on_state_changed (state-bus task),
- * on_wifi_connected/disconnected (state-bus task), and the multi-network
- * wifi op handlers (httpd task).
+ * Thread-safe across the state-bus, httpd, esp_timer, and broadcast
+ * tasks via stdatomic.h + FreeRTOS queue primitives. Called from
+ * on_state_changed (state-bus task), on_wifi_connected/disconnected
+ * (state-bus task), and the multi-network wifi op handlers (httpd
+ * task).
  */
 static void broadcast_state(void)
 {
@@ -891,12 +1057,14 @@ static void broadcast_state(void)
     esp_err_t err = esp_timer_start_once(s_broadcast_timer,
                                           LL_BROADCAST_DEBOUNCE_US);
     if (err != ESP_OK) {
-        /* Timer wedged for some reason — fall back to immediate broadcast
-         * so we don't silently drop state updates. */
+        /* Timer wedged for some reason — fall back to queueing the
+         * broadcast directly so we don't silently drop state updates.
+         * Stays asynchronous (broadcast task runs the fanout) so the
+         * caller's task isn't blocked on socket writes. */
         atomic_store(&s_broadcast_pending, false);
-        ESP_LOGW(TAG, "broadcast timer start: %s — falling back to immediate",
+        ESP_LOGW(TAG, "broadcast timer start: %s — falling back to direct enqueue",
                  esp_err_to_name(err));
-        do_broadcast_state();
+        enqueue_broadcast("timer-start-failed");
     }
 }
 
@@ -904,12 +1072,52 @@ static void broadcast_timer_cb(void *arg)
 {
     (void)arg;
     atomic_store(&s_broadcast_pending, false);
-    do_broadcast_state();
+    enqueue_broadcast("timer-cb");
+}
+
+/* Post a broadcast token to the queue. Caller must not depend on the
+ * fanout happening synchronously. Queue-full → drop the token (the
+ * next state-change will re-arm the debounce timer and a fresh token
+ * will land — losing one in-burst broadcast is benign because each
+ * dequeue snapshots the latest state). */
+static void enqueue_broadcast(const char *where)
+{
+    if (!s_broadcast_q) {
+        /* Init order bug or pre-init call — fall back to synchronous
+         * fanout so the very first WIFI_CONNECTED broadcast (which
+         * fires before the task is up in some boot orderings) isn't
+         * lost. After init this path should never trigger. */
+        ESP_LOGW(TAG, "broadcast queue null at %s — running synchronously", where);
+        do_broadcast_state();
+        return;
+    }
+
+    const uint8_t token = 1;
+    if (xQueueSendToBack(s_broadcast_q, &token, 0) != pdTRUE) {
+        /* Queue full — broadcast task is mid-send and one is already
+         * pending. Drop this one; the in-flight + pending pair will
+         * cover the latest state via their dequeue-time snapshots. */
+        ESP_LOGD(TAG, "broadcast queue full at %s — dropping token", where);
+    }
+}
+
+static void broadcast_task_fn(void *arg)
+{
+    (void)arg;
+    uint8_t token;
+    for (;;) {
+        if (xQueueReceive(s_broadcast_q, &token, portMAX_DELAY) == pdTRUE) {
+            do_broadcast_state();
+        }
+    }
 }
 
 /* Actually serialize + push the broadcast envelope to all connected WS
- * clients. Runs on the esp_timer task; should never be called directly
- * — go through broadcast_state() so the debounce holds. */
+ * clients. Runs on the broadcast task (via enqueue_broadcast → queue →
+ * broadcast_task_fn); the only callers outside that path are the
+ * enqueue_broadcast fallback when the queue isn't up yet, and the
+ * broadcast_state fallback when esp_timer_start_once fails. Go through
+ * broadcast_state() in production code so the debounce holds. */
 static void do_broadcast_state(void)
 {
     if (!g_server) return;
@@ -976,9 +1184,26 @@ static void on_state_changed(void *arg, esp_event_base_t base,
 esp_err_t ll_transport_init(void)
 {
     /* esp_http_server is started lazily on WIFI_CONNECTED. The broadcast
-     * debounce timer is created here so it's ready before the first
-     * LL_EV_STATE_CHANGED can fire — it's a one-shot timer that
-     * broadcast_state() arms on demand. */
+     * machinery (queue, fanout task, debounce timer) is created here so
+     * it's ready before the first LL_EV_STATE_CHANGED can fire. The
+     * queue must exist before the task is spawned (the task blocks on
+     * xQueueReceive from boot). */
+    s_broadcast_q = xQueueCreate(LL_BROADCAST_QUEUE_LEN, sizeof(uint8_t));
+    if (!s_broadcast_q) {
+        ESP_LOGE(TAG, "broadcast queue create failed");
+        return ESP_ERR_NO_MEM;
+    }
+
+    BaseType_t ok = xTaskCreate(broadcast_task_fn, "ll_broadcast",
+                                LL_BROADCAST_TASK_STACK, NULL,
+                                LL_BROADCAST_TASK_PRIO, &s_broadcast_task);
+    if (ok != pdPASS) {
+        ESP_LOGE(TAG, "broadcast task create failed");
+        vQueueDelete(s_broadcast_q);
+        s_broadcast_q = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+
     const esp_timer_create_args_t args = {
         .callback = broadcast_timer_cb,
         .name     = "ll_broadcast",
@@ -989,7 +1214,8 @@ esp_err_t ll_transport_init(void)
         return err;
     }
 
-    ESP_LOGI(TAG, "init: server deferred until wifi up");
+    ESP_LOGI(TAG, "init: server deferred until wifi up (broadcast task up, queue depth %d)",
+             LL_BROADCAST_QUEUE_LEN);
     return ESP_OK;
 }
 

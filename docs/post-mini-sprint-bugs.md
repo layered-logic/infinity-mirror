@@ -17,37 +17,6 @@ Each entry should carry: severity, surfaces, first observed, hypothesized cause,
 
 ## Open
 
-### #1 — Transient `socket closed` errors under user load
-
-**Severity:** Low (cosmetic + auto-recoverable)
-**Surfaces:** Webapp during rapid clicks across multiple controls; will likely also surface in the RN app once Sessions 6-8 ship
-**First observed:** Session 4, 2026-04-29 ([sprint_log.md Week 5](../sprint_log.md#week-5-apr-28--may-5-app-uxui-design--app-demo-mini-sprint))
-
-**Symptom**
-"socket closed" or "not connected" briefly flashes in the connection-status panel of the webapp when the user clicks several controls in rapid succession. The webapp's reconnect-with-backoff (1s → 2s → 4s → 8s capped, [Firmware/v1/webapp/src/ws-client.ts](../Firmware/v1/webapp/src/ws-client.ts)) recovers within 1-8s and the demo stays functional, but the error is visible long enough to be noticed.
-
-**Initial discovery**
-The bug surfaced under the brightness slider's first implementation (live-during-drag with a 100ms throttle, ~10 msg/sec). Backing off to commit-on-release sliding eliminated the *bulk* of the issue, but it can still trigger when the user clicks color presets or toggles power+pattern in fast sequence — i.e. the issue isn't slider-specific, it's load-tolerance-of-the-firmware.
-
-**Hypothesized root cause**
-`esp_http_server`'s WS handler is single-task and serializes both inbound dispatch *and* outbound broadcasts. Any state change (even one inbound `set_state`) triggers a fanout to all connected clients via `broadcast_state` ([transport.c](../Firmware/v1/core/transport/transport.c)), so a single inbound message produces N+1 frames worth of work on that one task. Add network jitter on the SoftAP and the framework's send queue can fill, dropping the connection. Spec §7.1's 10 msg/sec rate limit is documented but not actually enforced in transport.c — there's no policy doing the closing, just backpressure.
-
-**Reproduction**
-1. Connect dev PC to `LL-Mirror-XXXXXX` SoftAP, open the webapp dev server (`npm run dev` in `Firmware/v1/webapp/`).
-2. Hard-reload the page so the reconnect-equipped client is active.
-3. Click 6-8 color preset swatches in fast succession (one per ~100ms).
-4. Watch the "last error" line in the connection panel — "socket closed" appears intermittently. Badge transitions briefly to amber/red and returns to green within seconds.
-
-**Possible fixes (ordered by ROI)**
-1. **Coalesce broadcasts when `set_state` carries multiple fields.** Already noted as TODO in the Session 2c sprint_log entry — multi-field set_state currently broadcasts N times for N fields, all carrying the same final state. One broadcast per inbound dispatch is sufficient. Easiest win, ~1 hour.
-2. **Move broadcast fanout to a separate task / queue.** So inbound dispatch on the httpd task doesn't block on outbound socket writes. Lets bursts of inbound work proceed even if the outbound side is slow. Medium effort, ~1 day. Probably the *right* fix.
-3. **Implement spec §7.1 rate limit (10 msg/sec per IP)** so the device proactively rejects flood traffic with close code 1008 before backpressure builds. Doesn't help the steady-state case; helps malicious / buggy clients. Easy, ~half day.
-4. **Investigate SoftAP power management.** ESP32 power-save modes can introduce latency that compounds with the queue-fill issue. Audit `esp_wifi_set_ps(WIFI_PS_NONE)` for the SoftAP path. Diagnostic, ~half day.
-
-**Webapp side already does the right things** — commit-on-release sliders, reconnect with backoff, no flood traffic. The bug is firmware-side capacity.
-
-**Demo-day workaround if it bites during the May 5 advisor demo:** reload the page once at the start to ensure a fresh socket; avoid rapid-fire clicks across controls during the 3-4 minute demo window.
-
 ### #2 — `state.on` and `state.brightness` can disagree (misleading wire state)
 
 **Severity:** Medium (visible, ergonomic — affects first-impression of any new user)
@@ -104,6 +73,26 @@ Document the recovery path: "if the mirror doesn't appear on your network within
 ---
 
 ## Closed
+
+### #1 — Transient `socket closed` errors under user load
+
+**Closed:** 2026-05-15 across [LL-055](../tasks.md#LL-055) Sessions A-C (all four proposed fixes shipped).
+
+**Severity (at close):** Was Low (cosmetic + auto-recoverable). Now fixed end-to-end at the firmware capacity layer.
+
+**Symptom (historical)**
+"socket closed" or "not connected" briefly flashes in the connection-status panel of the webapp when the user clicks several controls in rapid succession. Webapp reconnect-with-backoff (1-8s) recovers, but the error was user-visible.
+
+**Root cause (historical)**
+`esp_http_server`'s WS handler is single-task and serializes inbound dispatch + outbound broadcasts. Any state change triggers a fanout to all connected clients via `broadcast_state`, so one inbound message → N+1 frames of work on that one task. Network jitter on the SoftAP filled the framework's send queue and dropped connections. Spec §7.1's 10 msg/sec rate limit was documented but not enforced.
+
+**Fixes shipped (chronological)**
+1. **Coalesce broadcasts within a debounce window** — May 14 ([sprint_log entry](../sprint_log.md), commit on `claude/happy-lehmann-907629`). 30ms one-shot timer in [transport.c](../Firmware/v1/core/transport/transport.c); first call arms the timer, subsequent calls within the window coalesce. 3-field set_state went from 3 broadcasts → 1; 6 rapid clicks at ~30ms went from 6 → 2.
+2. **Move broadcast fanout to a dedicated FreeRTOS task** — May 15 (LL-055 Session B). New `ll_broadcast` task (4 KB stack, prio 4) consumes a depth-2 queue of broadcast tokens; debounce timer cb posts to the queue instead of running do_broadcast_state synchronously. Verified via [ll_slow_client_test.py](../Firmware/v1/scripts/ll_slow_client_test.py): a slow client pinning a socket no longer affects inbound RTT (median 72→71 ms, 20/20 responses in both phases).
+3. **Implement spec §7.1 rate limit** — May 15 (LL-055 Session C). Per-IP token bucket (10 msg/s, burst 10) in WS receive path; overrun → close 1008 + `httpd_sess_trigger_close`. Verified via [ll_ratelimit_test.py](../Firmware/v1/scripts/ll_ratelimit_test.py): steady 10 msg/s = 30/30 clean; flood 50 msg/s = close 1008 at 0.43s.
+4. **Disable Wi-Fi power-save on the STA path** — May 15 (LL-055 Session A). Audit found zero `esp_wifi_set_ps` calls; new `ll_wifi_disable_ps()` helper + `WIFI_PS_NONE` at all four `esp_wifi_start` sites in [provisioning.c](../Firmware/v1/core/provisioning/provisioning.c). First-response latency dropped 155 → 84 ms (Test A, −46%) and 136 → 64 ms (Test B, −53%).
+
+The full resilience characterization suite from LL-055 Session D (reconnect hammer, latency/loss proxy, 5-minute soak) confirms the firmware now handles realistic user loads without the originating symptom. Webapp-side mitigations (commit-on-release sliders, reconnect-with-backoff) remain in place as defense-in-depth.
 
 ### #3 — Color / pattern controls don't auto-power-on the device when LEDs are off
 

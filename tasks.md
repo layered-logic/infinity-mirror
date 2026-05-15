@@ -2,7 +2,7 @@
 title: Task Registry
 type: task-registry
 next_id: LL-075
-updated: 2026-05-13
+updated: 2026-05-15
 
 ---
 
@@ -955,14 +955,34 @@ Resolved 2026-05-13 as a dedicated section of [LL-053](#LL-053): 10-step custom-
 ---
 
 <a id="LL-055"></a>
-### [ ] LL-055 — Firmware Wi-Fi/BLE resilience stress-test
+### [x] LL-055 — Firmware Wi-Fi/BLE resilience stress-test
 
-sprint: 7 | priority: medium | deadline: 2026-05-16
-added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
-artifacts: [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c)
+sprint: 7 | priority: medium | deadline: 2026-05-16 (slipped by ~12h — see Notes)
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-15 | resolved: 2026-05-15
+artifacts: [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c) · [Firmware/v1/scripts/](Firmware/v1/scripts/)
 dependencies: LL-029, LL-046
 
-**Notes:** Wi-Fi drop handling, BLE reconnection, network jitter under load. Technical "usability" — exercises resilience behavior currently spread across §4.5 (transport), §4.7 (ota validation), §8 (boot sequence) of [docs/firmware-spec.md](docs/firmware-spec.md); no dedicated resilience section exists yet. Includes addressing the parked transient-socket-closed bug from LL-035-4 ([post-mini-sprint-bugs.md #1](docs/post-mini-sprint-bugs.md)). Per Week 7 plan.
+**Notes:** Wi-Fi drop handling, network jitter under load, and the bug-doc fix cascade from [post-mini-sprint-bugs.md](docs/post-mini-sprint-bugs.md) #1-4. BLE reconnection split off to [LL-055-1](#LL-055-1) on 2026-05-15 (parked-on-dependency until BLE provisioning ships post-V1). Closed 2026-05-15 after 4 sessions over May 14-15; deadline slipped ~12h past May 16 cutoff with no de-scope.
+
+**Session record:**
+1. **Session A — Fix #4: Wi-Fi power-save disabled.** ✅ Done 2026-05-15. Audit found zero `esp_wifi_set_ps` calls; `ll_wifi_disable_ps()` helper + `WIFI_PS_NONE` at all four `esp_wifi_start` sites. Verified on `192.168.5.229`: ll_debounce_test.py first-response latency 155ms→84ms (Test A), 136ms→64ms (Test B).
+2. **Session B — Fix #2: Broadcast fanout → dedicated FreeRTOS task + depth-2 queue.** ✅ Done 2026-05-15. `ll_broadcast` task (4 KB stack, prio 4) consumes broadcast tokens; debounce timer cb is now a pure enqueuer. Verified via [ll_slow_client_test.py](Firmware/v1/scripts/ll_slow_client_test.py): 20/20 inbound responses with median latency unchanged while a slow client pins a socket.
+3. **Session C — Fix #3: §7.1 rate limit.** ✅ Done 2026-05-15. Per-IP token bucket (10 msg/s, burst 10); overrun → close 1008. Verified via new [ll_ratelimit_test.py](Firmware/v1/scripts/ll_ratelimit_test.py): steady 10 msg/s = 30/30 clean; flood 50 msg/s = close 1008 at 0.43s; after-close reconnect = ping OK. Bug-doc cascade fully closed.
+4. **Session D — Resilience characterization + test harness.** ✅ Done 2026-05-15. Five new scripts under [Firmware/v1/scripts/](Firmware/v1/scripts/): `ll_reconnect_hammer.py` (30/30 clean), `ll_ws_proxy.py` (TCP latency+loss proxy), `ll_jitter_test.py` (200ms latency = 10/10; 1% loss = 10/10; 5% loss breaks WS handshake — not a defect), `ll_soak_test.py` (5min/1476 iter @ 5 msg/s, 0 errors, RTT drift −0.4ms, uptime monotonic), `ll_ap_toggle_test.py` (manual — Bill toggles hotspot mid-run, script records gap + whether uptime resumed monotonically).
+
+The 5 scripts form a durable regression harness future firmware changes can replay against. No new bug-doc entries opened; all 4 entries that motivated LL-055 (#1-4) closed.
+
+---
+
+<a id="LL-055-1"></a>
+#### [ ] LL-055-1 — BLE reconnection stress-test
+
+parent: LL-055 | sprint: 7 | priority: low | deadline: —
+added: 2026-05-15 | last_engaged: 2026-05-15
+artifacts: —
+dependencies: BLE provisioning landing in firmware ([post-mini-sprint-bugs.md #6](docs/post-mini-sprint-bugs.md), currently a post-V1 stretch goal)
+
+**Notes:** Spun off from [LL-055](#LL-055) on 2026-05-15. Scope: BLE reconnection behavior after range loss / radio sleep, once `wifi_prov_mgr` BLE pairing is in. Untestable today — V1 firmware ships SoftAP-only provisioning per [post-mini-sprint-bugs.md #6](docs/post-mini-sprint-bugs.md); BLE provisioning is the architecturally-right fix for the cred-error-flow problem but explicitly post-V1. This task is parked-on-dependency, not abandoned: when BLE provisioning lands, reopen and run the same stress-test regime LL-055 is using (drop/restore, jitter under load) against the BLE transport.
 
 ---
 
