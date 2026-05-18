@@ -2,7 +2,7 @@
 title: Task Registry
 type: task-registry
 next_id: LL-077
-updated: 2026-05-15
+updated: 2026-05-18
 
 ---
 
@@ -1204,14 +1204,58 @@ dependencies: LL-026
 ---
 
 <a id="LL-069"></a>
-### [ ] LL-069 — Tax filing setup (WA DOR + federal 1040-ES)
+### [x] LL-069 — Tax filing setup (WA DOR + federal 1040-ES)
 
 sprint: 1 | priority: medium | deadline: 2026-06-15
-added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-18 | resolved: 2026-05-18
+artifacts: DOR welcome letter May 15 2026 (Letter ID L0034471313)
 dependencies: LL-002, LL-026
 
-**Notes:** Two tracks. **Federal 1040-ES:** not required while expected annual tax <$1K — currently zero income, so deferred until revenue lands. Re-evaluate before Jun 15, Sep 15, Jan 15. **WA DOR:** Layered Logic added to My DOR portal May 14; no immediate action items surfaced (consistent with default annual filing for new low-volume businesses). Filing frequency to be confirmed via the welcome letter / physical license arriving by mail — capture it here when it lands. Likely Jan 31, 2027 for any 2026 activity. If revenue lands mid-year that pushes the projection above WA's quarterly threshold, DOR may reclassify; re-check then.
+**Notes:** Setup complete — WA DOR portal access live, filing frequency confirmed via mailed welcome letter. **WA DOR welcome letter (May 15, 2026):** quarterly filing assigned (NOT annual as initially expected when added to portal May 14). UBI / Account ID 606-138-559, Account Type Excise Tax. Must file every quarter even with zero activity (RCW 82.32 zero-return obligation). Standard due dates: Q1 → Apr 30, Q2 → Jul 31, Q3 → Oct 31, Q4 → Jan 31. **First return:** Q1 2026 due Jun 15, 2026 (one-time extension granted based on business open date). Electronic filing required via My DOR per RCW 82.32.080. Recurring quarterly returns tracked as children LL-069-1 through LL-069-4. **Federal 1040-ES:** not required while expected annual tax <$1K — currently zero income, deferred until revenue lands. Re-evaluate before Jun 15, Sep 15, Jan 15. If revenue projection later pushes above thresholds, both tracks need re-check.
+
+---
+
+<a id="LL-069-1"></a>
+#### [ ] LL-069-1 — Q1 2026 WA excise return (Jan 1 – Mar 31)
+
+parent: LL-069 | sprint: 8 | priority: high | deadline: 2026-06-15
+added: 2026-05-18
+artifacts: —
+
+**Notes:** First return on the WA DOR excise account. One-time extended due date Jun 15, 2026 (vs. the standard Apr 30) per welcome-letter terms. Expected to file as "no business activity" — zero sales, zero gross receipts through Q1 2026. File electronically via My DOR. If any revenue lands before filing (e.g., friends-and-family pre-orders), Retailing (0.471%) + Manufacturing (0.484%) B&O classifications from LL-026 apply, and sales-tax collection rules engage.
+
+---
+
+<a id="LL-069-2"></a>
+#### [ ] LL-069-2 — Q2 2026 WA excise return (Apr 1 – Jun 30)
+
+parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-07-31
+added: 2026-05-18
+artifacts: —
+
+**Notes:** Standard quarterly due date Jul 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+
+---
+
+<a id="LL-069-3"></a>
+#### [ ] LL-069-3 — Q3 2026 WA excise return (Jul 1 – Sep 30)
+
+parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-10-31
+added: 2026-05-18
+artifacts: —
+
+**Notes:** Standard quarterly due date Oct 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+
+---
+
+<a id="LL-069-4"></a>
+#### [ ] LL-069-4 — Q4 2026 WA excise return (Oct 1 – Dec 31)
+
+parent: LL-069 | sprint: 8 | priority: medium | deadline: 2027-01-31
+added: 2026-05-18
+artifacts: —
+
+**Notes:** Standard quarterly due date Jan 31, 2027. Zero-activity filing unless revenue lands first. File electronically via My DOR.
 
 ---
 
