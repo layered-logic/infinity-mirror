@@ -12,6 +12,7 @@ idf_component_register(
     SRCS "transport.c"
     INCLUDE_DIRS "."
     REQUIRES
+        auth
         esp_app_format
         esp_event
         esp_http_server

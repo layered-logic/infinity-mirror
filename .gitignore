@@ -7,6 +7,13 @@ business/
 # Obsidian local editor config (per-machine)
 .obsidian/
 
+# VS Code local editor config (per-machine)
+.vscode/
+
+# 3D-model exports from the housing design scripts — bulky binary CAD
+# output, regenerable from the source models. Not worth versioning.
+*.stl
+
 # Obsidian "new file" stubs
 Untitled.*
 

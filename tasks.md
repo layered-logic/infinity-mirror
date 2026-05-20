@@ -756,7 +756,7 @@ dependencies: LL-030, LL-031, LL-036, LL-077
 ### [ ] LL-043 — User interview contact list and outreach
 
 sprint: 4 | priority: medium | deadline: 2026-05-30
-added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-15
+added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-20
 artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
@@ -770,13 +770,15 @@ dependencies: LL-032
 #### [ ] LL-043-1 — Content creator + streamer outreach campaign
 
 parent: LL-043 | sprint: 7 | priority: medium | deadline: 2026-05-30
-added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-15
+added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-20
 artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
 **Notes:** Per-lane scripted cold outreach (streamer / smart-home / maker / press). Ask = 15-20 min on want/need/cool/problematic re: studio backgrounds and functionality. 14-day no-reply window. Streamer/gaming variant uses nano-banana logo-on-prototype render as visual hook — automatable via n8n; smart-home and press variants are manual. Pipeline outlined in [outreach-list.md § n8n workflow](docs/outreach-list.md#n8n-workflow-outline). Verified contacts captured for Smart Home Solver (Reed), DIY Perks, Hardware Haven, Aztecross (fallback); contact-form-only for Hook Up + Everything Smart Home; remaining names pending verification before send.
 
 **May 15 update:** Hardware Haven (Colten) replied → followup sent same day, validates that the logo-render visual hook works beyond just streamers (Lane B / hardware-reuse creator engaged with it). Monday queue staged with 5 NEW targets, all email-verified via web search: Hackaday (`tips@hackaday.com`, Lane D), iFixit (`press@ifixit.com`, Lane E), Tested (`tips@tested.com`, Lane B/D), Strange Parts / Scotty Allen (`scotty@strangeparts.com`, Lane B indie-founder), Hardware Canucks / Dmitry (`dmitry@hardwarecanucks.com`, Lane C gaming/desk). Mix diversifies from yesterday's Lane-A-heavy batch. **bitluni** dropped to channel-blocked (X / Mastodon / Tindie only). **Drafting calibrations** from the Colten reply added to [feedback_cold_outreach_drafts memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_cold_outreach_drafts.md): positioning > specs (even for gear-heads), specific visual references, don't reflect recipient's stated state back, attach visual hook when the question is visual, "legitimate product" > "actually sellable", self-aware parentheticals are valid peer-tone. Also: no em dashes in outgoing prose ([feedback_no_em_dashes memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_no_em_dashes.md)).
+
+**May 20 update:** All 5 Monday-queue targets drafted and staged in [outreach-list.md § Drafted](docs/outreach-list.md#drafted--ready-to-send-wed-may-20-batch) for Bill to review and send: Hackaday (`tips@hackaday.com`), iFixit (`press@ifixit.com`), Tested (`tips@tested.com`), Strange Parts / Scotty Allen (`scotty@strangeparts.com`), Hardware Canucks / Dmitry (`dmitry@hardwarecanucks.com`). Each draft is a per-recipient subject + body tuned to its lane (press tip-line / repair-editorial / indie-maker-story / indie-founder / gaming-desk). Tone per the outreach memories: one-sentence project description, no em dashes, no LLC signature, subjects under 8 words, hedge openers for the two creator contacts. Public-repo link dropped from the press template since the codebase is closed-binary. Sends pending Bill's review; not yet moved to the Sent table.
 
 ---
 
@@ -818,14 +820,16 @@ dependencies: LL-041
 ---
 
 <a id="LL-047"></a>
-### [ ] LL-047 — App design-rationale wireframes (SVG-native, portfolio chapters)
+### [x] LL-047 — App design-rationale wireframes (SVG-native, portfolio chapters)
 
 sprint: 5 | priority: medium | deadline: 2026-06-06
-added: 2026-04-22 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+added: 2026-04-22 | first_engaged: 2026-05-14 | last_engaged: 2026-05-15 | resolved: 2026-05-15
 artifacts: [docs/wireframes/](docs/wireframes/)
 dependencies: —
 
-**Notes:** Originally scoped as "Figma wireframes" but pivoted May 14 to SVG-native lo-fi wireframes paired with markdown rationale docs — works as portfolio chapters that index into the existing decision docs (multi-network-design, button-design-rationale, service-blueprint) rather than parallel artifacts in Figma. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale" — working builds shipped first via [LL-035](#LL-035) mini-sprint, so this is retrospective. Template established with chapter 1 ([settings-wifi](docs/wireframes/settings-wifi.md)). Deadline extended May 9 → Jun 6 to land alongside Week 10 portfolio assembly. Planned chapters: Wi-Fi (✅), Home/Control (color wheel + brightness + pattern), First-boot Setup (SoftAP captive), Mirror picker (multi-mirror discovery), Custom design request (Stage 2b).
+**Notes:** Originally scoped as "Figma wireframes" but pivoted May 14 to SVG-native lo-fi wireframes paired with markdown rationale docs — works as portfolio chapters that index into the existing decision docs (multi-network-design, button-design-rationale, service-blueprint) rather than parallel artifacts in Figma. Per Week 5 plan: "wireframes inform implementation, working builds inform design rationale" — working builds shipped first via [LL-035](#LL-035) mini-sprint, so this is retrospective. Template established with chapter 1 ([settings-wifi](docs/wireframes/settings-wifi.md)). Deadline extended May 9 → Jun 6 to land alongside Week 10 portfolio assembly.
+
+**2026-05-20 — Resolved (tracking catch-up).** All five chapters were authored May 14–15 and merged via PR #19; the registry entry had not been updated. Verified complete: each is an SVG lo-fi wireframe + a paired markdown chapter following the chapter-1 template (TL;DR, journey link, per-callout decisions, alternate states, considered & rejected, research-to-design honesty, implementation gaps, what shipped, references). Chapters: 1 [settings-wifi](docs/wireframes/settings-wifi.md), 2 [home-control](docs/wireframes/home-control.md), 3 [first-boot-setup](docs/wireframes/first-boot-setup.md), 4 [mirror-picker](docs/wireframes/mirror-picker.md), 5 [pattern-designer](docs/wireframes/pattern-designer.md). **Chapter 5 is `pattern-designer`, not the originally-planned "Custom design request (Stage 2b)"** — a sound swap: the custom-order consult flow is an email/web/conversation flow with no App/v1 screen to wireframe, whereas the V2 pattern editor is a genuine app surface (and the natural extension flagged by chapter 2's callout ⑤). All chapters carry `status: draft` (ch5 `speculative-v2`) by design — the design rationale stays provisional until [LL-048](#LL-048) end-buyer interviews validate it.
 
 ---
 
@@ -844,12 +848,14 @@ dependencies: LL-032, LL-043
 <a id="LL-049"></a>
 ### [ ] LL-049 — Coffee shop / showcase partner interviews
 
-sprint: 4 | priority: medium | deadline: 2026-05-16
-added: 2026-04-22
-artifacts: —
+sprint: 4 | priority: medium | deadline: 2026-05-30
+added: 2026-04-22 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20
+artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032, LL-043
 
 **Notes:** Conversations with local coffee shops to understand how they choose artists/makers to showcase. Outline ready (LL-032); contact list pending (LL-043). Distinct audience from end-buyer interviews — different incentives, different decision criteria.
+
+**2026-05-20 — Contact-list scaffold + cafe outreach script built.** Deadline shifted May 16 → May 30 to match the [LL-048](#LL-048) interview window and the campaign's Milestone 3 boundary (the original May 16 date had already passed). [outreach-list.md Lane F](docs/outreach-list.md) reworked from a bullet-list approach into a fillable candidate table (cafe / neighborhood / shows-art-now / familiarity / reach-via / sent / status) with the 5-7-venue method spelled out; named venues are Bill's to fill from a local Maps walk-through — they can't be sourced here without risking a wrong name. New [Variant 4 cafe / showcase-partner script](docs/outreach-list.md#variant-4--cafe--showcase-partner): an in-person spoken opener as the default plus an email / IG-DM fallback, tuned to the owner/manager audience (the ask is "tell me how you decide," not "cover this"). The interviews themselves remain pending — Bill conducts them impromptu against the LL-032 showcase-partner outline once the venue list is filled.
 
 ---
 
@@ -953,16 +959,18 @@ dependencies: LL-001, LL-030
 ---
 
 <a id="LL-057"></a>
-### [ ] LL-057 — App ↔ hardware integration polish
+### [x] LL-057 — App ↔ hardware integration polish
 
-sprint: 8 | priority: medium | deadline: 2026-05-23 (will slip — see Notes)
-added: 2026-03-30 | first_engaged: 2026-05-15 | last_engaged: 2026-05-20
+sprint: 8 | priority: medium | deadline: 2026-05-23
+added: 2026-03-30 | first_engaged: 2026-05-15 | last_engaged: 2026-05-20 | resolved: 2026-05-20
 artifacts: [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-035, LL-040
 
 **Notes:** Per Week 8 plan. Most integration was front-loaded into the LL-035 mini-sprint and LL-040 hardening; this is the polish + remaining-features pass. **Scope locked 2026-05-15 as "wide"** (Bill's call) — telemetry and paired-mode auth stay in-scope. Will slip past May 23; slipping preferred over truncating quality. Bug cascade from the original notes: #1 closed via [LL-055](#LL-055), #2 via [LL-075](#LL-075), #6 parked on BLE provisioning ([LL-055-1](#LL-055-1)).
 
-**Four sessions, each its own build → verify cycle + sprint_log entry:** A — stuck-OTA-button fix ([LL-057-A](#LL-057-A), ✅). B — real OTA progress ([LL-057-B](#LL-057-B), 🟡 architecturally blocked, deferred). C — telemetry MVP ([LL-057-C](#LL-057-C), ✅). D — paired-mode auth ([LL-057-D](#LL-057-D), staged D1–D4; D1–D2 done, D3–D4 remain).
+**Four sessions, each its own build → verify cycle + sprint_log entry:** A — stuck-OTA-button fix ([LL-057-A](#LL-057-A), ✅). B — real OTA progress ([LL-057-B](#LL-057-B), 🟡 architecturally blocked, deferred). C — telemetry MVP ([LL-057-C](#LL-057-C), ✅). D — paired-mode auth ([LL-057-D](#LL-057-D), ✅ D1–D4 done).
+
+**2026-05-20 — Resolved.** A, C, D landed; D (paired-mode auth) completed all four stages on May 20, in the Week 8 window — the predicted slip past May 23 didn't materialize. B (real-time OTA progress) is the one deferred piece: it is architecturally blocked behind moving `ll_ota_start` off the httpd task, stays open as [LL-057-B](#LL-057-B) with forward-compat scaffolding already shipped app-side. The polish pass is otherwise complete. [LL-055-1](#LL-055-1) (BLE reconnection) remains parked-on-dependency, unchanged.
 
 ---
 
@@ -1003,11 +1011,11 @@ dependencies: —
 ---
 
 <a id="LL-057-D"></a>
-#### [ ] LL-057-D — Session D: paired-mode auth
+#### [x] LL-057-D — Session D: paired-mode auth
 
 parent: LL-057 | sprint: 8
-added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20
-artifacts: [Firmware/v1/core/auth/](Firmware/v1/core/auth/) · [Firmware/v1/variants/standard/main.c](Firmware/v1/variants/standard/main.c) · [Firmware/v1/tests/core/auth/test_auth_logic.c](Firmware/v1/tests/core/auth/test_auth_logic.c)
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [Firmware/v1/core/auth/](Firmware/v1/core/auth/) · [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c) · [Firmware/v1/scripts/ll_auth_test.py](Firmware/v1/scripts/ll_auth_test.py) · [App/v1/src/hmac.ts](App/v1/src/hmac.ts) · [App/v1/src/ws-client.ts](App/v1/src/ws-client.ts) · [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-035, LL-040
 
 **Notes:** HMAC-authenticated paired mode per [firmware-security.md §5](docs/firmware-security.md) + [control-protocol-spec.md](docs/control-protocol-spec.md). Scoping doc skipped — §5 already locks the design (pre-shared user secret, HMAC-SHA256 envelope, `hmac`-last canonicalization, no QR/DH/WPS). Staged D1–D4, each a build/flash/verify cycle.
@@ -1016,7 +1024,11 @@ dependencies: LL-035, LL-040
 
 **D2 done 2026-05-20** — `core/auth` wired into the standard variant. `ll_auth_init()` + `ll_auth_subscribe()` added to `variants/standard/main.c` (after `ll_nvs_subscribe`, before provisioning); `auth` added to the variant CMakeLists `REQUIRES`, listed last on purpose — listing it earlier shadows `core/nvs/nvs.h` with IDF's `nvs.h` and breaks `ll_nvs_init`. The factory-reset secret wipe (locked-out recovery) was already in `auth.c`'s subscribe handler from D1. The matter variant is left alone — still a bare scaffold; it picks up auth with every other core module at matter bring-up. Built clean for esp32c3 (2% partition headroom) and OTA-flashed to the live mirror: `fw_version` flipped `telemetry-final-1346` → `cec5bd3-dirty`, device booted clean (no rollback), `uptime_s` 188, WS `get_state` green with `auth_mode=open`.
 
-**Remaining D3–D4** (need the live mirror; will slip past the May 23 Week 8 deadline). D3 — transport auth gate in `handle_envelope()` + `set_auth_mode`/`rotate_secret` ops + replay protection: a per-socket monotonic-`ts` guard plus a device-wide recent-`req_id` dedup cache. D4 — app-side envelope signing (pure-JS HMAC) + pairing UI. **SNTP dropped 2026-05-20** (Bill's call): the device has no wall clock, but the recency-based replay guard is proportionate for this threat model and the device must work offline regardless — so the spec's absolute ±60s `ts` window is replaced by the monotonic-`ts` + `req_id`-dedup approach. `firmware-security.md` §5.4 to be amended to match when D3 lands.
+**SNTP dropped 2026-05-20** (Bill's call): the device has no wall clock, but the recency-based replay guard is proportionate for this threat model and the device must work offline regardless — so the spec's absolute ±60s `ts` window is replaced by a monotonic-`ts` + `req_id`-dedup approach.
+
+**D3 done 2026-05-20** — transport auth gate live. [`core/transport/transport.c`](Firmware/v1/core/transport/transport.c): a paired-mode gate in `handle_envelope()` (HMAC verify → `ts`/`req_id` presence → replay checks, all skipped in open mode so open-mode behavior is byte-identical to pre-LL-057-D); the `set_auth_mode` + `rotate_secret` wire ops; replay protection via a per-socket monotonic-`ts` guard (8 slots, reset on each handshake) plus a 32-entry device-wide `req_id` dedup ring. New `ll_auth_secret_matches()` in `core/auth/` backs the `rotate_secret` old-secret check; `auth` added to transport's CMake `REQUIRES`. Built for esp32c3 (**1% partition headroom** — the telemetry CA bundle dominates; flagged for trimming), OTA-flashed `d3auth-1349` to the live mirror, clean boot. Verified via new [`scripts/ll_auth_test.py`](Firmware/v1/scripts/ll_auth_test.py) — **16/16 checks**: open-mode regression, gate (unsigned → `auth_required`, signed OK, tampered → `bad_hmac`), replay (duplicate `req_id` and stale `ts` → `stale_ts`), `rotate_secret` (old secret invalidated, wrong `old_secret` → `bad_payload`), authenticated unpair. [`firmware-security.md`](docs/firmware-security.md) §5.4 and [`control-protocol-spec.md`](docs/control-protocol-spec.md) §3.1/§8 amended to the recency-based replay model. Mirror left in open mode.
+
+**D4 done 2026-05-20** — app-side paired-mode support. New [`App/v1/src/hmac.ts`](App/v1/src/hmac.ts): vendored pure-TS SHA-256 (FIPS 180-4) + HMAC-SHA256 (RFC 2104) — Hermes has no dependable WebCrypto and signing must not pull a native dependency. [`ws-client.ts`](App/v1/src/ws-client.ts) gained `setSecret()`, the `hmac`-last frame signing in a new `frameFor()` (signed region = envelope JSON minus its closing brace, matching `auth_logic.c`), and `setAuthMode` / `rotateSecret` ops. [`App.tsx`](App/v1/App.tsx) gained a Settings → Pairing section (require-a-passphrase / change-passphrase / remove-passphrase forms) and a controls-screen unlock block for a paired mirror the app holds no secret for — a rejected `get_state` flips a `needsSecret` flag. The secret is held in memory only (not persisted — a paired mirror re-prompts after an app restart, same posture as the un-persisted mirror URL; flagged as a V1 limitation). `tsc --noEmit` clean except the 4 pre-existing DOM-lib errors (`crypto` / `MessageEvent`) that predate this work. `hmac.ts` verified byte-exact against Node's `crypto` over 8 cases (SHA-256 KATs, a realistic envelope region, the >64-byte hashed-key path, Unicode) — since the device matched Python's HMAC in D3 (16/16) and Python == Node == FIPS, the app's signatures will verify on the mirror. Runtime UI verification (the pairing screens on a real Pixel 9) deferred to Bill's next session, per the LL-057-A precedent. **LL-057-D complete (D1–D4 all done).**
 
 ---
 
@@ -1295,6 +1307,22 @@ artifacts: [docs/assembly-guide.md](docs/assembly-guide.md)
 dependencies: —
 
 **Notes:** Created 2026-05-20 as the operations-track prerequisite [LL-042](#LL-042) (User Repair Guide) had been blocked on since Week 4 — the repair guide needs a teardown procedure, and no procedural build/teardown document existed (only a station-details CSV, a build-cost spreadsheet, and housing STL/Python files). Written at [docs/assembly-guide.md](docs/assembly-guide.md): tools/workspace, per-unit parts inventory, the three sub-assemblies (frame / LED / controller), the 20-station manufacturing build sequence (S01–S20), final assembly, and §7 — the teardown/access procedure LL-042 consumes. Authored from `Assembly_docs/LED_Mirror_Station_Details.csv`, the `Assembly_docs/basic_housing/` scripts, [repair-design-decisions.md](docs/repair-design-decisions.md), and the [BOM](docs/bom-breakdown-basic-6x6.md). Open items flagged in the doc: assembly times pending the golden-sample build; the `basic_housing/` model is still dimensioned for the old STM8 test board and needs re-confirming against the ESP32-C3 controller PCB.
+
+---
+
+<a id="LL-078"></a>
+### [x] LL-078 — Webapp paired-mode support
+
+sprint: 8 | priority: medium | deadline: 2026-05-23
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [Firmware/v1/webapp/src/hmac.ts](Firmware/v1/webapp/src/hmac.ts) · [Firmware/v1/webapp/src/ws-client.ts](Firmware/v1/webapp/src/ws-client.ts) · [Firmware/v1/webapp/src/pages/settings.tsx](Firmware/v1/webapp/src/pages/settings.tsx) · [Firmware/v1/webapp/src/app.tsx](Firmware/v1/webapp/src/app.tsx)
+dependencies: LL-057-D
+
+**Notes:** The webapp counterpart to [LL-057-D](#LL-057-D) D4. After D4 the mobile app could pair a mirror, but the device-hosted webapp had no pairing UI and couldn't sign frames — so enabling paired mode would lock the webapp out entirely. Bill flagged this 2026-05-20 (he could see `auth_mode: open` in the webapp's diagnostics but had no control to change it). Closes the webapp limitation [firmware-security.md §5.4](docs/firmware-security.md) had documented.
+
+Mirrors the D4 work into [Firmware/v1/webapp/](Firmware/v1/webapp/): new `hmac.ts` (vendored pure-TS SHA-256 + HMAC-SHA256 — the webapp is served over plain HTTP, not a secure context, so `crypto.subtle` is unavailable; byte-identical to App/v1's copy); `ws-client.ts` gained `setSecret()`, `hmac`-last frame signing (`frameFor()`), and the `setAuthMode` / `rotateSecret` ops; `settings.tsx` gained a pairing panel (require / change / remove a passphrase); `app.tsx` gained a needs-secret unlock screen and owns the secret. **The webapp persists the secret in `localStorage`** (works over plain HTTP, unlike the secure-context crypto APIs) so a paired mirror doesn't re-prompt on every page load — a deliberate divergence from the mobile app's in-memory-only secret, each fitting its platform.
+
+Webapp built clean (`tsc -b` + vite; bundle 13.9 KB gzipped), embedded in firmware `webauth-1444`, OTA-flashed to the live mirror. **Verified end-to-end in a browser** against the device-hosted webapp: the pairing panel renders; enabling pairing flips the device to `auth_mode: paired`; a signed `set_state` (color change) is accepted by the paired device's gate; and a full page reload re-authenticates transparently from the persisted secret with no re-prompt. The `remove passphrase` action uses `window.confirm` (same as factory reset) — fine for a real user, though it blocks browser automation, so the unpair leg was confirmed at the protocol level instead. Mirror left in open mode.
 
 ---
 

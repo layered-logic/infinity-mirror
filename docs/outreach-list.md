@@ -71,6 +71,143 @@ Gates:
 
 ---
 
+## Drafted — ready to send (Wed May 20 batch)
+
+The 5-target Monday queue, drafted and ready for Bill to review and send. Send window is Mon–Thu morning recipient-local; **Wed May 20 is a valid day**. After sending, move each row to the [Sent](#sent) tables and strike it from [Candidates](#candidates--next-round).
+
+All five contacts were email-verified via web search on May 15. Re-confirm the address on the channel's About / contact page if it's been longer.
+
+### 1. Hackaday (Lane D — press tip-line)
+
+**To:** `tips@hackaday.com` · **Subject:** ESP32-C3 infinity mirror, built repair-first
+
+```
+Hi Hackaday team,
+
+Sharing a project in case it's a fit for the blog: a 6x6 ESP32-C3 infinity
+mirror I built around repairability. It comes apart with no tools, the LED
+strips and controller swap out on JST connectors, and it runs self-hosted
+OTA so the firmware stays serviceable.
+
+A couple of things that might be column-shaped: the whole control surface is
+a local WebSocket protocol with an app, a device-hosted webapp, and physical
+buttons, each meant for a different situation. And the repair philosophy is
+operationalized down in the BOM, not just stated as a value.
+
+Happy to send photos, a short demo video, and the failure-mode and repair
+documentation if you'd like a closer look.
+
+Thanks so much,
+Bill
+```
+
+*Optional attachment:* one prototype photo. Hackaday tips are stronger with a visual.
+
+### 2. iFixit (Lane E — repair-voices editorial)
+
+**To:** `press@ifixit.com` · **Subject:** An infinity mirror designed to be repaired
+
+```
+Hi iFixit team,
+
+I'm an engineering student, and for the last few months I've been building
+an infinity mirror with repairability as the starting constraint, not an
+afterthought.
+
+In practice that meant it comes apart with no tools, the LED strips and
+controller swap out on connectors instead of solder, and I wrote the full
+failure-mode and repair documentation before the product ships rather than
+after.
+
+I thought it might interest you as a small example of designing a consumer
+light product the way iFixit argues products should be designed. Happy to
+send photos, the repair docs, and a teardown if you'd like a look.
+
+Thanks so much,
+Bill
+```
+
+*Optional attachment:* one prototype photo.
+
+### 3. Tested (Lane B/D — indie maker story)
+
+**To:** `tips@tested.com` · **Subject:** Infinity mirror, one-person hardware venture
+
+```
+Hi Tested team,
+
+I've been following the indie-maker stories you cover, and I wanted to share
+one in case it fits.
+
+I'm an engineering student building an ESP32 infinity mirror, and I've been
+taking it the whole distance a real product needs: brand, firmware, an app,
+repair documentation, packaging, and the business side, all as a one-person
+venture. It started as a single-button desk gadget and turned into something
+I'm trying to make legitimate.
+
+No pitch here, just thought the solo build-it-all-yourself angle is the kind
+of thing Tested tends to champion. Happy to send photos and a short video if
+you'd like to see it.
+
+Thanks so much,
+Bill
+```
+
+*Optional attachment:* one prototype photo.
+
+### 4. Strange Parts — Scotty Allen (Lane B — indie-founder)
+
+**To:** `scotty@strangeparts.com` · **Subject:** Quick question from another hardware tinkerer
+
+```
+Hey Scotty,
+
+Realize you probably get a lot of these, so I'll keep it short.
+
+I'm an engineering student turning an infinity mirror from a hobby project
+into a small hardware product, doing the whole thing solo: firmware, app,
+brand, the business side. You've documented that messy hobby-to-product jump
+in a way most people skip past, which is why I'm writing to you specifically.
+
+Would you have 15 or 20 minutes sometime in the next couple weeks for a call?
+I'd genuinely value your read on where this kind of project tends to go wrong
+on the way to becoming something real. If a call is too much, even a few
+sentences back would help.
+
+Thanks so much,
+Bill
+```
+
+*Opener alternatives:* if Bill has a specific Strange Parts video to reference, swap the hedge line for a one-sentence honest reference to it (don't fake familiarity). Otherwise the hedge stands. No attachment — the ask is about the project journey, not visual.
+
+### 5. Hardware Canucks — Dmitry (Lane C — gaming/desk)
+
+**To:** `dmitry@hardwarecanucks.com` · **Subject:** Ambient lighting piece for desk setups
+
+```
+Hey Dmitry,
+
+Realize you probably get a lot of these, so I'll be quick.
+
+I'm an engineering student building an ESP32 infinity mirror meant to live in
+a setup as ambient lighting, the kind of thing that ends up behind a desk or
+on a shelf in a build shot. It runs custom patterns and works on its own
+without needing a smart-home hub.
+
+Hardware Canucks works ambient lighting into build content now and then, so
+before I lock the v1 feature set I'd love your read on how you'd size it up
+for that kind of audience. Even a few sentences back would be a big help.
+
+Thanks so much,
+Bill
+```
+
+*Optional attachment:* one prototype photo (the question is partly visual). *Opener alternatives:* swap the hedge for a specific-build reference if Bill has one in mind.
+
+> **Drafting notes:** No public repo link included — the codebase is closed-binary (open-source-on-founder-exit), so "documented publicly at {repo}" from the Variant 3 template is dropped; press contacts get an offer to send docs instead. No LLC signature per [feedback_cold_outreach_drafts](../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_cold_outreach_drafts.md). No em dashes. Subject lines all under 8 words.
+
+---
+
 ## Candidates — next round
 
 > **Verification status legend:** ✅ contact info confirmed via web search; ⚠️ channel confirmed but contact is form-only or social DM; ❓ name needs verification before sending. Verify the email is still current via the channel's About page before pasting into n8n.
@@ -127,15 +264,23 @@ Lower commitment for them = higher hit rate for us. Written coverage indexes int
 | iFixit editorial | Blog | Corporate, well-aligned, professional. Safe yes. Press contact on iFixit.com. |
 | Louis Rossmann | YouTube | The loudest repair-advocacy voice. Controversial / abrasive — brand-association decision required before sending. |
 
-### Lane F — Coffee shops ([LL-049](../tasks.md#LL-049))
+### Lane F — Coffee shops / showcase partners ([LL-049](../tasks.md#LL-049))
 
-Can't name these from training data. Approach:
-1. **Maps walk-through** of U-District, Capitol Hill, Ballard. Note any cafe that already rotates local-artist work — they have a process to describe.
-2. **3-5 cafes you visit regularly** — warm-by-familiarity even though it's cold outreach.
-3. **1-2 cafes that don't currently showcase art** — control case for "why not?"
+Distinct from the creator lanes: these contacts can't be named from training data, and most are reached in person rather than by email. **Bill builds the named list from a local pass** — the cafe names are local knowledge, and guessing them here would just risk a wrong name. This section is the scaffold and the method; the table below is Bill's to fill.
+
+**How to build the list — target 5-7 venues:**
+1. **Maps walk-through** of U-District, Capitol Hill, Ballard. Note any cafe that already rotates local-artist work — they have a real process to describe, which makes the highest-value interview.
+2. **3-5 cafes Bill visits regularly** — warm-by-familiarity even though the ask is cold. The easiest yeses.
+3. **1-2 cafes that don't currently showcase art** — the control case: "why not?" is as informative as "how?"
 4. **Stretch:** a co-working space or barber shop — same ambient-display dynamic, different economics.
 
-Open questions to ask (from [stakeholder-map.md §2.6](stakeholder-map.md#26-local-showroom-partners-coffee-shops--small-businesses)): space-negotiation model, SLA, liability for displayed art, power-outlet constraints, power-draw cost.
+**What to leave each conversation with** (from [stakeholder-map.md §2.6](stakeholder-map.md#26-local-showroom-partners-coffee-shops--small-businesses) + the [showcase-partner interview outline](user-interview-outline.md)): how they source artists, the yes/no signals, the economics (commission / wall rent / goodwill), install + power constraints, and whether an LED piece is the wrong vibe for the space.
+
+**Approach + message:** [Outreach scripts → Variant 4](#variant-4--cafe--showcase-partner). In person is the default; an email / Instagram-DM fallback is there for venues a walk-in doesn't fit.
+
+| Cafe / venue | Neighborhood | Shows art now? | Familiarity | Reach via | Sent | Status |
+|---|---|---|---|---|---|---|
+| _(one row per venue from the walk-through)_ | | | | | | |
 
 ### Lane G — End-buyer interview slots ([LL-048](../tasks.md#LL-048))
 
@@ -234,6 +379,40 @@ Happy to answer questions or send a unit out for closer look.
 
 — Bill (Layered Logic, layeredlogic.cc)
 ```
+
+### Variant 4 — Cafe / showcase partner
+
+For: [Lane F](#lane-f--coffee-shops--showcase-partners-ll-049) — local cafes, co-working spaces, any venue that hosts makers on its walls. The audience is an owner or manager, not a creator with a following, so the ask is different: not "would you cover this" but "would you tell me how you decide." The [showcase-partner interview outline](user-interview-outline.md) is the conversation guide once someone says yes.
+
+**Default: in person.** Walk in at a quiet hour (mid-afternoon, not the morning rush). Ask whoever's at the counter whether the owner or manager is around, or when they usually are. Spoken opener:
+
+> Hi, I'm Bill, a UW student working on a small lighting and art project. I'm not selling anything. I'm trying to learn how cafes like yours decide who gets to show work on the walls. Could I ask whoever handles that a few questions sometime, fifteen or twenty minutes?
+
+If yes, run the interview outline. If not now, get the best time or channel to reach the manager and come back.
+
+**Fallback: email / Instagram DM** — for venues where a walk-in doesn't fit, or that list a contact and would rather hear first.
+
+```
+Subject: Quick question from a UW student
+
+Hi {cafe name} team,
+
+I'm a UW student working on a small lighting and art project, and I'm
+trying to learn how cafes choose the local makers and artists they show
+on their walls.
+
+Could I stop by and ask whoever handles that a few questions sometime?
+Fifteen or twenty minutes, no pitch, I just want to understand how the
+decision actually gets made.
+
+If a visit doesn't work, even a couple of sentences on how you pick
+would be a real help.
+
+Thanks so much,
+Bill
+```
+
+Same tone as the creator variants: one-sentence project description, no spec list, no LLC signature, no em dashes. Both the spoken opener and the email keep one self-disclosure — "I'm not selling anything" / "no pitch" — because a cafe owner's default read of a stranger asking about wall space is a sales pitch, and naming that up front clears it.
 
 ---
 

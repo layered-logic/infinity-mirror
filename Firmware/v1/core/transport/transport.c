@@ -14,8 +14,10 @@
  * Threading: start_server / stop_server run on the state-bus event
  * loop (single task → no races). The WS handler runs on the httpd
  * task; it only reads g_server transitively via the framework's
- * sockfd table, never touches it directly. Open auth mode means no
- * shared mutable state to guard yet. State broadcasts run on a
+ * sockfd table, never touches it directly. The paired-mode auth gate,
+ * the rate-limiter table, and the replay-guard tables are all touched
+ * only by that single httpd task, so they need no locking. State
+ * broadcasts run on a
  * dedicated ll_broadcast task: the debounce timer fires on the
  * esp_timer task and posts a token to s_broadcast_q; the broadcast
  * task consumes tokens and runs the fanout loop, so socket sends to
@@ -40,6 +42,7 @@
 #include "freertos/task.h"
 #include "lwip/sockets.h"
 
+#include "auth.h"
 #include "ll_wifi.h"
 #include "ota.h"
 #include "provisioning.h"
@@ -658,6 +661,145 @@ static void op_start_ota(cJSON *resp, const cJSON *payload)
     cJSON_AddStringToObject(err, "message", esp_err_to_name(r));
 }
 
+/* ---- auth ops (LL-057-D — control-protocol-spec.md §4.3) ---------
+ *
+ * set_auth_mode flips the device between open and paired mode;
+ * rotate_secret changes the shared secret without leaving paired mode.
+ * The paired-mode auth gate (auth_gate_check, further down) authenticates
+ * every inbound frame once auth_mode is PAIRED — so in paired mode both
+ * ops are only reachable by a client already holding the current secret.
+ * That is exactly firmware-security.md §5.2's "only authenticated clients
+ * can disable paired mode" rule, enforced by the gate rather than re-
+ * checked here. In open mode the gate is dormant, so any LAN client can
+ * enable paired mode (also per §5.2).
+ */
+
+/* Shared error-response shape: ok=false, result=null, error={code,message}.
+ * The pre-LL-057-D op handlers above open-code this; the auth ops use the
+ * helper to keep their several failure branches readable. */
+static void resp_set_error(cJSON *resp, const char *code, const char *message)
+{
+    cJSON_AddBoolToObject(resp, "ok", false);
+    cJSON_AddNullToObject(resp, "result");
+    cJSON *err = cJSON_AddObjectToObject(resp, "error");
+    cJSON_AddStringToObject(err, "code",    code);
+    cJSON_AddStringToObject(err, "message", message);
+}
+
+static void op_set_auth_mode(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        resp_set_error(resp, "bad_payload",
+                       "set_auth_mode requires an object payload");
+        return;
+    }
+
+    const char *mode = cJSON_GetStringValue(cJSON_GetObjectItem(payload, "mode"));
+    if (!mode) {
+        resp_set_error(resp, "bad_payload",
+                       "mode must be \"open\" or \"paired\"");
+        return;
+    }
+
+    if (strcmp(mode, "paired") == 0) {
+        const char *secret =
+            cJSON_GetStringValue(cJSON_GetObjectItem(payload, "secret"));
+        if (!secret || !secret[0]) {
+            resp_set_error(resp, "bad_payload",
+                           "enabling paired mode requires a non-empty `secret`");
+            return;
+        }
+        /* Persist the secret BEFORE flipping auth_mode so there is never a
+         * window where the device reports paired with no secret held. */
+        esp_err_t err = ll_auth_set_secret(secret);
+        if (err != ESP_OK) {
+            resp_set_error(resp, "bad_payload",
+                           err == ESP_ERR_INVALID_ARG
+                               ? "secret must be 1-63 characters"
+                               : esp_err_to_name(err));
+            return;
+        }
+        ll_ev_auth_mode_payload_t p = { .mode = LL_AUTH_PAIRED };
+        ll_state_bus_post(LL_EV_AUTH_MODE, &p);
+        ESP_LOGI(TAG, "auth mode -> paired");
+
+        cJSON_AddBoolToObject(resp, "ok", true);
+        cJSON *result = cJSON_AddObjectToObject(resp, "result");
+        cJSON_AddStringToObject(result, "mode", "paired");
+        cJSON_AddNullToObject(resp, "error");
+        return;
+    }
+
+    if (strcmp(mode, "open") == 0) {
+        /* In paired mode this op is only reached through a verified frame
+         * (the gate ran first) — so this is the authenticated unpair. */
+        ll_auth_clear_secret();
+        ll_ev_auth_mode_payload_t p = { .mode = LL_AUTH_OPEN };
+        ll_state_bus_post(LL_EV_AUTH_MODE, &p);
+        ESP_LOGI(TAG, "auth mode -> open");
+
+        cJSON_AddBoolToObject(resp, "ok", true);
+        cJSON *result = cJSON_AddObjectToObject(resp, "result");
+        cJSON_AddStringToObject(result, "mode", "open");
+        cJSON_AddNullToObject(resp, "error");
+        return;
+    }
+
+    resp_set_error(resp, "bad_payload",
+                   "mode must be \"open\" or \"paired\"");
+}
+
+static void op_rotate_secret(cJSON *resp, const cJSON *payload)
+{
+    if (!cJSON_IsObject(payload)) {
+        resp_set_error(resp, "bad_payload",
+                       "rotate_secret requires an object payload");
+        return;
+    }
+    if (!ll_auth_is_paired()) {
+        resp_set_error(resp, "bad_payload",
+                       "rotate_secret is only valid in paired mode");
+        return;
+    }
+
+    const char *old_secret =
+        cJSON_GetStringValue(cJSON_GetObjectItem(payload, "old_secret"));
+    const char *new_secret =
+        cJSON_GetStringValue(cJSON_GetObjectItem(payload, "new_secret"));
+    if (!old_secret || !new_secret || !new_secret[0]) {
+        resp_set_error(resp, "bad_payload",
+                       "rotate_secret requires `old_secret` and a non-empty `new_secret`");
+        return;
+    }
+
+    /* The envelope HMAC has already proven the caller holds the current
+     * secret (the gate ran). Verifying `old_secret` on top of that turns a
+     * mistyped current passphrase in the app's rotate form into a clean
+     * error instead of silently rotating to something unintended. */
+    if (!ll_auth_secret_matches(old_secret)) {
+        resp_set_error(resp, "bad_payload",
+                       "old_secret does not match the current secret");
+        return;
+    }
+
+    esp_err_t err = ll_auth_set_secret(new_secret);
+    if (err != ESP_OK) {
+        resp_set_error(resp, "bad_payload",
+                       err == ESP_ERR_INVALID_ARG
+                           ? "new_secret must be 1-63 characters"
+                           : esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "shared secret rotated");
+
+    /* auth_mode is unchanged (still paired) and the secret is not part of
+     * ll_state_t — no event post, no broadcast. The caller updates its
+     * local secret on the ok response and signs later frames with it. */
+    cJSON_AddBoolToObject(resp, "ok", true);
+    cJSON_AddObjectToObject(resp, "result");
+    cJSON_AddNullToObject(resp, "error");
+}
+
 /* ---- /api/info HTTP endpoint ------------------------------------- */
 
 /* Single-roundtrip discovery payload. The RN app's findMirrors scans the
@@ -714,7 +856,175 @@ static esp_err_t send_text_frame(httpd_req_t *req, const char *json, size_t len)
     return httpd_ws_send_frame(req, &frame);
 }
 
-static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
+/* ---- paired-mode auth gate + replay protection (LL-057-D) ---------
+ *
+ * firmware-security.md §5.4. When auth_mode is PAIRED, every inbound
+ * frame must carry a valid HMAC-SHA256 (ll_auth_verify) and survive a
+ * two-part replay check:
+ *
+ *   - per-socket monotonic ts — a frame's `ts` must be >= the highest
+ *     `ts` already accepted on that socket. Stops in-band replay and
+ *     reordering on a live connection.
+ *   - device-wide req_id dedup — a small ring of recently-accepted
+ *     `req_id`s. A frame whose req_id is still in the ring is rejected.
+ *     Stops a captured frame being replayed on a fresh connection,
+ *     where the per-socket ts guard has reset to 0.
+ *
+ * SNTP was dropped (the device has no wall clock), so the spec's
+ * absolute +-60s `ts` window is replaced by this recency model. The
+ * residual window is honest: a frame can be replayed once its req_id
+ * has aged out of the ring AND on a new socket. Given the threat model
+ * (local network, non-sensitive mirror state — firmware-security §5.5)
+ * that is proportionate.
+ *
+ * All state here is touched only by the single httpd WS task — no
+ * locking, same as s_rl_table.
+ */
+
+#define LL_REPLAY_TS_SLOTS    8     /* one per the spec §7.1 8-client cap     */
+#define LL_REPLAY_REQID_N     32    /* recent req_ids retained for dedup      */
+#define LL_REPLAY_REQID_BUFSZ 48    /* UUIDv4 is 36 chars; longer ids truncate */
+
+typedef struct {
+    int     fd;           /* socket fd; -1 = slot unused                  */
+    int64_t last_ts;      /* highest `ts` accepted on this socket         */
+    int64_t touched_us;   /* esp_timer time of last touch — eviction key  */
+} replay_ts_entry_t;
+
+static replay_ts_entry_t s_replay_ts[LL_REPLAY_TS_SLOTS];
+static char    s_replay_reqid[LL_REPLAY_REQID_N][LL_REPLAY_REQID_BUFSZ];
+static uint8_t s_replay_reqid_head;   /* ring write cursor */
+
+/* Find the ts slot for `fd`, allocating one (last_ts=0) if absent.
+ * Eviction on a full table: oldest touched_us, so a closed socket's
+ * stale slot ages out. The table cannot overflow for live connections
+ * (the spec caps concurrent clients at 8 == LL_REPLAY_TS_SLOTS). */
+static int replay_ts_slot(int fd)
+{
+    int free_slot = -1, oldest = 0;
+    int64_t oldest_us = s_replay_ts[0].touched_us;
+    for (int i = 0; i < LL_REPLAY_TS_SLOTS; i++) {
+        if (s_replay_ts[i].fd == fd) {
+            return i;
+        }
+        if (s_replay_ts[i].fd == -1 && free_slot < 0) {
+            free_slot = i;
+        }
+        if (s_replay_ts[i].touched_us < oldest_us) {
+            oldest_us = s_replay_ts[i].touched_us;
+            oldest = i;
+        }
+    }
+    int slot = (free_slot >= 0) ? free_slot : oldest;
+    s_replay_ts[slot].fd         = fd;
+    s_replay_ts[slot].last_ts    = 0;
+    s_replay_ts[slot].touched_us = esp_timer_get_time();
+    return slot;
+}
+
+/* Reset the per-socket ts guard on a fresh WS handshake. Keying by fd
+ * alone is not enough — the OS recycles fd numbers, so a new connection
+ * can land on a closed connection's slot; this clears the inherited
+ * last_ts so the new client's first frame is not judged against it. */
+static void replay_ts_handshake(int fd)
+{
+    int s = replay_ts_slot(fd);
+    s_replay_ts[s].last_ts    = 0;
+    s_replay_ts[s].touched_us = esp_timer_get_time();
+}
+
+/* True if `ts` is acceptable on `fd` (monotonic non-decreasing). Read-only
+ * — the accepted ts is committed separately so a later dedup failure does
+ * not advance the guard. */
+static bool replay_ts_ok(int fd, int64_t ts)
+{
+    return ts >= s_replay_ts[replay_ts_slot(fd)].last_ts;
+}
+
+static void replay_ts_commit(int fd, int64_t ts)
+{
+    int s = replay_ts_slot(fd);
+    s_replay_ts[s].last_ts    = ts;
+    s_replay_ts[s].touched_us = esp_timer_get_time();
+}
+
+/* True if `req_id` is in the recent-accepted ring (i.e. a replay). */
+static bool replay_reqid_seen(const char *req_id)
+{
+    for (int i = 0; i < LL_REPLAY_REQID_N; i++) {
+        if (s_replay_reqid[i][0] != '\0' &&
+            strncmp(s_replay_reqid[i], req_id, LL_REPLAY_REQID_BUFSZ - 1) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void replay_reqid_record(const char *req_id)
+{
+    char *slot = s_replay_reqid[s_replay_reqid_head];
+    strncpy(slot, req_id, LL_REPLAY_REQID_BUFSZ - 1);
+    slot[LL_REPLAY_REQID_BUFSZ - 1] = '\0';
+    s_replay_reqid_head = (uint8_t)((s_replay_reqid_head + 1) % LL_REPLAY_REQID_N);
+}
+
+/* Run the paired-mode gate on one inbound frame. Returns NULL when the
+ * frame is authentic and fresh (committing its ts + req_id as a side
+ * effect); otherwise returns a control-protocol-spec §8 error code and
+ * sets *msg. Caller must only invoke this when ll_auth_is_paired(). */
+static const char *auth_gate_check(httpd_req_t *req, const cJSON *envelope,
+                                   const char *json, size_t len,
+                                   const char **msg)
+{
+    /* 1. HMAC signature over the raw frame bytes. */
+    switch (ll_auth_verify(json, len)) {
+    case LL_AUTH_OK:
+        break;
+    case LL_AUTH_UNSIGNED:
+        *msg = "paired mode active: an `hmac` signature is required";
+        return "auth_required";
+    case LL_AUTH_NO_SECRET:
+        *msg = "paired mode active but no secret is stored — "
+               "factory reset (recessed button) to recover";
+        return "bad_hmac";
+    case LL_AUTH_BAD_HMAC:
+    default:
+        *msg = "`hmac` signature did not verify";
+        return "bad_hmac";
+    }
+
+    /* 2. ts + req_id must be present (spec §3.1 — both required). */
+    const cJSON *ts_item = cJSON_GetObjectItem(envelope, "ts");
+    if (!cJSON_IsNumber(ts_item)) {
+        *msg = "paired mode requires a numeric `ts`";
+        return "bad_payload";
+    }
+    const char *req_id =
+        cJSON_GetStringValue(cJSON_GetObjectItem(envelope, "req_id"));
+    if (!req_id || !req_id[0]) {
+        *msg = "paired mode requires a non-empty `req_id`";
+        return "bad_payload";
+    }
+
+    /* 3. Replay — per-socket monotonic ts, then device-wide req_id dedup.
+     * Neither is committed until both pass, so a dedup hit does not
+     * advance the ts guard. */
+    int     fd = httpd_req_to_sockfd(req);
+    int64_t ts = (int64_t)cJSON_GetNumberValue(ts_item);
+    if (!replay_ts_ok(fd, ts)) {
+        *msg = "`ts` is older than the last accepted frame on this connection";
+        return "stale_ts";
+    }
+    if (replay_reqid_seen(req_id)) {
+        *msg = "duplicate `req_id` — frame rejected as a replay";
+        return "stale_ts";
+    }
+    replay_ts_commit(fd, ts);
+    replay_reqid_record(req_id);
+    return NULL;
+}
+
+static esp_err_t handle_envelope(httpd_req_t *req, const char *json, size_t len)
 {
     cJSON *envelope = cJSON_Parse(json);
     if (!envelope) {
@@ -734,7 +1044,19 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
     cJSON_AddStringToObject(resp, "op",     op     ? op     : "");
     cJSON_AddStringToObject(resp, "req_id", req_id ? req_id : "");
 
-    if (op && strcmp(op, "ping") == 0) {
+    /* Paired-mode auth gate (LL-057-D). Skipped entirely in open mode, so
+     * behavior there is byte-identical to pre-LL-057-D firmware. */
+    const char *gate_code = NULL;
+    const char *gate_msg  = NULL;
+    if (ll_auth_is_paired()) {
+        gate_code = auth_gate_check(req, envelope, json, len, &gate_msg);
+    }
+
+    if (gate_code) {
+        ESP_LOGW(TAG, "auth gate rejected op=%s: %s",
+                 op ? op : "(none)", gate_code);
+        resp_set_error(resp, gate_code, gate_msg);
+    } else if (op && strcmp(op, "ping") == 0) {
         cJSON_AddBoolToObject(resp, "ok", true);
         cJSON_AddItemToObject(resp, "result", result_for_ping());
         cJSON_AddNullToObject(resp, "error");
@@ -758,6 +1080,10 @@ static esp_err_t handle_envelope(httpd_req_t *req, const char *json)
         op_factory_reset(resp);
     } else if (op && strcmp(op, "start_ota") == 0) {
         op_start_ota(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "set_auth_mode") == 0) {
+        op_set_auth_mode(resp, cJSON_GetObjectItem(envelope, "payload"));
+    } else if (op && strcmp(op, "rotate_secret") == 0) {
+        op_rotate_secret(resp, cJSON_GetObjectItem(envelope, "payload"));
     } else {
         cJSON_AddBoolToObject(resp, "ok", false);
         cJSON_AddNullToObject(resp, "result");
@@ -896,7 +1222,11 @@ static esp_err_t ws_handler(httpd_req_t *req)
      * connection: once for the upgrade handshake (method=HTTP_GET)
      * and again for each subsequent frame (other methods). */
     if (req->method == HTTP_GET) {
-        ESP_LOGI(TAG, "ws handshake from sock=%d", httpd_req_to_sockfd(req));
+        int fd = httpd_req_to_sockfd(req);
+        ESP_LOGI(TAG, "ws handshake from sock=%d", fd);
+        /* Reset the per-socket replay guard before this connection's first
+         * frame — the fd may have been recycled (see auth_gate_check). */
+        replay_ts_handshake(fd);
         return ESP_OK;
     }
 
@@ -942,7 +1272,7 @@ static esp_err_t ws_handler(httpd_req_t *req)
             free(buf);
             return ESP_OK;
         }
-        err = handle_envelope(req, (const char *)buf);
+        err = handle_envelope(req, (const char *)buf, frame.len);
     }
     /* Binary / ping / pong frames: ignored at the app layer for
      * Session 1. The httpd layer handles WS protocol-level ping/pong
@@ -1198,6 +1528,13 @@ esp_err_t ll_transport_init(void)
      * it's ready before the first LL_EV_STATE_CHANGED can fire. The
      * queue must exist before the task is spawned (the task blocks on
      * xQueueReceive from boot). */
+
+    /* Mark every per-socket replay slot unused. fd 0 is a valid socket,
+     * so -1 is the sentinel (static zero-init would falsely claim fd 0). */
+    for (int i = 0; i < LL_REPLAY_TS_SLOTS; i++) {
+        s_replay_ts[i].fd = -1;
+    }
+
     s_broadcast_q = xQueueCreate(LL_BROADCAST_QUEUE_LEN, sizeof(uint8_t));
     if (!s_broadcast_q) {
         ESP_LOGE(TAG, "broadcast queue create failed");

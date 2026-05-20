@@ -56,6 +56,11 @@ esp_err_t ll_auth_set_secret(const char *secret);
  * and the paired-to-open transition. */
 esp_err_t ll_auth_clear_secret(void);
 
+/* Constant-time compare of `candidate` against the cached secret. Returns
+ * false for a NULL candidate, when no secret is held, or on mismatch. Used
+ * by the rotate_secret op to confirm the caller-supplied `old_secret`. */
+bool ll_auth_secret_matches(const char *candidate);
+
 /*
  * Verify the HMAC on a raw WebSocket frame against the cached secret.
  * `len` is the frame length in bytes.

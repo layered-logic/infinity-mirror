@@ -109,7 +109,6 @@ const COLOR_WHEEL_THROTTLE_MS = 80;
 const COLOR_WHEEL_BUBBLE_PX = 56;    // magnifier bubble that follows the touch
 const colorWheelAsset = require('./assets/color-wheel.png');
 
-const HOME_URL = 'ws://10.123.210.61/ws';
 const SOFTAP_URL = 'ws://192.168.4.1/ws';
 const DEFAULT_OTA_URL = 'http://192.168.223.176:8000/layered_logic_mirror_standard.bin';
 
@@ -135,7 +134,10 @@ function App() {
   const wheelSize = Math.max(160, windowWidth - COLOR_WHEEL_BODY_PADDING * 2);
 
   const [route, setRoute] = useState<Route>('controls');
-  const [url, setUrl] = useState(HOME_URL);
+  // The connect screen opens pointed at the SoftAP — a fresh mirror's
+  // fixed setup address. For a mirror already on Wi-Fi, "Find mirror"
+  // discovers it; there's no useful fixed home IP to default to.
+  const [url, setUrl] = useState(SOFTAP_URL);
   const [conn, setConn] = useState<ConnState>('idle');
   const [lastError, setLastError] = useState<string | null>(null);
   const [state, setState] = useState<DeviceState | null>(null);
@@ -185,6 +187,42 @@ function App() {
   // socket dies mid-switch, so this can take a few seconds to clear.
   const [switchingTo, setSwitchingTo] = useState<string | null>(null);
 
+  // Paired-mode auth (LL-057-D). `pairSecret` is the shared secret this
+  // app holds — in memory only, not persisted, so a paired mirror
+  // re-prompts for the passphrase after an app restart (same posture as
+  // the un-persisted mirror URL). `needsSecret` is set when a connect is
+  // rejected for a missing/wrong secret; it drives the unlock screen.
+  // `pairForm` selects which Settings pairing form is open.
+  const [pairSecret, setPairSecret] = useState<string | null>(null);
+  const [needsSecret, setNeedsSecret] = useState(false);
+  const [pairForm, setPairForm] = useState<'none' | 'enable' | 'rotate'>('none');
+  const [pairNew, setPairNew] = useState('');
+  const [pairNewConfirm, setPairNewConfirm] = useState('');
+  const [pairOld, setPairOld] = useState('');
+  const [pairBusy, setPairBusy] = useState(false);
+  const [unlockInput, setUnlockInput] = useState('');
+  const [unlockBusy, setUnlockBusy] = useState(false);
+
+  // Fetch device state after connecting. A paired mirror rejects an
+  // unsigned (or wrong-secret) get_state — surface that as the unlock
+  // screen (needsSecret) rather than a raw error string.
+  const loadState = async () => {
+    const c = clientRef.current;
+    if (!c) return;
+    try {
+      const s = await c.getState();
+      setState(s);
+      setNeedsSecret(false);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (msg.includes('auth_required') || msg.includes('bad_hmac')) {
+        setNeedsSecret(true);
+      } else {
+        setLastError(msg);
+      }
+    }
+  };
+
   useEffect(() => {
     return () => clientRef.current?.disconnect();
   }, []);
@@ -208,7 +246,9 @@ function App() {
 
   useEffect(() => {
     if (conn !== 'open') return;
-    clientRef.current?.getState().then(setState).catch((e) => setLastError((e as Error).message));
+    loadState();
+    // loadState reads clientRef/state at call time; deps stay [conn].
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conn]);
 
   // Reset the bypass flag whenever the device transitions back into
@@ -270,6 +310,7 @@ function App() {
   const connect = () => {
     clientRef.current?.disconnect();
     setLastError(null);
+    setNeedsSecret(false);
     setReconfiguringWifi(false);
     setSubmitState('idle');
     setSubmitTime(null);
@@ -282,6 +323,10 @@ function App() {
         setOtaProgress({ percent: p.percent, phase: p.phase });
       },
     });
+    // Carry the held passphrase onto the fresh client so a reconnect to a
+    // paired mirror signs from the first frame. Harmless if the mirror is
+    // open — the device ignores the hmac field in open mode.
+    if (pairSecret) c.setSecret(pairSecret);
     clientRef.current = c;
     c.connect();
   };
@@ -565,6 +610,139 @@ function App() {
     );
   };
 
+  // ---- paired-mode auth (LL-057-D D4) ------------------------------
+
+  const openPairForm = (which: 'enable' | 'rotate') => {
+    setPairNew('');
+    setPairNewConfirm('');
+    setPairOld('');
+    setLastError(null);
+    setPairForm(which);
+  };
+
+  const closePairForm = () => {
+    setPairForm('none');
+    setPairNew('');
+    setPairNewConfirm('');
+    setPairOld('');
+  };
+
+  // Unlock a paired mirror the app has no (or a wrong) secret for. There
+  // is no server "unlock" op — the app just adopts the entered secret and
+  // proves it by retrying get_state. A bad_hmac means a wrong passphrase.
+  const submitUnlock = async () => {
+    const c = clientRef.current;
+    if (!c) return;
+    const entered = unlockInput.trim();
+    if (entered.length < 1) return;
+    haptic.medium();
+    setLastError(null);
+    setUnlockBusy(true);
+    c.setSecret(entered);
+    try {
+      const s = await c.getState();
+      setState(s);
+      setPairSecret(entered);
+      setNeedsSecret(false);
+      setUnlockInput('');
+    } catch (e) {
+      const msg = (e as Error).message;
+      c.setSecret(pairSecret); // revert — entered passphrase didn't work
+      setLastError(
+        msg.includes('bad_hmac')
+          ? 'That passphrase didn’t match. Try again.'
+          : msg,
+      );
+    } finally {
+      setUnlockBusy(false);
+    }
+  };
+
+  // Enable paired mode. The set_auth_mode frame goes out unsigned (the
+  // device is still open); on success the app adopts the secret so every
+  // later frame is signed.
+  const submitEnablePairing = async () => {
+    const c = clientRef.current;
+    if (!c) return;
+    if (pairNew.length < 1) {
+      setLastError('Enter a passphrase.');
+      return;
+    }
+    if (pairNew !== pairNewConfirm) {
+      setLastError('Passphrases don’t match.');
+      return;
+    }
+    haptic.medium();
+    setLastError(null);
+    setPairBusy(true);
+    try {
+      await c.setAuthMode('paired', pairNew);
+      c.setSecret(pairNew);
+      setPairSecret(pairNew);
+      closePairForm();
+      // The device broadcasts the new state; onState flips auth_mode.
+    } catch (e) {
+      setLastError((e as Error).message);
+    } finally {
+      setPairBusy(false);
+    }
+  };
+
+  // Change the shared secret in place. The rotate_secret frame is signed
+  // with the current secret; on success the app adopts the new one.
+  const submitRotate = async () => {
+    const c = clientRef.current;
+    if (!c) return;
+    if (pairNew.length < 1) {
+      setLastError('Enter a new passphrase.');
+      return;
+    }
+    if (pairNew !== pairNewConfirm) {
+      setLastError('New passphrases don’t match.');
+      return;
+    }
+    haptic.medium();
+    setLastError(null);
+    setPairBusy(true);
+    try {
+      await c.rotateSecret(pairOld, pairNew);
+      c.setSecret(pairNew);
+      setPairSecret(pairNew);
+      closePairForm();
+    } catch (e) {
+      setLastError((e as Error).message);
+    } finally {
+      setPairBusy(false);
+    }
+  };
+
+  const removePairing = () => {
+    Alert.alert(
+      'Remove passphrase?',
+      'Anyone on your Wi-Fi will be able to control this mirror again.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const c = clientRef.current;
+            if (!c) return;
+            haptic.heavy();
+            setLastError(null);
+            try {
+              await c.setAuthMode('open');
+              c.setSecret(null);
+              setPairSecret(null);
+            } catch (e) {
+              setLastError((e as Error).message);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const ready = conn === 'open' && state !== null;
   const provisioningSetup = ready && state?.provisioning_active === true && !setupBypassed;
   const inSetup = provisioningSetup || (ready && reconfiguringWifi);
@@ -585,7 +763,7 @@ function App() {
           <Text style={styles.h1}>
             {route === 'settings' ? 'Settings' : 'LL Mirror'}
           </Text>
-          {!inSetup && route === 'controls' && conn === 'open' && (
+          {!inSetup && route === 'controls' && conn === 'open' && !needsSecret && (
             <Pressable
               onPress={() => setRoute('settings')}
               style={styles.navBtn}
@@ -680,6 +858,41 @@ function App() {
           </>
         )}
 
+        {!inSetup && route === 'controls' && conn === 'open' && needsSecret && (
+          <View style={styles.setupBlock}>
+            <Text style={styles.section}>Mirror is paired</Text>
+            <Text style={styles.muted}>
+              This mirror needs a passphrase. Enter it to control the mirror.
+              If you’ve lost it, hold the recessed button for 10 seconds to
+              factory-reset the mirror back to open mode.
+            </Text>
+            <Text style={styles.label}>Passphrase</Text>
+            <TextInput
+              value={unlockInput}
+              onChangeText={setUnlockInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              maxLength={48}
+              placeholder="Passphrase"
+              placeholderTextColor="#555"
+              style={styles.input}
+            />
+            <Pressable
+              onPress={submitUnlock}
+              disabled={unlockBusy || unlockInput.trim().length === 0}
+              style={[
+                styles.btn,
+                (unlockBusy || unlockInput.trim().length === 0) && styles.btnDisabled,
+              ]}
+            >
+              <Text style={styles.btnText}>
+                {unlockBusy ? 'Checking…' : 'Unlock'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
         {inSetup && submitState === 'submitted' && (
           <View style={styles.setupBlock}>
             <Text style={styles.section}>Credentials sent</Text>
@@ -705,8 +918,8 @@ function App() {
             <Text style={styles.body1}>
               1. Switch this phone's Wi-Fi from the mirror's setup network back to{' '}
               <Text style={styles.bold}>{ssid}</Text>.{'\n\n'}
-              2. Tap <Text style={styles.bold}>Home</Text> above to set the URL to your home-network
-              mirror IP, then tap <Text style={styles.bold}>Connect</Text>.
+              2. Tap <Text style={styles.bold}>Find mirror</Text> above to locate it on{' '}
+              <Text style={styles.bold}>{ssid}</Text>, then tap <Text style={styles.bold}>Connect</Text>.
             </Text>
           </View>
         )}
@@ -1084,6 +1297,160 @@ function App() {
                 onValueChange={(v) => apply({ telemetry_enabled: v })}
               />
             </View>
+
+            <Text style={styles.subsection}>Pairing</Text>
+            {state.auth_mode === 'open' && pairForm !== 'enable' && (
+              <>
+                <Text style={styles.muted}>
+                  This mirror is open — anyone on your Wi-Fi can control it.
+                  Add a passphrase to require it for control.
+                </Text>
+                <Pressable onPress={() => openPairForm('enable')} style={styles.btn}>
+                  <Text style={styles.btnText}>Require a passphrase</Text>
+                </Pressable>
+              </>
+            )}
+            {state.auth_mode === 'open' && pairForm === 'enable' && (
+              <View style={styles.addNetForm}>
+                <Text style={styles.muted}>
+                  Set a passphrase. Every controller will need it to control
+                  the mirror. Keep it safe — if it’s lost, the only way back
+                  in is a factory reset (hold the recessed button 10s).
+                </Text>
+                <Text style={styles.label}>Passphrase</Text>
+                <TextInput
+                  value={pairNew}
+                  onChangeText={setPairNew}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  maxLength={48}
+                  placeholder="Passphrase"
+                  placeholderTextColor="#555"
+                  style={styles.input}
+                />
+                <Text style={styles.label}>Confirm passphrase</Text>
+                <TextInput
+                  value={pairNewConfirm}
+                  onChangeText={setPairNewConfirm}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  maxLength={48}
+                  placeholder="Repeat passphrase"
+                  placeholderTextColor="#555"
+                  style={styles.input}
+                />
+                <View style={styles.row}>
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={closePairForm}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={submitEnablePairing}
+                    disabled={pairBusy}
+                    style={[styles.btn, pairBusy && styles.btnDisabled]}
+                  >
+                    <Text style={styles.btnText}>{pairBusy ? 'Enabling…' : 'Enable'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+            {state.auth_mode === 'paired' && pairForm !== 'rotate' && (
+              <>
+                <Text style={styles.muted}>
+                  Paired — control requires the passphrase.
+                  {!pairSecret &&
+                    ' This app doesn’t have the passphrase stored; reconnect ' +
+                      'and enter it to manage pairing.'}
+                </Text>
+                {pairSecret && (
+                  <View style={styles.row}>
+                    <Pressable
+                      onPress={() => openPairForm('rotate')}
+                      style={[styles.btn, styles.btnSecondary]}
+                    >
+                      <Text style={styles.btnText}>Change passphrase</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={removePairing}
+                      style={[styles.btn, styles.btnSecondary]}
+                    >
+                      <Text style={styles.btnText}>Remove passphrase</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            )}
+            {state.auth_mode === 'paired' && pairForm === 'rotate' && (
+              <View style={styles.addNetForm}>
+                <Text style={styles.label}>Current passphrase</Text>
+                <TextInput
+                  value={pairOld}
+                  onChangeText={setPairOld}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  maxLength={48}
+                  placeholder="Current passphrase"
+                  placeholderTextColor="#555"
+                  style={styles.input}
+                />
+                <Text style={styles.label}>New passphrase</Text>
+                <TextInput
+                  value={pairNew}
+                  onChangeText={setPairNew}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  maxLength={48}
+                  placeholder="New passphrase"
+                  placeholderTextColor="#555"
+                  style={styles.input}
+                />
+                <Text style={styles.label}>Confirm new passphrase</Text>
+                <TextInput
+                  value={pairNewConfirm}
+                  onChangeText={setPairNewConfirm}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry={!showPassword}
+                  maxLength={48}
+                  placeholder="Repeat new passphrase"
+                  placeholderTextColor="#555"
+                  style={styles.input}
+                />
+                <View style={styles.row}>
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={closePairForm}
+                    style={[styles.btn, styles.btnSecondary]}
+                  >
+                    <Text style={styles.btnText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={submitRotate}
+                    disabled={pairBusy}
+                    style={[styles.btn, pairBusy && styles.btnDisabled]}
+                  >
+                    <Text style={styles.btnText}>{pairBusy ? 'Changing…' : 'Change'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
 
             <Text style={styles.subsection}>Danger</Text>
             <Pressable onPress={factoryReset} style={[styles.btn, styles.btnDanger]}>

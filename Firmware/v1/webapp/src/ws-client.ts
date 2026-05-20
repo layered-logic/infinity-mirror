@@ -10,6 +10,7 @@ import {
   newReqId,
   nowEpochSeconds,
 } from './protocol';
+import { hmacSha256Hex } from './hmac';
 
 export type ConnState = 'idle' | 'connecting' | 'open' | 'closed';
 
@@ -43,6 +44,9 @@ export class MirrorClient {
   private wantOpen = false;
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  // Paired-mode shared secret. null = open mode (frames sent unsigned).
+  // Set via setSecret() once the user has paired or unlocked the mirror.
+  private secret: string | null = null;
 
   constructor(private opts: MirrorClientOptions) {}
 
@@ -63,6 +67,14 @@ export class MirrorClient {
     }
     this.ws?.close();
     this.ws = null;
+  }
+
+  // Set (or clear) the paired-mode shared secret. When set, every
+  // outbound frame is HMAC-signed per firmware-security §5.4; when null,
+  // frames go unsigned (open mode). Signing an open-mode device is
+  // harmless — the device ignores the `hmac` field in open mode.
+  setSecret(secret: string | null): void {
+    this.secret = secret;
   }
 
   private openSocket(): void {
@@ -128,8 +140,21 @@ export class MirrorClient {
         reject,
         timeout,
       });
-      this.ws.send(JSON.stringify(envelope));
+      this.ws.send(this.frameFor(envelope));
     });
+  }
+
+  // Serialize an envelope to the wire frame. In paired mode this appends
+  // the `hmac`-last signature: the signed region is the envelope JSON
+  // minus its closing brace, and the device HMACs that exact prefix
+  // (auth_logic.c / firmware-security §5.4) — so no re-serialization is
+  // needed on either side.
+  private frameFor(envelope: object): string {
+    const body = JSON.stringify(envelope);
+    if (!this.secret) return body;
+    const region = body.slice(0, -1);  // drop the trailing `}`
+    const mac = hmacSha256Hex(this.secret, region);
+    return `${region},"hmac":"${mac}"}`;
   }
 
   getState(): Promise<DeviceState> {
@@ -163,6 +188,30 @@ export class MirrorClient {
   factoryReset(): Promise<void> {
     return this.send<undefined, { reset: boolean }>('factory_reset').then((r) => {
       if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'factory_reset failed');
+    });
+  }
+
+  // Switch the device between open and paired mode (control-protocol-spec
+  // §4.3). Enabling paired mode requires `secret`; the caller should then
+  // setSecret() so subsequent frames are signed. Disabling paired mode is
+  // itself a gated control op — the device is in paired mode, so the
+  // client needs the current secret set first or the frame is rejected.
+  setAuthMode(mode: 'open' | 'paired', secret?: string): Promise<void> {
+    const payload = secret !== undefined ? { mode, secret } : { mode };
+    return this.send<typeof payload, { mode: string }>('set_auth_mode', payload).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'set_auth_mode failed');
+    });
+  }
+
+  // Change the shared secret without leaving paired mode. The frame is
+  // signed with the *current* secret (the gate verifies it, and the
+  // device also checks old_secret); on success the caller should
+  // setSecret(newSecret) so later frames use the new key.
+  rotateSecret(oldSecret: string, newSecret: string): Promise<void> {
+    return this.send<{ old_secret: string; new_secret: string }, unknown>(
+      'rotate_secret', { old_secret: oldSecret, new_secret: newSecret },
+    ).then((r) => {
+      if (!r.ok) throw new Error(r.error?.message ?? r.error?.code ?? 'rotate_secret failed');
     });
   }
 
