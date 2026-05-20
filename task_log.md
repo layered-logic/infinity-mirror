@@ -150,5 +150,6 @@ Append-only. Every meaningful task status transition gets one row. Format spec: 
 | 2026-05-20 | LL-042 | done | User Repair Guide written — customer-facing procedures for all 17 failure modes; repair-index §6 placeholder replaced | docs/user-repair-guide.md |
 | 2026-05-20 | LL-057-D | added | Session D (paired-mode auth) — scoping doc skipped, implementing directly against firmware-security §5 | tasks.md#LL-057-D |
 | 2026-05-20 | LL-057-D | progress | D1 done — core/auth/ module (auth + host-testable auth_logic: SHA-256/HMAC/canonicalization) + 21 host tests pass, clean -Werror build | Firmware/v1/core/auth/ |
+| 2026-05-20 | LL-057-D | progress | D2 done — core/auth wired into variants/standard/main.c + variant CMakeLists; built esp32c3, OTA-flashed cec5bd3-dirty to the live mirror, boots clean (no rollback, auth_mode=open, uptime 188s) | Firmware/v1/variants/standard/main.c |
 | 2026-05-20 | LL-057-D | rescoped | SNTP dropped from the session plan (Bill's call) — replay protection via per-socket monotonic-ts guard + req_id dedup; remaining D-stages renumbered D2-D4 | tasks.md#LL-057-D |
 | 2026-05-20 | LL-056 | progress | Post-draft: contact email, warranty period, and 50/50 custom-order deposit structure confirmed with Bill; all [CONFIRM] markers cleared from the doc | docs/terms-of-service-and-warranty.md |

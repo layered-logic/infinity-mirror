@@ -958,7 +958,7 @@ dependencies: LL-035, LL-040
 
 **Notes:** Per Week 8 plan. Most integration was front-loaded into the LL-035 mini-sprint and LL-040 hardening; this is the polish + remaining-features pass. **Scope locked 2026-05-15 as "wide"** (Bill's call) — telemetry and paired-mode auth stay in-scope. Will slip past May 23; slipping preferred over truncating quality. Bug cascade from the original notes: #1 closed via [LL-055](#LL-055), #2 via [LL-075](#LL-075), #6 parked on BLE provisioning ([LL-055-1](#LL-055-1)).
 
-**Four sessions, each its own build → verify cycle + sprint_log entry:** A — stuck-OTA-button fix ([LL-057-A](#LL-057-A), ✅). B — real OTA progress ([LL-057-B](#LL-057-B), 🟡 architecturally blocked, deferred). C — telemetry MVP ([LL-057-C](#LL-057-C), ✅). D — paired-mode auth ([LL-057-D](#LL-057-D), staged D1–D4; D1 done, D2–D4 remain).
+**Four sessions, each its own build → verify cycle + sprint_log entry:** A — stuck-OTA-button fix ([LL-057-A](#LL-057-A), ✅). B — real OTA progress ([LL-057-B](#LL-057-B), 🟡 architecturally blocked, deferred). C — telemetry MVP ([LL-057-C](#LL-057-C), ✅). D — paired-mode auth ([LL-057-D](#LL-057-D), staged D1–D4; D1–D2 done, D3–D4 remain).
 
 ---
 
@@ -1003,14 +1003,16 @@ dependencies: —
 
 parent: LL-057 | sprint: 8
 added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20
-artifacts: [Firmware/v1/core/auth/](Firmware/v1/core/auth/) · [Firmware/v1/tests/core/auth/test_auth_logic.c](Firmware/v1/tests/core/auth/test_auth_logic.c)
+artifacts: [Firmware/v1/core/auth/](Firmware/v1/core/auth/) · [Firmware/v1/variants/standard/main.c](Firmware/v1/variants/standard/main.c) · [Firmware/v1/tests/core/auth/test_auth_logic.c](Firmware/v1/tests/core/auth/test_auth_logic.c)
 dependencies: LL-035, LL-040
 
 **Notes:** HMAC-authenticated paired mode per [firmware-security.md §5](docs/firmware-security.md) + [control-protocol-spec.md](docs/control-protocol-spec.md). Scoping doc skipped — §5 already locks the design (pre-shared user secret, HMAC-SHA256 envelope, `hmac`-last canonicalization, no QR/DH/WPS). Staged D1–D4, each a build/flash/verify cycle.
 
 **D1 done 2026-05-20** — `core/auth/` module created + host tests. New files: `auth_logic.h/.c` (pure-C, host-buildable — SHA-256, HMAC-SHA256, hex, constant-time compare, and the `,"hmac":`-last envelope split), `auth.h/.c` (ESP-IDF — `ll_auth` NVS namespace, RAM secret cache, init/subscribe/is_paired/has_secret/set_secret/clear_secret/verify), `CMakeLists.txt`, and `tests/core/auth/test_auth_logic.c`. Refinement from the approved plan: SHA-256/HMAC are vendored pure-C rather than `mbedtls/md.h`, so the crypto is host-testable and serves as the byte-exact reference for the app's JS HMAC. 21 host tests (SHA-256 + RFC 4231 HMAC known-answer vectors + envelope round-trips) — all pass; clean `-Wall -Wextra -Wpedantic -Werror` build.
 
-**Remaining D2–D4** (need the live mirror; will slip past the May 23 Week 8 deadline). D2 — wire `ll_auth_init/subscribe` into `variants/standard/main.c` + factory-reset secret wipe (the locked-out-recovery path). D3 — transport auth gate in `handle_envelope()` + `set_auth_mode`/`rotate_secret` ops + replay protection: a per-socket monotonic-`ts` guard plus a device-wide recent-`req_id` dedup cache. D4 — app-side envelope signing (pure-JS HMAC) + pairing UI. **SNTP dropped 2026-05-20** (Bill's call): the device has no wall clock, but the recency-based replay guard is proportionate for this threat model and the device must work offline regardless — so the spec's absolute ±60s `ts` window is replaced by the monotonic-`ts` + `req_id`-dedup approach. `firmware-security.md` §5.4 to be amended to match when D3 lands.
+**D2 done 2026-05-20** — `core/auth` wired into the standard variant. `ll_auth_init()` + `ll_auth_subscribe()` added to `variants/standard/main.c` (after `ll_nvs_subscribe`, before provisioning); `auth` added to the variant CMakeLists `REQUIRES`, listed last on purpose — listing it earlier shadows `core/nvs/nvs.h` with IDF's `nvs.h` and breaks `ll_nvs_init`. The factory-reset secret wipe (locked-out recovery) was already in `auth.c`'s subscribe handler from D1. The matter variant is left alone — still a bare scaffold; it picks up auth with every other core module at matter bring-up. Built clean for esp32c3 (2% partition headroom) and OTA-flashed to the live mirror: `fw_version` flipped `telemetry-final-1346` → `cec5bd3-dirty`, device booted clean (no rollback), `uptime_s` 188, WS `get_state` green with `auth_mode=open`.
+
+**Remaining D3–D4** (need the live mirror; will slip past the May 23 Week 8 deadline). D3 — transport auth gate in `handle_envelope()` + `set_auth_mode`/`rotate_secret` ops + replay protection: a per-socket monotonic-`ts` guard plus a device-wide recent-`req_id` dedup cache. D4 — app-side envelope signing (pure-JS HMAC) + pairing UI. **SNTP dropped 2026-05-20** (Bill's call): the device has no wall clock, but the recency-based replay guard is proportionate for this threat model and the device must work offline regardless — so the spec's absolute ±60s `ts` window is replaced by the monotonic-`ts` + `req_id`-dedup approach. `firmware-security.md` §5.4 to be amended to match when D3 lands.
 
 ---
 
