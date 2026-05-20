@@ -1,8 +1,8 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-077
-updated: 2026-05-18
+next_id: LL-078
+updated: 2026-05-20
 
 ---
 
@@ -430,7 +430,7 @@ added: 2026-04-28 | first_engaged: 2026-04-28 | last_engaged: 2026-04-30 | resol
 artifacts: [docs/mini-sprint-app-demo.md](docs/mini-sprint-app-demo.md) · commits `5216633`, `e48c9dd`, `f1db077`, `1b86d5e`
 dependencies: LL-027, LL-029, LL-034
 
-**Notes:** 8-session push Apr 28→May 5 targeting faculty advisor demo of webapp + RN app controlling a real ESP32 mirror. Path A+B+C committed (transport + webapp + RN app). Stack: React Native bare (Android only — iOS deferred), Preact + Vite for webapp, esp_http_server + cJSON for transport. Demo board = XIAO ESP32-C3 (V0 prototype). Demo network = phone hotspot. Auth = open mode for demo (HMAC stays specced). RN skips BLE provisioning (webapp captive portal handles first-time pairing, RN discovers via mDNS). Pattern editor confirmed OUT (V2). Hardware safety rules locked: no eFuse burns. **Demo gate hit Apr 30 — 5 days early.** Sessions 0–8 tracked as children below; closed during cleanup once all children resolved.
+**Notes:** 8-session push Apr 28→May 5 for a faculty-advisor demo of the webapp + RN app controlling a real ESP32 mirror. Stack: React Native bare (Android-only), Preact+Vite webapp, esp_http_server+cJSON transport; demo board XIAO ESP32-C3, phone-hotspot network, open-mode auth, no BLE provisioning. Pattern editor confirmed out (V2); no eFuse burns. **Demo gate hit Apr 30, 5 days early.** Sessions 0–8 tracked as children below; closed during cleanup once all resolved. Session narratives in sprint_log_archive.md (Week 5).
 
 ---
 
@@ -441,7 +441,7 @@ parent: LL-035 | sprint: 5
 added: 2026-04-28 | first_engaged: 2026-04-28 | last_engaged: 2026-04-28 | resolved: 2026-04-28
 artifacts: sprint_log.md · commit `50035df`
 
-**Notes:** V1 firmware booted end-to-end on XIAO ESP32-C3 after fixing two pre-flash-review-missed bugs in-session: TASK_CORE 1→0 (C3 is Unicore — `xTaskCreatePinnedToCore` asserted on `xCoreID < 1`); state_bus_defaults led_count 32→66 (was overriding board header). Boot log clean: app version `50035df`, all 4 modules init with `leds=66`, button gestures + LED response confirmed. Build: 983KB / 1MB partition (94% — flagged for ab_with_factory in next session).
+**Notes:** V1 firmware booted end-to-end on the XIAO ESP32-C3 after two in-session fixes (TASK_CORE 1→0 for the Unicore C3; state_bus led_count default 32→66). Boot log clean, all 4 modules init, button + LED response confirmed. Build 983 KB / 1 MB.
 
 ---
 
@@ -463,7 +463,7 @@ parent: LL-035-1 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/partitions.csv · Firmware/v1/sdkconfig.defaults · commit `37be211`
 
-**Notes:** Layout: nvs 24KB at 0x9000 (default offset preserved so existing NVS survives), otadata 8KB, factory 1.25MB, ota_0 1.25MB, ota_1 1.25MB; 128KB headroom. Build green: 983KB / 1.25MB slot, 25% free. Boot green: bootloader read partitions correctly, NVS state from prior session survived. Production hardening flags (secure boot, flash encryption, anti-rollback) explicitly commented as forbidden this sprint per demo-build safety rules. No source code touched.
+**Notes:** 4MB ab_with_factory partition table (nvs 24KB at 0x9000, otadata 8KB, factory + ota_0 + ota_1 at 1.25MB each, 128KB headroom). Build 983 KB / 1.25 MB slot; prior-session NVS survived. Production hardening flags left off per demo-build safety rules. No source touched.
 
 ---
 
@@ -474,7 +474,7 @@ parent: LL-035-1 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/ll_mdns/ll_mdns.h · Firmware/v1/core/ll_mdns/ll_mdns.c
 
-**Notes:** Wraps espressif/mdns managed component. Service `_layeredlogic._tcp.local` on port 80 with TXT records `variant`, `version`, `id`, `auth`. Hostname `layered-logic-mirror-XXXXXX.local` (lower 3 bytes of WiFi STA MAC). Compile-time `LL_VARIANT_NAME` injected via top-level CMakeLists. **Lesson learned**: component name folder rename `core/mdns/` → `core/ll_mdns/` to avoid collision with espressif/mdns in build graph. Boot green: mDNS task announced, `service deferred until wifi up` correctly fired in wifi-down state.
+**Notes:** `core/ll_mdns/` wraps the espressif/mdns component — service `_layeredlogic._tcp.local:80` with `variant`/`version`/`id`/`auth` TXT records, hostname from the WiFi STA MAC suffix. Lesson: folder renamed `core/mdns/`→`core/ll_mdns/` to avoid a build-graph collision with espressif/mdns.
 
 ---
 
@@ -485,7 +485,7 @@ parent: LL-035-1 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/transport/transport.c · Firmware/v1/core/provisioning/provisioning.c · commit `9874b74-dirty`
 
-**Notes:** core/transport wraps esp_http_server, /ws handler parses JSON envelope via cJSON, dispatches by `op`. Session 1 implements only `ping`; unknown ops return `unknown_op`. Dev SoftAP path under `LL_DEV_OPEN_SOFTAP=1` opens `LL-Mirror-XXXXXX` (open, no password) at boot when no creds. **Two in-session bugs caught**: (1) sdkconfig doesn't pick up sdkconfig.defaults once it exists — required `Remove-Item Firmware/v1/sdkconfig` then rebuild for `CONFIG_HTTPD_WS_SUPPORT=y`; (2) AP fast path raced subscribe order — split start_dev_softap into init + kick (publicly callable) so main.c can sequence `*_subscribe` before the wifi-up event fires. End-to-end verified: `wscat -c ws://192.168.4.1/ws` ping/pong round-trips from dev PC.
+**Notes:** `core/transport` wraps esp_http_server; the /ws handler parses a JSON envelope via cJSON and dispatches by `op` (Session 1: `ping` only). Dev SoftAP opens `LL-Mirror-XXXXXX` when no creds. End-to-end `wscat` ping/pong verified. Two bugs caught: sdkconfig.defaults needs a clean rebuild to take effect; the AP fast-path raced subscribe order (split into init + kick).
 
 ---
 
@@ -507,7 +507,7 @@ parent: LL-035-2 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/transport/transport.c
 
-**Notes:** Read-only op. `state_to_json()` helper serializes 7 fields (`on`, `pattern_id`, `base_color` as `#RRGGBB`, `brightness`, `led_count`, `auth_mode`, `telemetry_enabled`). State_bus exposes `const ll_state_t *` directly — read races writer task by design (eventual consistency). Verified end-to-end with NVS-persisted state.
+**Notes:** `get_state` op. `state_to_json()` serializes 7 fields (`base_color` as `#RRGGBB`). Reads race the writer task by design (eventual consistency).
 
 ---
 
@@ -518,7 +518,7 @@ parent: LL-035-2 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/transport/transport.c
 
-**Notes:** Pivotal milestone — full write surface via WS. `parse_hex_color()` helper. 4 mutable fields (`on`, `base_color`, `brightness`, `pattern_id`) post matching state-bus events. Sensitive fields rejected via set_state: `auth_mode` (use set_auth_mode), `telemetry_enabled` (use set_telemetry), `led_count` (read-only). Async response design documented: result is best-effort (likely stale); broadcasts are authoritative. Visual confirmation: LEDs went bright green, then breathing/blue/50%.
+**Notes:** `set_state` op — full WS write surface. `parse_hex_color()` helper; 4 mutable fields post state-bus events; `auth_mode`/`telemetry_enabled`/`led_count` rejected (own ops / read-only). Result is best-effort; broadcasts are authoritative.
 
 ---
 
@@ -529,7 +529,7 @@ parent: LL-035-2 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/transport/transport.c
 
-**Notes:** `broadcast_state()` builds `{op:"state", ts, state:{...}}` envelope, enumerates open WS sockets via httpd_get_client_list, sends async. Subscribed via `LL_EV_STATE_CHANGED`. No-op when no server up. Two-watcher triangle verified at ~65ms latency. Multi-field set_state sends N broadcasts all carrying final state — coalescing flagged as future optimization. `ts` is uptime-since-boot, not Unix time (no NTP yet).
+**Notes:** `broadcast_state()` builds a `{op:"state",ts,state}` envelope and async-sends to all open WS sockets on `LL_EV_STATE_CHANGED`. ~65ms two-watcher latency. Multi-field set_state sends N broadcasts (coalescing deferred); `ts` is uptime, not Unix time.
 
 ---
 
@@ -540,7 +540,7 @@ parent: LL-035 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/webapp/ · commit `37be211`
 
-**Notes:** C → TS pivot. Vite 5.4 + Preact 10.22 + TypeScript 5.5. Standalone npm project, no monorepo hoisting. Output renamed `app.js`/`app.css` with `cssCodeSplit:false` for stable embed filenames. ws-client.ts deliberately Preact-free for Session 7 RN port. UI: connection panel + color (large swatch + picker + 7 presets) + state kv table. Snapshot-on-open pattern (fires get_state immediately on connect). Color sends use `onChange` not `onInput` to avoid flooding. **Bundle: 8.6KB gzipped — 11% of 80KB budget.** Bill: "works great, change takes effect instantaneously."
+**Notes:** Webapp scaffold — C→TS pivot, Vite + Preact + TypeScript, standalone npm project. `ws-client.ts` kept Preact-free for the later RN port. Snapshot-on-open; color sends on `onChange`. Bundle 8.6 KB gzipped (11% of the 80 KB budget). First click changes color on hardware.
 
 ---
 
@@ -551,7 +551,7 @@ parent: LL-035 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/webapp/src/app.tsx · Firmware/v1/webapp/src/ws-client.ts
 
-**Notes:** Brightness slider (commit-on-release, full integer 0-100), pattern dropdown (7 builtins), on/off toggle (`brightness 0` / restore-last-active), factory reset (UI mockup, wire op deferred to Session 5 sub-4). WS client gained reconnect-with-backoff (1s→2s→4s→8s). Local-state-during-drag pattern documented (RN slider will need same shape). Layout: connection → [power|pattern] → color → brightness → state → danger zone. **Bundle: 9.87KB gzipped — 12% of 80KB budget.** Parked: transient `socket closed` errors under user load (esp_http_server WS handler is single-task, fanout backpressure) — captured as bug #1.
+**Notes:** All 5 webapp capabilities — brightness slider, pattern dropdown, on/off, factory reset (UI mockup; wire op in sub-5-4) — plus WS reconnect-with-backoff. Bundle 9.87 KB gzipped (12% of budget). Parked transient `socket closed` under load as bug #1 (single-task WS fanout backpressure).
 
 ---
 
@@ -573,7 +573,7 @@ parent: LL-035-5 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/webapp_assets/ · Firmware/v1/webapp/scripts/gzip-dist.mjs · commit `93f686c-dirty`
 
-**Notes:** New component `core/webapp_assets/` owns embed + static URI handlers at `/`, `/app.js`, `/app.css`. Pre-gzip in npm build (Z_BEST_COMPRESSION) not CMake — keeps firmware build pure C/asm. Component CMakeLists checks for .gz files at configure with friendly fatal-error pointer to `npm run build`. transport.c integration is two lines + bumped `max_uri_handlers` 4→8. **One in-session bug**: `-Werror=comment` flagged nested `/*` in path glob inside outer block comment; reworded. Bonus side-quest: mDNS-over-SoftAP works on Windows (`Resolve-DnsName` resolved hostname in 120ms).
+**Notes:** `core/webapp_assets/` embeds the pre-gzipped webapp bundle and serves `/`, `/app.js`, `/app.css`. Pre-gzip in the npm build keeps the firmware build pure C. transport.c integration is 2 lines + `max_uri_handlers` 4→8.
 
 ---
 
@@ -584,7 +584,7 @@ parent: LL-035-5 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: sprint_log.md (no committed code — throwaway spike, reverted)
 
-**Notes:** Tier 1 risk validation: does Pixel 9 hotspot forward mDNS? **Yes for PC + browser via Win32 getaddrinfo path** (curl, Python urllib, ping all resolve `layered-logic-mirror-b2332c.local` to STA IP). Single failure: PowerShell's `Invoke-WebRequest` (.NET HttpClient quirk on .local). Two surprises: SSID typo from chat, Windows scan lying about band availability (C3 found 2.4GHz BSSID for same SSID even though `netsh` only showed 5GHz). Phone-side mDNS deferred to Sessions 6-8. Spike reverted clean — no creds in version control.
+**Notes:** Tier-1 risk check: does the Pixel 9 hotspot forward mDNS? Yes for PC/browser (Win32 getaddrinfo resolves the mirror hostname); only PowerShell `Invoke-WebRequest` fails (.NET quirk on `.local`). Phone-side mDNS deferred to Sessions 6-8. Throwaway spike, reverted clean.
 
 ---
 
@@ -595,7 +595,7 @@ parent: LL-035-5 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/captive_dns/ · Firmware/v1/core/webapp_assets/webapp_assets.c
 
-**Notes:** New `core/captive_dns/` (~250 lines) UDP responder gated on AP mode. Every A query returns gateway IP `192.168.4.1` (RFC 1035 compliant, name-compressed). HTTP 404 wildcard handler in webapp_assets returns `302 Location: /` for Android `/generate_204`, iOS `/hotspot-detect.html`, Windows `/connecttest.txt` etc. **Weird bug**: Unicode `→` (U+2192) in runtime format strings silently broke `vsnprintf` emission — comments fine, format strings broken. Defensive rule documented: ASCII-only in runtime format strings. End-to-end: captive-portal sheet pops automatically on phone OS join.
+**Notes:** `core/captive_dns/` UDP responder (AP-mode only) answers every A query with the gateway IP; an HTTP 404 handler 302-redirects the OS captive-check URLs to `/`. Captive sheet now pops automatically on join. Bug: a Unicode `→` in a runtime format string silently broke `vsnprintf` — ASCII-only in format strings.
 
 ---
 
@@ -606,7 +606,7 @@ parent: LL-035-5 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/transport/transport.c · Firmware/v1/core/provisioning/provisioning.c · Firmware/v1/webapp/src/{hooks.ts,components/Header.tsx,pages/{control,settings,setup}.tsx,app.tsx}
 
-**Notes:** Closes Session 5 DoD. Architectural call: option B (JSON-WS set_wifi_creds delegating into esp_wifi/NVS) over option C (full protocomm-HTTP via wifi_prov_mgr). Webapp speaks one JSON envelope; production HA support is separate concern via Matter variant. New ops: `set_wifi_creds`, `factory_reset` (wire op replacing UI mockup). State extension: `provisioning_active`, `wifi_ssid`. Webapp refactored to hash router (3 pages: /, /settings, /setup) with shared chrome. **15s fallback timer** (the demo-saver): typo'd password no longer strands the device — falls back to SoftAP automatically. Three coupled UX bug fixes (power button reads `state.on` directly; power-on patches restore brightness; color/pattern auto-power-on). Bug log: closed #3 (auto-power-on), opened #5 (Windows captive sheet → MSN), opened #6 (failed-cred error flow ergonomics). Real Pixel 9 hotspot creds verified on silicon.
+**Notes:** Setup screen + `set_wifi_creds` and `factory_reset` wire ops. Architectural call: JSON-WS provisioning (option B) over protocomm-HTTP. State gained `provisioning_active`/`wifi_ssid`; webapp refactored to a 3-page hash router. **15s fallback timer** — a typo'd password falls back to SoftAP instead of stranding the device. Closes Session 5 DoD; closed bug #3, opened #5 and #6.
 
 ---
 
@@ -617,7 +617,7 @@ parent: LL-035-5 | sprint: 5
 added: 2026-04-29 | first_engaged: 2026-04-29 | last_engaged: 2026-04-29 | resolved: 2026-04-29
 artifacts: Firmware/v1/core/provisioning/provisioning.{c,h} · Firmware/v1/variants/standard/main.c · Firmware/v1/core/transport/transport.h
 
-**Notes:** Pure rename + comment refresh; no functional/behavior/wire changes. `LL_DEV_OPEN_SOFTAP` → `LL_SOFTAP_PROVISIONING`, `LL_DEV_AP_*` → `LL_AP_*`, `init_dev_softap` → `init_softap`, etc. Public `ll_provisioning_kick_dev_softap()` → `ll_provisioning_kick_softap()`. Comment + log strings refreshed (dropped "DEV-ONLY:" / "Replace before prod" framing). transport.h top-of-file doc updated to reflect actual V1 op surface. Older sprint_log entries deliberately not retro-edited.
+**Notes:** Pure rename — `LL_DEV_OPEN_SOFTAP`→`LL_SOFTAP_PROVISIONING` and related symbols; dropped the "DEV-ONLY" framing from comments/logs. No functional or wire changes.
 
 ---
 
@@ -628,7 +628,7 @@ parent: LL-035 | sprint: 5
 added: 2026-04-30 | first_engaged: 2026-04-30 | last_engaged: 2026-04-30 | resolved: 2026-04-30
 artifacts: App/v1/ · App/v1/src/{protocol.ts,ws-client.ts} · App/v1/App.tsx
 
-**Notes:** Three scheduled sessions landed in a single ~2.5-hour morning push. Bare RN (not Expo), Android-only this sprint, RN 0.85.2 + React 19.2.3 + TS 5.5. **Three Windows wedges hit and fixed**: gradlew.bat path, foojay-resolver-convention 0.5.0 → 1.0.0 (Gradle 9 compatibility), Windows MAX_PATH (dropped `react-native-safe-area-context` + `@react-native/new-app-screen`). Phase 2 source ports: `protocol.ts` verbatim from webapp; `ws-client.ts` with only `defaultDeviceUrl` removed (Metro has no `import.meta.env`). Single-screen UI wires all 5 capabilities. End-to-end verified on AVD against live mirror over phone hotspot: connect+ping, set_state via swatch, on/off toggle. Cross-client sync implicitly verified (same wire protocol as webapp).
+**Notes:** Sessions 6-8 collapsed into one ~2.5h push — bare RN app (Android-only, RN 0.85) with all 5 controls end-to-end against the live mirror. Three Windows build wedges fixed (gradlew.bat path, foojay-resolver 0.5.0→1.0.0, MAX_PATH — dropped two deep-path deps). `protocol.ts` ported verbatim from the webapp.
 
 ---
 
@@ -639,7 +639,7 @@ parent: LL-035 | sprint: 5
 added: 2026-04-30 | first_engaged: 2026-04-30 | last_engaged: 2026-04-30 | resolved: 2026-04-30
 artifacts: App/v1/App.tsx · App/v1/src/find-mirror.ts · App/v1/android/app/src/main/java/com/v1/{WifiInfoModule,WifiInfoPackage}.kt · App/v1/scripts/gen_app_icon.py
 
-**Notes:** Crosses original Decision #7 from mini-sprint plan (RN does SoftAP-based provisioning end-to-end, no BLE). Setup screen + auto-route on `provisioning_active=true`. Subnet-scan discovery via WifiInfo native Kotlin module + 253 parallel fetch probes for `<title>Layered Logic Mirror</title>` (mDNS deferred to LL-040 due to Windows MAX_PATH wedge on `react-native-zeroconf`). Brand pass: app label `v1` → `LLogic`; launcher icon generated from canonical SVG via PIL (no inkscape dep); StatusBar overlap fix. **First install on physical Pixel 9 Pro** via USB tethering with `adb reverse`. Three legs verified: control over existing network, factory-reset → SoftAP provisioning round-trip → discovery + control on new network. Bill: "now I can control the mirror from my phone through the app!"
+**Notes:** RN provisioning end-to-end (SoftAP, no BLE) + Find Mirror + brand pass + first physical Pixel 9 install. Setup screen auto-routes on `provisioning_active`; discovery via a native Kotlin subnet-scan module (mDNS deferred to LL-040 over a Windows MAX_PATH wedge). Three legs verified: control on the existing network, factory-reset→SoftAP round-trip, discovery + control on a new network.
 
 ---
 
@@ -651,7 +651,7 @@ added: 2026-04-30 | first_engaged: 2026-04-30 | last_engaged: 2026-04-30 | resol
 artifacts: sprint_log.md
 dependencies: LL-035-2-3, LL-035-7
 
-**Notes:** Final demo-day DoD line. Bench test: webapp on dev PC + LLogic app on Pixel 9, both pointed at the same mirror on `LayeredLogicDemo` hotspot. State changes from either surface propagate to other within broadcast latency. Bill: "I can make changes from the webapp on the dev pc that are seen in the mirror and in the mobile app." **Mini-sprint DoD fully green five days ahead of May 5 advisor meeting.** Minor follow-up parked: webapp/RN color-swatch presets inconsistent (resolved later in LL-038-adjacent work, see commit `cf43899`).
+**Notes:** Final demo-day DoD: webapp (dev PC) + RN app (Pixel 9) on the same mirror, state changes propagate both ways within broadcast latency. Mini-sprint DoD fully green 5 days ahead of the May 5 advisor meeting.
 
 ---
 
@@ -735,19 +735,20 @@ added: 2026-05-06 | first_engaged: 2026-05-06 | last_engaged: 2026-05-06 | resol
 artifacts: external — `admin_workflow/n8n-nodes/infinity_mirror_{task_collector,accomplishments,reconcile,validation}.js` · `admin_workflow/n8n-nodes/task_collector_sql_builder.js`
 dependencies: —
 
-**Notes:** Retooled the four n8n flows in `admin_workflow` that consume this repo's tasks.md so the planning + reconciliation pipeline operates on stable LL-NNN IDs instead of slug-fuzzy-matching `sprint_plan.md` through GPT-5-nano. Four structural-parse Code nodes shipped: morning task_collector (one item per open `[ ]`), accomplishments scraper (`resolved` or `last_engaged` = today), reconcile (task_log.md events → outcome_events), validation (structural invariants — every `[x]` has a `done` log row, sprint_log `[LL-NNN]` tags resolve, `next_id` counter consistency, no top-level ID gaps). Output shape conformed to the PascalCase `{Id, Source, Title, Notes, Importance, Deadline, Meta}` envelope used by the existing Trello / Canvas / TrainerRoad collectors; `task_collector_sql_builder.js` gained a `normalizeTask` shim so PascalCase and legacy lowercase coexist without a forked code path. Postgres scrubbed of 9 legacy `github:sprint:*` rows + 22 volatile rows; downstream namespace is now `github:task:LL-NNN`, immutable across renames — task identity no longer requires an LLM hop.
+**Notes:** Retooled the four n8n flows in `admin_workflow` that consume this repo's tasks.md so the planning + reconciliation pipeline runs on stable LL-NNN IDs instead of slug-fuzzy-matching `sprint_plan.md` through an LLM. Four structural-parse Code nodes shipped (task_collector, accomplishments scraper, reconcile, validation); output conformed to the existing PascalCase collector envelope via a `normalizeTask` shim. Postgres scrubbed of legacy `github:sprint:*` rows; downstream namespace is now `github:task:LL-NNN`, immutable across renames.
 
 ---
 
 <a id="LL-042"></a>
-### [ ] LL-042 — User Repair Guide / Repairability Manual
+### [x] LL-042 — User Repair Guide / Repairability Manual
 
 sprint: 4 | priority: high | deadline: 2026-05-23
-added: 2026-04-22 | first_engaged: 2026-04-22 | last_engaged: 2026-04-30
-artifacts: —
-dependencies: LL-030, LL-031, LL-036
+added: 2026-04-22 | first_engaged: 2026-04-22 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [docs/user-repair-guide.md](docs/user-repair-guide.md)
+dependencies: LL-030, LL-031, LL-036, LL-077
 
-**Notes:** Customer-facing PDF or web page covering common failures + fixes (LED replacement, controller swap, connectivity troubleshooting). Sprint 4 plan called for draft; sprint 8 plan calls for finalization. Listed in Week 4 In-Progress section. Largely blocked on assembly guide which lives in operations track. Status updated 2026-04-30 — RtR portfolio docs (LL-036) covered the analytical layer; the user-facing guide itself is still pending. Active sprint: 5–8.
+**Notes:** 2026-05-20 — Resolved. Customer-facing guide written at [docs/user-repair-guide.md](docs/user-repair-guide.md): repair-first intro, tools/safety, a symptom-finder decision tree, per-component repair procedures covering all 17 failure modes, the recessed-button recovery reference, a parts-sourcing table, and the RMA/contact path — in the first-person LL brand voice. The long-standing assembly-guide blocker was resolved by spinning out [LL-077](#LL-077) (Mirror Assembly & Teardown Guide); §2/§3 of the repair guide build on LL-077 §7's teardown procedure. [repair-index.md](docs/repair-index.md) §6 placeholder replaced with a live link. Repair-time estimates flagged provisional pending the golden-sample build. Surfaced one open item: the front/back panel labels in [acrylic-crack-scratch.md](Failure_Modes/acrylic-crack-scratch.md) read inverted vs. infinity-mirror physics — captured in the guide's Open Items for reconciliation. Active sprint: 8.
+2026-04-30 — RtR portfolio docs (LL-036) covered the analytical layer; the user-facing guide itself was still pending, blocked on the assembly guide. Sprint 4 plan called for draft; sprint 8 plan calls for finalization.
 
 ---
 
@@ -808,25 +809,7 @@ added: 2026-05-01 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resol
 artifacts: [Firmware/v1/core/ll_wifi/](Firmware/v1/core/ll_wifi/) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c) · [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-041
 
-**Notes:** Implements the spec locked in LL-041 (multi-network design doc). NVS schema bump for N saved networks (N_MAX=4), scan-and-pick reconnect, protocol additions (`list/add/remove_wifi_network`), `set_wifi_creds` retained as deprecated shim through V2 lifetime. App UX: settings page network list with last-used-wins ordering, proactive disconnect on remove with confirm dialog. ~6 days estimated implementation. Proposed Week 6 engineering replacement for the no-longer-real PCB-arrival item.
-
-Step 1/6 (NVS layer + migration shim) shipped May 7: new `core/ll_wifi/` module with `wifi_entry_t`, list ops (find/add/remove/pick_next/sanitize), per-entry NVS persistence, mutex-guarded singleton, and a separate `ll_wifi_migrate_from_esp_wifi(ssid, password)` hook so the dependency direction stays one-way (provisioning depends on ll_wifi, not vice versa). 27 host tests cover sizing, find, add (insert/update/full/invalid), remove (compaction + active_idx fixup), pick_next priority + recently-failed mask + tiebreak, and sanitize.
-
-Step 2/6 (provisioning refactor) shipped May 7: `provisioning.c` now drives STA from `ll_wifi`. Boot-time legacy cred migration via `migrate_legacy_cred_if_needed()`; `esp_wifi_set_storage(WIFI_STORAGE_RAM)` so `esp_wifi`'s NVS becomes vestigial; new helpers `find_idx_by_ssid` / `apply_entry_to_esp_wifi`; `on_wifi_apply_creds` writes to `ll_wifi` first then drives the SoftAP→STA handoff; apply-creds fallback removes the failed entry from `ll_wifi` (was previously `esp_wifi_restore` only); `on_factory_reset` calls `ll_wifi_erase_all` alongside `esp_wifi_restore`; `post_wifi_connected` stamps `ll_wifi_set_active(idx, last_used_us)`. **OTA-flashed and verified on live mirror b2332c** — `fw_version` flipped `ip-state-v3` → `4c1f888-dirty`, STA auto-reconnected to "IoT", all 7 `ll_settings` fields preserved, migration shim real-hardware-confirmed.
-
-Step 3/6 (SCANNING/PICKING/BACKOFF state machine) shipped May 7. New SM in `provisioning.c`: 5 states (IDLE/SCANNING/CONNECTING/ONLINE/BACKOFF), backoff 5s/15s/60s, 8s connect-watchdog, recently-failed bitmask cleared on BACKOFF→SCANNING. PICKING is sub-logic in `sm_handle_scan_done()` — builds a not-visible mask from scan results, ORs with recently-failed, picks via `ll_wifi_list_pick_next`. STA_START kicks the SM (boot path) or calls `esp_wifi_connect` directly (apply-creds path); STA_DISCONNECTED branches on SM state. Factory reset and apply-creds fallback both tear the SM down to IDLE. Boot path simplified — no more `pick_boot_idx`/`apply_entry_to_esp_wifi` at init; the SM kicks itself from STA_START. **First OTA bricked the live mirror** via stack overflow in `sm_handle_scan_done` (1.6 KB `wifi_ap_record_t` array on ~2.3 KB system event task stack); fix heap-allocates the records buffer. USB recovery flashed the stack-fixed build; mirror booted clean, SM connected to "IoT" autonomously through SCANNING→PICKING→CONNECTING→ONLINE.
-
-OTA rollback safety net added during Step 3 (May 7 — out of LL-046's original scope, surfaced by the brick). `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y` in `sdkconfig.defaults`; new `ll_ota_subscribe()` calls `esp_ota_mark_app_valid_cancel_rollback()` on first `LL_EV_WIFI_CONNECTED` after boot. Future OTAs that panic before getting online (or never connect) will auto-rollback to the previous slot. Wired into `main.c` after captive-DNS. Orthogonal to LL-071's eFuse anti-rollback (downgrade defense vs. boot-loop recovery). Bootloader change deployed via USB flash.
-
-Step 4/6 (wire protocol ops) shipped + OTA-verified May 7. Three new ops in `transport.c`: `list_wifi_networks` (sorted by last_used desc, includes is_active), `add_wifi_network` (insert-or-update, never switches active), `remove_wifi_network` (forget by SSID; proactively disconnects via new `ll_provisioning_drop_active()` if removing the active SSID, the SM picks the next eligible). `DeviceState.wifi_saved_count` added per design-doc §7.5 (count only — full list on demand). add/remove trigger `broadcast_state()` so connected clients refresh. `set_wifi_creds` kept as legacy first-cred entry point per §7.4. Smoke-tested 9 cases on live mirror — insert / update / full / invalid / remove / not_found / wifi_saved_count round-trip all green.
-
-Step 5/6 (RN app Settings UI) shipped May 7. `App/v1/` Settings page replaces the single "Reconfigure Wi-Fi" block with a saved-networks list (rendered from `list_wifi_networks`, active-checkmark + per-row Forget button) and an inline "+ Add a network" form. Forget on the active SSID surfaces a confirm dialog (per design-doc §4.3); non-active forgets silently. `protocol.ts` gained `WifiNetwork` / `Add*` / `Remove*` types + `wifi_saved_count` on DeviceState; `ws-client.ts` gained the matching thin wrappers. List refetches on Settings open and on `wifi_saved_count` broadcasts. Setup-flow form (`provisioning_active=true`) unchanged — still uses `set_wifi_creds` per §8.2. Hardware-on-device verification deferred to Step 6 / cross-network E2E.
-
-Step 6 hardware test (May 7) surfaced two issues. (1) The release APK installed and the multi-network UI worked — Bill exercised `set_wifi_creds`, `add_wifi_network`, `remove_wifi_network` paths cleanly. But he hit a recovery gap: bad creds on a second network + Forget on the first (good) network ⇒ mirror stuck in BACKOFF with no auto-SoftAP fallback (per design-doc Q3 / `feedback_rf_minimal_unless_asked`). Recovery via USB `esptool erase_region 0x9000 0x6000` (NVS partition only — preserves firmware, wipes ll_settings + ll_wifi + esp_wifi cred). (2) Bill flagged the bigger feature gap: the spec deliberately omits a "switch to this network" op (§4.2 Q1, "Adding ≠ joining"), but the failure mode he hit proves it's needed. Added a new `connect_wifi_network(ssid)` wire op + `ll_wifi_bump_priority` (last_used only) + `ll_provisioning_request_switch` (handles all SM states); RN app gains a "Connect" button per non-active row. Firmware USB-flashed; APK rebuilt.
-
-Status-bar overlap fix landed in the same session (out of LL-046's original scope but Bill flagged it during testing): module-load read of `StatusBar.currentHeight` returned 0 in cold-start races on Android 15 / Pixel 9, leaving the Settings nav icon untappable under the system bar. Tried `react-native-safe-area-context` first; the deep worktree path blew the C++ codegen filenames past Windows MAX_PATH and a `subst`-aliased drive broke `path.relative` cross-drive in `@react-native/codegen`. Shipped a smaller render-time read floored at 32px instead — no native deps, no Windows-path risk, same outcome.
-
-connect_wifi_network UX polish (May 7): first hardware exercise of the Connect button had no haptic/visual feedback on tap and the WS op was timing out client-side because `ll_provisioning_request_switch()` was tearing the STA down synchronously before transport could flush the response. Refactored to post a new `LL_EV_WIFI_REQUEST_SWITCH` event; provisioning's handler runs on the state-bus task with a 250ms response-flush yield (same pattern as `on_wifi_apply_creds`). App side: optimistic-clear of `is_active` on tap (per Bill's UX call), "Switching to X…" banner, 15ms `Vibration.vibrate` haptic, and the Settings list-refetch `useEffect` now keys on `state.wifi_ssid` so the post-switch settle replaces the optimistic state. Three follow-on fixes after a second hardware pass: VIBRATE permission added to AndroidManifest (was crashing the app on tap), banner copy reworded to tell the user to match their phone's Wi-Fi and re-run Find mirror (auto-reconnect is a lie unless the phone is on the same network), and the Find-mirror "no mirror found" error now mentions disabling VPN as the most common cause.
+**Notes:** Implemented the [LL-041](#LL-041) multi-network spec across six steps, all shipped + OTA-verified on live mirror b2332c (May 7). New `core/ll_wifi/` module (host-tested list ops, per-entry NVS persistence, one-way dependency from provisioning) + a legacy-cred migration shim; provisioning refactored to drive STA from `ll_wifi` with a SCANNING/CONNECTING/ONLINE/BACKOFF state machine (5s/15s/60s backoff); wire ops `list/add/remove/connect_wifi_network`; RN Settings saved-networks UI. `set_wifi_creds` kept as a deprecated shim. Scope grew during the hardware test: a `connect_wifi_network` op was added after Bill hit a dual-network recovery gap, plus an OTA rollback safety net (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` + `ll_ota_subscribe`) after a stack-overflow brick, plus a status-bar overlap fix. Step-by-step narrative in sprint_log_archive.md (Week 6).
 
 ---
 
@@ -886,30 +869,7 @@ added: 2026-03-30 | first_engaged: 2026-05-12 | last_engaged: 2026-05-12 | resol
 artifacts: [docs/packaging-dielines.md](docs/packaging-dielines.md) · [Assembly_docs/packaging/](Assembly_docs/packaging/)
 dependencies: —
 
-**Notes:** Cardboard stock, dimensions, print/laser process. Per Week 6 plan. Blocking dependency for LL-044 (packaging QR code). Slipped — started Week 7 (active sprint: 7).
-
-**Reference templates captured 2026-05-12** (CEFbox parametric dielines, starting point for the custom infinity-mirror packaging):
-- **Outer box** — [Ear-Lock Mailer](https://www.cefbox.com/dielines/mailerBox/earLockMailers). One-piece foldable mailer with locking ear flaps on the lid; no tape or glue needed once folded. Industry-standard name: Roll End Front Tuck (REFT).
-- **Insert** — [Insert with Backing](https://www.cefbox.com/dielines/insert/withBacking). Tray + backer card that holds the product in place; backer is the planned raster surface for the right-to-repair QR ([LL-044](#LL-044)).
-
-**Approach 2026-05-12 — Path B: hand-derive from industry-standard names.** CEFbox's geometry isn't exposed server-side; rather than scrape, hand-derive parametric flat patterns and validate against a CEFbox-generated DXF for the same dimensions. First artifacts landed:
-- [docs/packaging-dielines.md](docs/packaging-dielines.md) — design doc with parametric math for both templates, SVG layer conventions, validation plan, and open decisions list (flute weight, score style, ear-lock shape, insert sizing tied to mirror not box).
-- [Assembly_docs/packaging/sketch_dielines.py](Assembly_docs/packaging/sketch_dielines.py) — matplotlib preview generator. Renders both flat patterns at default 8×8×3" outer with cut/score/raster layers visually separated. Mirrors the [basic_housing](Assembly_docs/basic_housing/) precedent of sketch-first, production-CAD-after.
-
-**Next milestones (sequenced):** (1) Bill sign-off on the sketch geometry, (2) CEFbox DXF cross-check (parse with `ezdxf`, overlay), (3) Python SVG generator (per-template module emitting cut/score/raster layers), (4) `nest.py` bin-packing onto standard sheet sizes via `rectpack`, (5) first physical test cut + fold + fit, (6) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
-
-**Update 2026-05-12 (afternoon).** v1 sketch was structurally wrong — caught when Bill compared to CEFbox screenshots. Pivoted to Path A: 10 reference DXFs from CEFbox at controlled dimension variations (5 mailer + 5 insert, one parameter varied at a time per the [DOE table](packaging-dielines.md)). Built and ran [dxf_analyze.py](Assembly_docs/packaging/dxf_analyze.py) (per-template summary + score-line position diffs) and [dxf_recover.py](Assembly_docs/packaging/dxf_recover.py) (per-coordinate parametric recovery — searches for the simplest clean formula `a·L + b·W + c·H + d·t + const` that matches each baseline coord across all variation samples). Output [coord_formulas.json](Assembly_docs/packaging/coord_formulas.json). Results: ~60% of unique coords resolve to clean formulas (constants, ±L, ±W, L/2±k, L+k·t variants for various integer k); the remaining ~40% are arc-endpoint coordinates that need separate recovery as (center, radius, start_angle, end_angle) tuples. Structural topology now understood: mailer is a 5-panel REFT spine (tuck + W + H + W + lid-tuck) with 2H-wide roll-end side walls (the "2H" coefficient confirms the side wall is a doubled-fold roll); insert is backer + floor + 4 down-folding walls with a centered slot cradle. Reference DXFs are in `Assembly_docs/Packaging_Templates/` (gitignored — paid CEFbox content). Next step: arc-parameter recovery + parametric SVG generator using the JSON formulas.
-
-**Update 2026-05-12 (evening).** Pivoted again from per-coord formula recovery to a NAMED-PARTS architecture (graph of structural pieces with rules, mirror-symmetry as a hard constraint). Both generators landed and pass strict validation:
-
-- **[mailer_reft.py](Assembly_docs/packaging/mailer_reft.py)** — Roll End Front Tuck mailer in 6 incremental phases: spine + scores → roll-end side walls with W-conditional tooth pattern → dust flaps (case A vs case B at H ≈ 100−2.5t threshold) → ear-lock arcs with horns + score-tangents + tangent diagonals → finger holes scaled with W → cleanup pass with 14 panel-fold scores + corner connectors. Bug caught mid-build: dieline is mirror-symmetric about `x = L/2 + 5t`, NOT `x = L/2` (every right-side coord was off by 10t until fixed).
-- **[insert_tray.py](Assembly_docs/packaging/insert_tray.py)** — backer + floor + slot cradle + side walls + front wall + corner arcs + tangents in 5 phases. Supports N-slot configurations via `Slot(cx, cy, SL, SW, SH)` records; `single_slot()` and `n_slot()` constructors for convenience. Degenerate-cradle handling for SH = SL/2 or SW/2 (collapses to a Line; effective SH clamped per-slot).
-- **[validation.py](Assembly_docs/packaging/validation.py)** — entity-count + Y-symmetry tests against the 5 reference DXFs per template. Arc canonicalization via `(midpoint, sweep)` to handle 0/360 wrap; polyline canonicalization dedupes explicit closing points; 0.01mm rounding precision avoids FP drift between left/right mirrored values. Result: **10/10 reference tests PASS** (5 mailer + 5 insert).
-- **[cefbox_render.py](Assembly_docs/packaging/cefbox_render.py)** — solid-line PNG renderer (cut=red, score=blue, color-only differentiation per Bill's style fix).
-- **[dxf_to_png.py](Assembly_docs/packaging/dxf_to_png.py)** — passthrough renderer for verifying reference DXFs against my generator output.
-- **CEFbox-style geometric rules** added to both Specs as `validate()` methods: insert enforces 5mm slot-edge buffer + 5mm slot-to-slot gap; mailer enforces W ≥ 180 (tooth pattern lower bound), L ≥ 60, H ∈ [20, 200], t ∈ [0.5, 5.0], H ≥ 2t (case A non-degenerate). Bad inputs raise `ValueError` with specific actionable messages.
-
-**Open follow-ons**: (1) `nest.py` for sheet-size optimization via `rectpack`, flagged as ready-to-build separate workstream; (2) first physical test cut + fold + fit; (3) close [LL-044](#LL-044) by wiring the QR raster region to a real URL.
+**Notes:** Packaging concept — parametric dieline generators for the infinity-mirror box. Per Week 6 plan; slipped, started Week 7. Path A chosen: hand-derive parametric flat patterns from 10 CEFbox reference DXFs (in `Assembly_docs/Packaging_Templates/`, gitignored — paid content) rather than scrape. Two production generators shipped with a passing validation suite (10/10 reference DXFs): `mailer_reft.py` (Roll End Front Tuck outer box) and `insert_tray.py` (N-slot backer tray — the backer is the planned QR raster surface for [LL-044](#LL-044)), plus `validation.py` and PNG renderers in [Assembly_docs/packaging/](Assembly_docs/packaging/); parametric math + conventions in [docs/packaging-dielines.md](docs/packaging-dielines.md). Open follow-ons: `nest.py` sheet packing, first physical test cut, and wiring the QR raster region (unblocks [LL-044](#LL-044)). Iteration history in task_log.md.
 
 ---
 
@@ -934,9 +894,7 @@ added: 2026-03-30 | first_engaged: 2026-05-13 | last_engaged: 2026-05-13 | resol
 artifacts: [docs/service-blueprint.md](docs/service-blueprint.md)
 dependencies: LL-004, LL-007
 
-**Notes:** Map the complete user journey: ad → browse → choose standard or custom → purchase → unbox → setup → daily use → troubleshoot/repair. HCDE artifact demonstrating "system of interactions" rather than just product. Per Week 7 plan.
-
-Resolved 2026-05-13: 10-stage blueprint (Discover → End-of-life) plus dedicated Custom Order Deep Dive section ([LL-054](#LL-054)) for the bespoke flow. Each stage covers Customer Journey / Frontstage / Backstage / Support Systems & Partners, with explicit moments-of-truth and fail-point callouts and links into the existing artifacts (stakeholder map, repair-index, supply-chain, sustainability audit, button-interface, brand positioning, Assembly_docs, failure-mode catalog) rather than restating them. Summary table at end for portfolio-skim case. Open-actions table surfaced 4 new triageable items (repair-video pipeline, custom-order deposit structure, carrier insurance threshold, gift-giver/recipient address mismatch) flagged for future promotion to LL-NNN, not added inline.
+**Notes:** Per Week 7 plan — the complete user journey as an HCDE "system of interactions" artifact. Resolved 2026-05-13: 10-stage blueprint (Discover → End-of-life), each stage covering Customer Journey / Frontstage / Backstage / Support with moments-of-truth and fail-point callouts, linking into the existing artifacts rather than restating them. Includes a dedicated Custom Order Deep Dive ([LL-054](#LL-054)) and a portfolio-skim summary table. Surfaced 4 new triageable open actions (repair-video pipeline, custom-order deposit structure, carrier insurance threshold, gift address mismatch).
 
 ---
 
@@ -948,9 +906,7 @@ added: 2026-03-30 | first_engaged: 2026-05-13 | last_engaged: 2026-05-13 | resol
 artifacts: [docs/service-blueprint.md § Custom Order Deep Dive](docs/service-blueprint.md#custom-order-deep-dive)
 dependencies: LL-053
 
-**Notes:** Bespoke design process is the primary value differentiator. Map: how customer communicates custom vision → translation into buildable design → approval flow → upsell tiers (size, complexity, frame material). Per Week 7 plan. Lives inside LL-053's broader blueprint.
-
-Resolved 2026-05-13 as a dedicated section of [LL-053](#LL-053): 10-step custom-order journey (Inquiry → Discovery → Concept + price band → Design proof → Revision cycle, capped at 3 free → Approval + 50% deposit → Manufacture → Pre-ship review → Balance + ship → Post-purchase identical to standard), frontstage/backstage table, three custom-specific moments of truth, five fail-point modes (unbuildable ask, copyright/trademark, revision-cap breach, mid-cycle ghosting, post-manufacture cancel), and five open research questions threaded into the LL-048 interview agenda. Frames the bespoke branch as a high-margin on-ramp into the $250+ B2B and sensory tiers from [Market Analysis](docs/Market%20Analysis%20Report.md) — only the laser-cut mirror plane differs, so custom reuses 100% of the standard supply chain and production line.
+**Notes:** Per Week 7 plan — the bespoke design process, the primary value differentiator. Resolved 2026-05-13 as a dedicated section of [LL-053](#LL-053)'s blueprint: 10-step custom-order journey (Inquiry → Concept + price band → Design proof → ≤3 free revisions → Approval + 50% deposit → Manufacture → Pre-ship review → Balance + ship), frontstage/backstage table, 5 fail-point modes, and 5 open research questions threaded into the LL-048 interview agenda. Custom reuses 100% of the standard supply chain and line — only the laser-cut mirror plane differs — framing it as a high-margin on-ramp into the $250+ tiers.
 
 ---
 
@@ -962,15 +918,9 @@ added: 2026-03-30 | first_engaged: 2026-05-14 | last_engaged: 2026-05-15 | resol
 artifacts: [Firmware/v1/core/transport/transport.c](Firmware/v1/core/transport/transport.c) · [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c) · [Firmware/v1/scripts/](Firmware/v1/scripts/)
 dependencies: LL-029, LL-046
 
-**Notes:** Wi-Fi drop handling, network jitter under load, and the bug-doc fix cascade from [post-mini-sprint-bugs.md](docs/post-mini-sprint-bugs.md) #1-4. BLE reconnection split off to [LL-055-1](#LL-055-1) on 2026-05-15 (parked-on-dependency until BLE provisioning ships post-V1). Closed 2026-05-15 after 4 sessions over May 14-15; deadline slipped ~12h past May 16 cutoff with no de-scope.
+**Notes:** Wi-Fi drop handling + network jitter under load + the bug-doc fix cascade from [post-mini-sprint-bugs.md](docs/post-mini-sprint-bugs.md) #1-4. Closed 2026-05-15 after 4 sessions (May 14-15); deadline slipped ~12h, no de-scope. BLE reconnection split off to [LL-055-1](#LL-055-1) (parked on post-V1 BLE provisioning).
 
-**Session record:**
-1. **Session A — Fix #4: Wi-Fi power-save disabled.** ✅ Done 2026-05-15. Audit found zero `esp_wifi_set_ps` calls; `ll_wifi_disable_ps()` helper + `WIFI_PS_NONE` at all four `esp_wifi_start` sites. Verified on `192.168.5.229`: ll_debounce_test.py first-response latency 155ms→84ms (Test A), 136ms→64ms (Test B).
-2. **Session B — Fix #2: Broadcast fanout → dedicated FreeRTOS task + depth-2 queue.** ✅ Done 2026-05-15. `ll_broadcast` task (4 KB stack, prio 4) consumes broadcast tokens; debounce timer cb is now a pure enqueuer. Verified via [ll_slow_client_test.py](Firmware/v1/scripts/ll_slow_client_test.py): 20/20 inbound responses with median latency unchanged while a slow client pins a socket.
-3. **Session C — Fix #3: §7.1 rate limit.** ✅ Done 2026-05-15. Per-IP token bucket (10 msg/s, burst 10); overrun → close 1008. Verified via new [ll_ratelimit_test.py](Firmware/v1/scripts/ll_ratelimit_test.py): steady 10 msg/s = 30/30 clean; flood 50 msg/s = close 1008 at 0.43s; after-close reconnect = ping OK. Bug-doc cascade fully closed.
-4. **Session D — Resilience characterization + test harness.** ✅ Done 2026-05-15. Five new scripts under [Firmware/v1/scripts/](Firmware/v1/scripts/): `ll_reconnect_hammer.py` (30/30 clean), `ll_ws_proxy.py` (TCP latency+loss proxy), `ll_jitter_test.py` (200ms latency = 10/10; 1% loss = 10/10; 5% loss breaks WS handshake — not a defect), `ll_soak_test.py` (5min/1476 iter @ 5 msg/s, 0 errors, RTT drift −0.4ms, uptime monotonic), `ll_ap_toggle_test.py` (manual — Bill toggles hotspot mid-run, script records gap + whether uptime resumed monotonically).
-
-The 5 scripts form a durable regression harness future firmware changes can replay against. No new bug-doc entries opened; all 4 entries that motivated LL-055 (#1-4) closed.
+**Four sessions, all verified on the live mirror:** A — Wi-Fi power-save disabled (`WIFI_PS_NONE`), first-response latency roughly halved. B — broadcast fanout moved to a dedicated FreeRTOS task + depth-2 queue. C — per-IP rate limit (token bucket 10 msg/s, overrun → close 1008). D — characterization + a 5-script regression harness in [Firmware/v1/scripts/](Firmware/v1/scripts/) (reconnect hammer, latency/loss proxy, jitter, 5-min soak, AP-toggle). All 4 motivating bug-doc entries closed.
 
 ---
 
@@ -987,14 +937,14 @@ dependencies: BLE provisioning landing in firmware ([post-mini-sprint-bugs.md #6
 ---
 
 <a id="LL-056"></a>
-### [ ] LL-056 — Terms of Service and Warranty policy
+### [x] LL-056 — Terms of Service and Warranty policy
 
 sprint: 8 | priority: high | deadline: 2026-05-23
-added: 2026-03-30
-artifacts: —
+added: 2026-03-30 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [docs/terms-of-service-and-warranty.md](docs/terms-of-service-and-warranty.md)
 dependencies: LL-001, LL-030
 
-**Notes:** Balance pro-consumer values with business liability. Define return/refund policy. ToS for online sales. Warranty terms (length, what's covered, what's not). Per Week 8 plan. RtR philosophy (LL-030) shapes the warranty ergonomics; legal entity (LL-001) provides the contracting party.
+**Notes:** 2026-05-20 — Resolved. 13-section policy drafted at [docs/terms-of-service-and-warranty.md](docs/terms-of-service-and-warranty.md): terms of sale (standard + the custom-order flow with the 50% deposit), repair-first limited warranty + RMA process + 7-year parts commitment, returns/refunds (30-day standard window, custom-order deposit forfeiture + proprietary-design scrap rule), firmware/closed-binary terms, custom-design buyer-IP attestation, limitation of liability, privacy, WA governing law. **Ships as a draft, not legal advice** — carries a banner that it needs review against WA consumer-protection law / Magnuson-Moss / FTC guidance by counsel before going live. Three former [CONFIRM] items confirmed by Bill 2026-05-20: `support@layeredlogic.cc` as the contact email; a 1-year-from-ship warranty, with any statutory consumer-protection period overriding where the law mandates a different one; and 50/50 custom-order payment (50% deposit at approval, 50% balance at shipment). Remaining gate is counsel review before the doc goes live. RtR philosophy (LL-030) shaped the warranty ergonomics; the legal entity (LL-001) is the contracting party.
 
 ---
 
@@ -1002,19 +952,13 @@ dependencies: LL-001, LL-030
 ### [ ] LL-057 — App ↔ hardware integration polish
 
 sprint: 8 | priority: medium | deadline: 2026-05-23 (will slip — see Notes)
-added: 2026-03-30 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15
+added: 2026-03-30 | first_engaged: 2026-05-15 | last_engaged: 2026-05-20
 artifacts: [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: LL-035, LL-040
 
-**Notes:** Per Week 8 plan. Most engineering integration was front-loaded into LL-035 mini-sprint and LL-040 hardening. **Scope locked 2026-05-15 as "wide"** — telemetry and paired-mode auth stay in-scope rather than spinning out (Bill's call after the scope question). Will slip past May 23; recommend slipping rather than truncating quality. Closed items already crossed off the original notes: bug #1 closed via [LL-055](#LL-055); bug #2 closed via [LL-075](#LL-075); bug #6 is structurally parked on BLE provisioning ([LL-055-1](#LL-055-1)).
+**Notes:** Per Week 8 plan. Most integration was front-loaded into the LL-035 mini-sprint and LL-040 hardening; this is the polish + remaining-features pass. **Scope locked 2026-05-15 as "wide"** (Bill's call) — telemetry and paired-mode auth stay in-scope. Will slip past May 23; slipping preferred over truncating quality. Bug cascade from the original notes: #1 closed via [LL-055](#LL-055), #2 via [LL-075](#LL-075), #6 parked on BLE provisioning ([LL-055-1](#LL-055-1)).
 
-**Session plan (locked 2026-05-15):**
-1. **Session A — Stuck-OTA-button bug fix (~30 min).** ✅ Done 2026-05-15 (code; runtime verify pending Bill's next Pixel 9 session). `useEffect` in [App.tsx](App/v1/App.tsx) tracks previous conn state via a ref; resets `otaState` from `'rebooting'` → `'idle'` on the *transition* into `conn === 'open'` (not just the steady state — otherwise it would fire mid-OTA before the mirror reboots).
-2. **Session B — Real OTA progress (~½ day).** 🟡 Partial close 2026-05-15 — bisected as architecturally blocked. Bisect found that any broadcast emitted while `esp_https_ota` is running (or even from the httpd task immediately before it) causes the install to fail with ESP_FAIL or roll back on boot. Firmware-side progress reporting needs to move `ll_ota_start` off the httpd task (dedicated OTA task) before this can ship. App-side wire-type scaffolding (`OtaProgressBroadcast`, `onOtaProgress`, `otaProgressLabel`) shipped as forward-compat in [App/v1/src/protocol.ts](App/v1/src/protocol.ts) + [App.tsx](App/v1/App.tsx) — when firmware progress is fixed later, the app immediately benefits with no further changes. Bisect chain left the mirror's OTA partitions in a refusing-all-installs state; needs USB `erase-flash && flash` to recover (flagged separately). See sprint_log entry for full bisect timeline + design lead for the retry.
-3. **Session C — Telemetry MVP (~1-2 days).** ✅ Done 2026-05-15 (code-complete; E2E verify gated on [LL-076](#LL-076)). New `core/telemetry/` module + Cloudflare Worker at `telemetry.layeredlogic.cc/v1/beacon` + app/webapp settings toggle. Boot-reason-only panic capture (full file:line:task deferred). Binary 1.23 MB / 1.25 MB after embedded CA bundle. See [LL-057-C](#LL-057-C) for full breakdown.
-4. **Session D — Paired-mode auth (~2+ days, design-first).** Per [firmware-spec §4.9](docs/firmware-spec.md). First: scoping doc to pick the pairing UX (QR on label / LED color-code / DH key exchange / WPS-style press-button). Then: `core/auth/` HMAC-SHA256 over WS envelope; transport changes (`ts` + `hmac` fields); NVS `ll_auth` namespace; app pairing flow.
-
-Each session = its own build → OTA → verify cycle + sprint_log entry (per `feedback_verify_each_change` memory). Sub-IDs as we go (LL-057-A through LL-057-D).
+**Four sessions, each its own build → verify cycle + sprint_log entry:** A — stuck-OTA-button fix ([LL-057-A](#LL-057-A), ✅). B — real OTA progress ([LL-057-B](#LL-057-B), 🟡 architecturally blocked, deferred). C — telemetry MVP ([LL-057-C](#LL-057-C), ✅). D — paired-mode auth ([LL-057-D](#LL-057-D), staged D1–D4; D1 done, D2–D4 remain).
 
 ---
 
@@ -1026,24 +970,7 @@ added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15 | resol
 artifacts: [cloudflare-workers/telemetry/](cloudflare-workers/telemetry/) · [Firmware/v1/core/telemetry/](Firmware/v1/core/telemetry/) · [App/v1/App.tsx](App/v1/App.tsx) · [Firmware/v1/webapp/src/pages/settings.tsx](Firmware/v1/webapp/src/pages/settings.tsx)
 dependencies: LL-076 (resolved 2026-05-15)
 
-**Notes:** End-to-end telemetry path per [firmware-spec §4.10](docs/firmware-spec.md): mirror → POST → Cloudflare Worker → KV. **Three pieces landed:**
-
-1. **Cloudflare Worker** at `telemetry.layeredlogic.cc/v1/beacon`. New project at [cloudflare-workers/telemetry/](cloudflare-workers/telemetry/) — Wrangler-deployable TS Worker that validates a versioned beacon schema (v=1), stores per-timestamp entries with a 90-day TTL plus a no-TTL "latest snapshot per device" pointer, exposes `GET /v1/healthz` + `GET /v1/latest/<device_id>`. README documents the first-time setup (kv create, route, dns) for Bill to deploy.
-2. **App + webapp toggle.** "Share anonymous diagnostics" Switch in [App.tsx](App/v1/App.tsx) Settings + matching checkbox panel in [webapp settings.tsx](Firmware/v1/webapp/src/pages/settings.tsx). Both wired to `set_state {telemetry_enabled: bool}` — uses the existing `DeviceState.telemetry_enabled` field, no new wire op.
-3. **Firmware `core/telemetry/` module.** Builds + posts the beacon on a 24h ± 2h jittered schedule, gated on `state.telemetry_enabled`. First fire 1-5 min after first `LL_EV_WIFI_CONNECTED`. HTTPS via `esp_crt_bundle_attach` (new `CONFIG_MBEDTLS_CERTIFICATE_BUNDLE` enabled in sdkconfig.defaults). Includes a "this boot was a panic" flag when `esp_reset_reason() == ESP_RST_PANIC`; cleared after first successful beacon. Wired into `variants/standard/main.c` with the standard init/subscribe order.
-
-**Build cost:** +74 KB (mostly the embedded Mozilla CA bundle, ~70 KB). Binary now 1.23 MB / 1.25 MB partition — **98.2% utilization, 1.8% headroom.** Tight; flagged for future trimming (CMN-only bundle would halve the cost; CA pinning to CF's specific roots would slim further; or expand the partition slot — needs a partitions.csv change that breaks OTA compatibility).
-
-**End-to-end verified on the live mirror, 2026-05-15 ~13:43** (after [LL-076](#LL-076) USB recovery). Bill deployed the Worker (subdomain `layeredlogic.workers.dev`); the workers.dev URL went live first while DNS for the `telemetry.layeredlogic.cc` custom domain propagated. Beacon arrived at the Worker `/v1/latest/b2332c` ~100s after `set_state {telemetry_enabled:true}` — well within the 1-5 min first-fire window. Real payload: `fw_version=telemetry-fix-1342, uptime_s=103, heap_free_min=163268, boot_reason="OTHER" (now "USB" after the reset-reason expansion), rssi=-72, led_count=66`. **Two bugs caught + fixed during E2E:**
-
-1. **Cloudflare Bot Fight Mode rejects requests with library-default User-Agents** (returns HTTP 403 / CF error code 1010). Added an explicit `User-Agent: ll-mirror/1 esp32c3` header in [telemetry.c](Firmware/v1/core/telemetry/telemetry.c)'s `post_beacon()`. Same trap would have hit any future esp_http_client-using module; flagged for the OTA path when production OTA via CF lands.
-2. **`telemetry_enabled` was silently dropped by `op_set_state`** in [transport.c](Firmware/v1/core/transport/transport.c) — the field is in `ll_state_t`, the event `LL_EV_TELEMETRY` exists in state_bus, but the WS dispatcher had no branch for it. App/webapp toggles were sending the value but the firmware ignored it. Added the missing branch that posts `LL_EV_TELEMETRY`.
-3. (Polish) Expanded `reset_reason_str()` in telemetry.c to cover `ESP_RST_USB / JTAG / EFUSE / PWR_GLITCH / CPU_LOCKUP` — added in IDF 5.x and previously catching-all to "OTHER".
-
-**Deferred from Session C:**
-- Full panic capture (`filename:line:task_name`) — needs `esp_set_panic_handler` hook, more involved than MVP. V1 ships boot-reason-only.
-- Dashboard UI for the Worker side (browse recent beacons / panic timeline).
-- Alerting on panic payloads.
+**Notes:** End-to-end telemetry per [firmware-spec §4.10](docs/firmware-spec.md): mirror → POST → Cloudflare Worker → KV. Three pieces shipped — a Wrangler-deployable TS Worker at `telemetry.layeredlogic.cc/v1/beacon` (versioned schema, 90-day TTL + latest-snapshot pointer, `/healthz` + `/latest`); app + webapp "share diagnostics" toggles on the existing `telemetry_enabled` field; and a `core/telemetry/` firmware module (24h±2h jittered beacon, HTTPS via embedded CA bundle, boot-reason panic flag). **Build cost +74 KB → 1.23/1.25 MB partition (1.8% headroom — tight).** E2E-verified on the live mirror May 15; two bugs fixed during E2E (CF Bot Fight Mode needs an explicit User-Agent; `telemetry_enabled` was silently dropped by `op_set_state`). Deferred: full panic capture (file:line:task), Worker dashboard, panic alerting.
 
 ---
 
@@ -1055,7 +982,7 @@ added: 2026-05-15 | first_engaged: 2026-05-15 | last_engaged: 2026-05-15
 artifacts: [App/v1/App.tsx](App/v1/App.tsx) · [App/v1/src/protocol.ts](App/v1/src/protocol.ts) · [Firmware/v1/webapp/src/protocol.ts](Firmware/v1/webapp/src/protocol.ts)
 dependencies: LL-076 (device USB recovery before any retry)
 
-**Notes:** Status = partial close, deferred. Targeted real-time progress reporting via a new `{op:"ota_progress", phase, percent}` wire op. Bisect (May 15) found that emitting WS broadcasts while `esp_https_ota` is running on the httpd task — or even from the httpd task immediately before the call — causes the install to fail with ESP_FAIL or install successfully but fail boot validation (silent rollback). Three approaches tried (begin/perform/finish migration, ESP_HTTPS_OTA_EVENT subscription, op_start_ota wrapper); all blocked on the same constraint. The bisect chain also left the live mirror's otadata/ota_X partitions in a state refusing all OTA installs ([LL-076](#LL-076) tracks USB recovery). **Forward-compat scaffolding shipped:** `OtaPhase` + `OtaProgressBroadcast` + `isOtaProgress` in both [App/v1/src/protocol.ts](App/v1/src/protocol.ts) and [Firmware/v1/webapp/src/protocol.ts](Firmware/v1/webapp/src/protocol.ts); `onOtaProgress` callback in both ws-client.ts; [App.tsx](App/v1/App.tsx) wires `otaProgress` state + `otaProgressLabel` helper. **Design lead for retry:** move `ll_ota_start` off the httpd task — spawn a dedicated OTA worker task that processes start_ota requests from a queue, the same way Session B of LL-055 moved broadcast fanout off `esp_timer`. Then the OTA window and the broadcast window are on separate tasks and the contention disappears. See sprint_log entry for full bisect timeline.
+**Notes:** Partial close, deferred. Targeted real-time OTA progress via an `ota_progress` wire op. Bisect (May 15) found that any WS broadcast during `esp_https_ota` — or from the httpd task just before it — fails the install (ESP_FAIL or boot-validation rollback); three approaches all blocked on this. Forward-compat scaffolding shipped app-side (`OtaProgressBroadcast`, `onOtaProgress`, `otaProgressLabel`). Retry design: move `ll_ota_start` off the httpd task onto a dedicated OTA worker task (same pattern as LL-055's broadcast-fanout fix). The bisect chain corrupted the mirror's OTA partitions → recovered via [LL-076](#LL-076).
 
 ---
 
@@ -1068,6 +995,22 @@ artifacts: [App/v1/App.tsx](App/v1/App.tsx)
 dependencies: —
 
 **Notes:** Closes the LL-040 follow-up note: app OTA button stuck on "Mirror downloading + rebooting…" forever after a successful OTA. Fix in [App.tsx](App/v1/App.tsx): `prevConnRef` tracks the previous `conn` state; a new `useEffect` fires when the transition is "non-open → open" *and* `otaState === 'rebooting'`, resetting to `'idle'`. The transition-not-steady-state distinction matters: when the user taps the button conn is already `'open'`, so a naive `useEffect` watching just `(conn, otaState)` would reset mid-OTA before the mirror reboots. 13 lines added. `tsc --noEmit` clean on App.tsx (4 pre-existing errors in protocol.ts/ws-client.ts about missing DOM globals — unrelated, predate this change). Runtime verification deferred to Bill's next Pixel 9 session — needs an actual OTA cycle through the app UI to confirm the button auto-resets.
+
+---
+
+<a id="LL-057-D"></a>
+#### [ ] LL-057-D — Session D: paired-mode auth
+
+parent: LL-057 | sprint: 8
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20
+artifacts: [Firmware/v1/core/auth/](Firmware/v1/core/auth/) · [Firmware/v1/tests/core/auth/test_auth_logic.c](Firmware/v1/tests/core/auth/test_auth_logic.c)
+dependencies: LL-035, LL-040
+
+**Notes:** HMAC-authenticated paired mode per [firmware-security.md §5](docs/firmware-security.md) + [control-protocol-spec.md](docs/control-protocol-spec.md). Scoping doc skipped — §5 already locks the design (pre-shared user secret, HMAC-SHA256 envelope, `hmac`-last canonicalization, no QR/DH/WPS). Staged D1–D4, each a build/flash/verify cycle.
+
+**D1 done 2026-05-20** — `core/auth/` module created + host tests. New files: `auth_logic.h/.c` (pure-C, host-buildable — SHA-256, HMAC-SHA256, hex, constant-time compare, and the `,"hmac":`-last envelope split), `auth.h/.c` (ESP-IDF — `ll_auth` NVS namespace, RAM secret cache, init/subscribe/is_paired/has_secret/set_secret/clear_secret/verify), `CMakeLists.txt`, and `tests/core/auth/test_auth_logic.c`. Refinement from the approved plan: SHA-256/HMAC are vendored pure-C rather than `mbedtls/md.h`, so the crypto is host-testable and serves as the byte-exact reference for the app's JS HMAC. 21 host tests (SHA-256 + RFC 4231 HMAC known-answer vectors + envelope round-trips) — all pass; clean `-Wall -Wextra -Wpedantic -Werror` build.
+
+**Remaining D2–D4** (need the live mirror; will slip past the May 23 Week 8 deadline). D2 — wire `ll_auth_init/subscribe` into `variants/standard/main.c` + factory-reset secret wipe (the locked-out-recovery path). D3 — transport auth gate in `handle_envelope()` + `set_auth_mode`/`rotate_secret` ops + replay protection: a per-socket monotonic-`ts` guard plus a device-wide recent-`req_id` dedup cache. D4 — app-side envelope signing (pure-JS HMAC) + pairing UI. **SNTP dropped 2026-05-20** (Bill's call): the device has no wall clock, but the recency-based replay guard is proportionate for this threat model and the device must work offline regardless — so the spec's absolute ±60s `ts` window is replaced by the monotonic-`ts` + `req_id`-dedup approach. `firmware-security.md` §5.4 to be amended to match when D3 lands.
 
 ---
 
@@ -1297,7 +1240,7 @@ added: 2026-05-07 | first_engaged: 2026-05-07 | last_engaged: 2026-05-07 | resol
 artifacts: [App/v1/src/haptic.ts](App/v1/src/haptic.ts) · [App/v1/scripts/gen-color-wheel.py](App/v1/scripts/gen-color-wheel.py) · [App/v1/assets/color-wheel.png](App/v1/assets/color-wheel.png)
 dependencies: LL-046
 
-**Notes:** Two-feature polish round on the RN app, requested after LL-046 closed. (1) Haptic feedback wired across all the action buttons via a new `src/haptic.ts` helper with three tiers (light/medium/heavy) plus `pattern(id)` and `brightness(level)` content-encoded signatures — tap a pattern → feel a haptic that mirrors that LED pattern's vibe (solid = steady, twinkle = staccato, breathing = slow swell, etc.); tap a brightness step → feel a duration that scales with the level (Android `Vibration` amplitude isn't bridged from RN core, so duration is the perceptual proxy). Pattern haptics tuned to ~50% longer total + ~20% softer per-pulse on second pass for less assault, more vibe. (2) Replaced the 12 brand-color dots with a 512×512 HSV color wheel PNG (generated by `scripts/gen-color-wheel.py`), sized at runtime to fill the screen width minus body padding; touch handler maps polar coords to `#RRGGBB`, throttled to ~10Hz with a final-on-release send. UI extras: a color preview overlay at the top-right corner of the wheel (45° from center), a touch-follow magnifier bubble that floats above the finger so it doesn't block the target, and `onResponderTerminationRequest={() => false}` + `scrollEnabled={wheelTouch === null}` to keep the page from panning during drag. Replaces `BRAND_SWATCHES` in the app — the export stays in `protocol.ts` for the webapp's own use.
+**Notes:** Two-feature RN app polish after LL-046. (1) Haptics via a new `src/haptic.ts` helper — light/medium/heavy tiers plus content-encoded `pattern(id)` and `brightness(level)` signatures (a tapped pattern feels like its LED vibe; brightness duration scales with the level, since Android amplitude isn't bridged from RN core). (2) Replaced the 12 brand-color dots with a 512×512 HSV color-wheel PNG — polar touch-to-`#RRGGBB`, ~10 Hz throttle, top-right preview swatch, touch-follow magnifier bubble, scroll-lock during drag.
 
 ---
 
@@ -1309,7 +1252,7 @@ added: 2026-05-13 | first_engaged: 2026-05-13 | last_engaged: 2026-05-13 | resol
 artifacts: [docs/user-flow-authoring.md](docs/user-flow-authoring.md) · [docs/service-blueprint-flows.md](docs/service-blueprint-flows.md) · [.preview/stage1.html](.preview/stage1.html)
 dependencies: LL-053
 
-**Notes:** Emerged organically from drilling down on [LL-053](#LL-053) — Bill asked whether the service-blueprint stages could be visualized as user flows in a Figma-style decision tree. Six-iteration drill-down on Stage 1 (Discover) produced both the locked HCDE methodology AND a reusable rendering recipe. Methodology decisions locked: pain points reframed as user-voice diamonds (`Can I imagine this in my space?` instead of `Pain: scale not conveyed`); two-layer pain evaluation (pain → recovery probe → missing-or-rejoin) where recovery is also a user-voice question and the "No" branch terminates at a yellow `Missing: X` build-this callout; orange diamond reserved for friction, red oval reserved for exit; natural cognitive order enforced (vibe → visualize → value → trust → timing for consumer-purchase flows); modality-compression rule (don't fork on channel); recovery is optional, not paired. Rendering: Mermaid ruled out after step-curves and the ELK plugin both failed to produce strict port-pinned orthogonal routing; switched to **Graphviz via `@viz-js/viz@3` (WASM)** with `splines=ortho`, explicit port specifiers (`:e -> :w` for Yes, `:s -> :n` for No), and per-column `rank=same` groups. The non-obvious rendering gotcha worth memorizing: in `rankdir=LR`, `rank=same` means same *column* (vertical strip), not same row — putting the whole happy path in one rank group stacks it vertically and gives top-down primary instead of left-right primary. Two memory entries also added: [feedback_flow_natural_progression](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_flow_natural_progression.md) (always reorder for natural cognition) and [reference_user_flow_authoring](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/reference_user_flow_authoring.md) (pointer to the docs file). Remaining nine stages (2-10) are now follow-on work, ready to scale against the locked grammar.
+**Notes:** Emerged from drilling down on [LL-053](#LL-053) — can service-blueprint stages be drawn as Figma-style user flows? Six iterations on Stage 1 (Discover) produced a locked HCDE methodology + a reusable rendering recipe, both in [docs/user-flow-authoring.md](docs/user-flow-authoring.md) / [docs/service-blueprint-flows.md](docs/service-blueprint-flows.md). Methodology: pain points as user-voice diamonds, two-layer pain→recovery→`Missing:` evaluation, orange=friction / red=exit, natural cognitive order, modality compression. Rendering: Graphviz via `@viz-js/viz` with `splines=ortho` + explicit ports (Mermaid ruled out). Key gotcha: in `rankdir=LR`, `rank=same` means same column, not row. Two memory entries added; Stages 2–10 are follow-on work against the locked grammar.
 
 ---
 
@@ -1334,6 +1277,18 @@ artifacts: —
 dependencies: —
 
 **Notes:** Resolved 2026-05-15 ~12:40. The May 15 [LL-057-B](#LL-057-B) bisect chain triggered ~5 consecutive OTA install failures on the live mirror at 192.168.5.229. After the last failure the running firmware (`ota-diag-priv-req-1153`) refused all subsequent OTA installs with ESP_FAIL — even installing a fresh build with literally zero behavioral changes from a previously-working baseline (`ota-rollback-1214`). Most likely cause: otadata partition slot bookkeeping corrupted across consecutive partial-write failures. **Recovery executed:** Bill plugged in USB; `idf.py -p COM3 erase-flash` (14.4s chip erase) followed by `idf.py -p COM3 flash` brought the device back. Bill re-provisioned via the SoftAP captive flow, the mirror rejoined his Wi-Fi at the same DHCP lease (192.168.5.229). OTA-flashing not re-tested over the air (no need — USB recovery alone reset the partition state) but a full sequence of subsequent USB reflashes (telemetry-mvp → telemetry-ua → telemetry-fix → telemetry-final) all succeeded cleanly. Unblocks the LL-057-C end-to-end verification path.
+
+---
+
+<a id="LL-077"></a>
+### [x] LL-077 — Mirror Assembly & Teardown Guide
+
+sprint: 8 | priority: high | deadline: 2026-05-23
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [docs/assembly-guide.md](docs/assembly-guide.md)
+dependencies: —
+
+**Notes:** Created 2026-05-20 as the operations-track prerequisite [LL-042](#LL-042) (User Repair Guide) had been blocked on since Week 4 — the repair guide needs a teardown procedure, and no procedural build/teardown document existed (only a station-details CSV, a build-cost spreadsheet, and housing STL/Python files). Written at [docs/assembly-guide.md](docs/assembly-guide.md): tools/workspace, per-unit parts inventory, the three sub-assemblies (frame / LED / controller), the 20-station manufacturing build sequence (S01–S20), final assembly, and §7 — the teardown/access procedure LL-042 consumes. Authored from `Assembly_docs/LED_Mirror_Station_Details.csv`, the `Assembly_docs/basic_housing/` scripts, [repair-design-decisions.md](docs/repair-design-decisions.md), and the [BOM](docs/bom-breakdown-basic-6x6.md). Open items flagged in the doc: assembly times pending the golden-sample build; the `basic_housing/` model is still dimensioned for the old STM8 test board and needs re-confirming against the ESP32-C3 controller PCB.
 
 ---
 

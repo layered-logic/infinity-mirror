@@ -23,6 +23,7 @@ endif()
 
 add_executable(ll_firmware_tests
     test_main.c
+    core/auth/test_auth_logic.c
     core/button/test_gesture.c
     core/button/test_cycle.c
     core/led_driver/test_encode.c
@@ -30,6 +31,7 @@ add_executable(ll_firmware_tests
     core/nvs/test_nvs_logic.c
     core/pattern_interp/test_patterns.c
     core/pattern_interp/test_cue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/auth/auth_logic.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/button/button_logic.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/led_driver/led_driver_logic.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/ll_wifi/ll_wifi_logic.c
@@ -41,6 +43,7 @@ add_executable(ll_firmware_tests
 
 target_include_directories(ll_firmware_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/auth
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/button
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/led_driver
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/ll_wifi
