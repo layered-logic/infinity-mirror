@@ -15,13 +15,13 @@ void ll_state_defaults(ll_state_t *out)
         .pattern_id = "solid",
         .base_color_rgb = 0x3214FFu,   /* Indigo Signal */
         .brightness = 75,
-        /* TODO: led_count is board-dependent — production 6x6 wants 32,
-         * V0 12x12 prototype wants 66. Right architecture is for nvs.c
-         * to pull LL_LED_COUNT_DEFAULT from board.h after this call, and
-         * for state_bus_defaults.c to omit led_count entirely. Until that
-         * refactor, the literal here matches the active development
-         * target (V0 12x12 prototype on c3_devkit). */
-        .led_count = 66,
+        /* TODO: led_count is board-dependent — the 6x6 product SKU wants
+         * 32, the 12x12 dev prototype wants 66. Right architecture is for
+         * nvs.c to pull LL_LED_COUNT_DEFAULT from board.h after this call,
+         * and for state_bus_defaults.c to omit led_count entirely. Until
+         * that refactor, the literal here is the shipping 6x6 SKU default,
+         * matching the NVS sanitizer fallback in nvs_logic.c. */
+        .led_count = 32,
         .auth_mode = LL_AUTH_OPEN,
         .telemetry_enabled = false,
         .name = "",  /* empty = "unnamed; clients fall back to id" */
