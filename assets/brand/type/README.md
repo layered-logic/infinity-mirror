@@ -31,15 +31,15 @@ The *decisions* (which faces, why, what roles) live in [docs/typography-decision
 
 ---
 
-## Current status (Apr 21, 2026)
+## Current status (May 7, 2026)
 
-This folder is **scaffolded, no artifacts yet**. The decisions are locked (see typography-decisions.md) but specimens and licenses haven't been produced or purchased.
+**Trial phase — no licenses purchased yet.** Decisions locked (see typography-decisions.md), specimens not produced. Purchase deferred until first public-facing surface; full plan and cost research in [font-license-plan.md](font-license-plan.md).
 
 **To add:**
 - [ ] `specimen-nhg.svg` — once license purchased
 - [ ] `specimen-berkeley-mono.svg` — once license purchased
 - [ ] `hierarchy.svg` — full type ramp
-- [ ] `LICENSE.md` — scaffold now with placeholder; update when licenses are purchased
+- [ ] `LICENSE.md` — created at purchase trigger (see font-license-plan.md for triggers + cost paths)
 
 ---
 

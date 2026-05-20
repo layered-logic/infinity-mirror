@@ -126,6 +126,25 @@ esp_err_t ll_auth_clear_secret(void)
     return err;
 }
 
+bool ll_auth_secret_matches(const char *candidate)
+{
+    if (candidate == NULL) {
+        return false;
+    }
+    size_t held = strlen(g_secret);
+    if (held == 0) {
+        return false;  /* no secret stored */
+    }
+    /* Length is compared directly — that is not constant-time, but the
+     * secret's length is not the sensitive part. The byte compare on an
+     * equal-length candidate below runs in constant time. */
+    if (held != strlen(candidate)) {
+        return false;
+    }
+    return ll_consttime_eq((const uint8_t *)g_secret,
+                           (const uint8_t *)candidate, held);
+}
+
 ll_auth_verdict_t ll_auth_verify(const char *raw_json, size_t len)
 {
     if (!ll_auth_has_secret()) {

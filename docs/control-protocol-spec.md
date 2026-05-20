@@ -76,9 +76,9 @@ All messages — request and response, WebSocket and HTTP and BLE — use the sa
 |---|---|---|---|
 | `op` | string | yes | Operation name — see §4 |
 | `req_id` | string (UUIDv4) | yes | Client-generated. Device echoes in response for correlation. |
-| `ts` | int (epoch seconds) | yes | Unix timestamp. Device rejects messages where `|device_ts - ts| > 60`. |
+| `ts` | int | yes | Monotonic counter; epoch seconds recommended. In paired mode the device rejects a frame whose `ts` is below the highest already accepted on that connection (`stale_ts`). No absolute-time check — the device has no wall clock. See [firmware-security §5.4](firmware-security.md#54-hmac-envelope). |
 | `payload` | object | varies | Op-specific data — see §4 |
-| `hmac` | string (hex) | only in paired mode | HMAC-SHA256 of the JSON object minus `hmac` itself, keyed on shared secret. Required when device is in paired mode, rejected (as unknown field) when in open mode. |
+| `hmac` | string (hex) | only in paired mode | HMAC-SHA256 over the frame text preceding the `,"hmac":` token (`hmac` is always the last key), keyed on the shared secret. Required in paired mode; ignored in open mode. |
 
 ### 3.2 Response envelope
 
@@ -286,7 +286,7 @@ Minimal surface. Only used during provisioning or as fallback when Wi-Fi is unav
 | `bad_payload` | Missing or malformed field in payload |
 | `auth_required` | Paired mode enabled, no HMAC provided |
 | `bad_hmac` | HMAC did not verify |
-| `stale_ts` | Timestamp outside ±60s window |
+| `stale_ts` | Frame rejected by the paired-mode replay guard: `ts` below the last accepted on the connection, or a duplicate `req_id` |
 | `rate_limit` | Per-IP message rate exceeded |
 | `pattern_too_large` | Pattern exceeds 16KB |
 | `nvs_full` | Pattern storage full |

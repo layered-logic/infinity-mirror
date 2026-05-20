@@ -47,8 +47,8 @@ The panels are mounted in the frame — not glued, not permanently bonded. Repla
 
 | Panel | Position | Description |
 |---|---|---|
-| **1-way mirror** | Front (viewer-facing) | Highly reflective on the front, transparent from behind — this is what creates the infinity tunnel depth |
-| **2-way mirror** | Back (behind LEDs) | Partially reflective, partially transparent — reflects light back into the cavity while letting some through from behind |
+| **2-way mirror** | Front (viewer-facing) | The see-through half-mirror you look at. Partially reflective, partially transparent: it reflects most light back into the cavity while letting enough through for the infinity tunnel to be visible. |
+| **1-way mirror** | Back (behind the LEDs) | The full mirror behind the LED cavity. Fully reflective: it bounces all the light forward toward the front panel. |
 
 ### Tools Required
 

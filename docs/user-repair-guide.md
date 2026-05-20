@@ -283,7 +283,7 @@ I'd always rather help you fix the mirror than see you replace it. Before anythi
 ## Open Items
 
 - **Repair-time estimates** in Section 4 are working figures, to be confirmed against the first production golden-sample builds (Weeks 9–11).
-- **Panel labeling:** the failure-mode reference [acrylic-crack-scratch.md](../Failure_Modes/acrylic-crack-scratch.md) labels the front/back panels in a way that appears inverted relative to how an infinity mirror physically works (the viewer-facing panel must be the see-through half-mirror). This guide identifies the panels by position and function to stay unambiguous; the failure-mode doc's "1-way / 2-way" table should be reconciled.
+- ~~**Panel labeling:** the failure-mode reference [acrylic-crack-scratch.md](../Failure_Modes/acrylic-crack-scratch.md) inverted the front/back panels.~~ Reconciled 2026-05-20: the failure-mode doc's "Which panel?" table now matches the assembly guide and this guide — 2-way mirror = front (viewer-facing half-mirror), 1-way mirror = back (full mirror).
 
 ---
 

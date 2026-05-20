@@ -194,19 +194,74 @@ Trade-off accepted: an attacker already on your Wi-Fi in open mode can lock you 
 
 ### 5.4 HMAC envelope
 
+A request frame in paired mode:
+
 ```json
 {
   "op": "set_state",
   "req_id": "<uuid>",
   "ts": 1745280000,
   "payload": { "color": "#3214FF", "brightness": 80 },
-  "hmac": "<hex-encoded HMAC-SHA256 of everything above this field>"
+  "hmac": "<hex-encoded HMAC-SHA256>"
 }
 ```
 
-- HMAC covers the message minus the hmac field itself
-- `ts` rejects replay attacks older than 60 seconds
-- `req_id` allows ack + dedupe
+*Implemented in [LL-057-D](../tasks.md#LL-057-D). The replay model below
+diverges from the original ±60 s design — see the SNTP note.*
+
+**What the HMAC covers — `hmac`-last canonicalization.** JSON has no
+canonical byte form, so device and client agree on a structural rule
+rather than a re-serialization step: `hmac` is always the final key, and
+the signed bytes are exactly the frame text *before* the `,"hmac":`
+token. The client builds the `{op, req_id, ts, payload}` object,
+serializes it, drops the trailing `}`, HMAC-SHA256s that brace-less
+string, then transmits `<signed-string>,"hmac":"<hex>"}`. The device
+HMACs the received prefix, so the two byte strings match with no parsing
+on the signing path. The signed region is deliberately not itself valid
+JSON; HMAC signs bytes, not JSON.
+
+**The gate.** When `auth_mode` is `paired`, the transport dispatcher
+verifies every inbound frame before dispatching its op. Failures map to
+[control-protocol-spec §8](control-protocol-spec.md#8-error-codes) error
+codes: `auth_required` (no `hmac`), `bad_hmac` (signature did not
+verify, or paired with no secret stored), `bad_payload` (missing
+`ts`/`req_id`). Open mode skips the gate entirely.
+
+**Replay protection — recency, not a wall clock.** V1 has no SNTP and no
+RTC, so the original "reject `ts` more than 60 s from device time"
+window is not implementable and was dropped. It is replaced by two
+recency checks that need no wall clock:
+
+- **Per-socket monotonic `ts`.** Each WebSocket connection tracks the
+  highest `ts` it has accepted; a frame with a lower `ts` is rejected
+  (`stale_ts`). Stops in-band replay and reordering on a live
+  connection. Reset to 0 on each new handshake.
+- **Device-wide `req_id` dedup.** A ring of the 32 most recently
+  accepted `req_id`s. A frame whose `req_id` is still in the ring is
+  rejected (`stale_ts`). Stops a captured frame being replayed on a
+  fresh connection, where the per-socket `ts` guard has reset.
+
+`ts` is therefore a client-supplied monotonic counter, not an
+authenticated wall-clock value — the client may use epoch seconds or any
+non-decreasing sequence.
+
+**Residual window — stated honestly.** A captured signed frame can still
+be replayed *if* its `req_id` has aged out of the 32-entry ring *and*
+the replay is sent on a new connection; a device reboot clears both
+guards. Given the threat model (local network, non-sensitive mirror
+state — §5.5) this is proportionate: a successful replay re-applies a
+stale, already-authorized command, not privilege escalation or data
+disclosure.
+
+**Client coverage.** Paired-mode signing is implemented in both the LL
+mobile app ([App/v1/](../App/v1/), LL-057-D) and the device-hosted
+webapp ([Firmware/v1/webapp/](../Firmware/v1/webapp/), LL-078). Both
+vendor the same pure-JS SHA-256/HMAC rather than using WebCrypto: the
+app's Hermes engine has no dependable `crypto.subtle`, and the webapp is
+served over plain `http://` (not a secure context), where `crypto.subtle`
+is unavailable too. The webapp persists the secret in `localStorage` so a
+paired mirror doesn't re-prompt every page load; the mobile app holds it
+in memory only.
 
 ### 5.5 What auth does NOT protect
 
