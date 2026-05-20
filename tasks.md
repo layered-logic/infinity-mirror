@@ -756,11 +756,13 @@ dependencies: LL-030, LL-031, LL-036, LL-077
 ### [ ] LL-043 — User interview contact list and outreach
 
 sprint: 4 | priority: medium | deadline: 2026-05-30
-added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-14
+added: 2026-04-22 | first_engaged: 2026-04-28 | last_engaged: 2026-05-15
 artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
 **Notes:** Interview outline drafted via LL-032 (Apr 28). Deadline extended from May 9 to May 30 (Milestone 3) on May 14 to match the actual campaign window. Outreach started cold: 2 YouTubers (Philip DeFranco, Corridor Digital) + 2 Twitch streamers (Aztecross, Jake the Alright) contacted May 14. [docs/outreach-list.md](docs/outreach-list.md) tracks sent + next-round candidates by lane (smart-home, maker, gaming-setup, press, repair voices, cafes, end-buyer recruitment). Content-creator branch spun out as child [LL-043-1](#LL-043-1).
+
+**May 15 update:** Sent table corrected — actual 2026-05-14 send count was 11 (DeFranco, Corridor, Aztecross, Jake, Reed, Robert, Lewis, Matt, Joe, **TechHut**, **Hardware Haven**), not 5 as the sprint-log undercount implied. First reply landed same day from **Colten / Hardware Haven** — swamped through end of month but receptive; followup sent with UW HCDE framing, smart-home-indicator positioning, studio-curation question (transposed from [user-interview-outline §1](docs/user-interview-outline.md)), and AI render of the mirror carrying his channel logo + real-prototype photo as visual hook. Two campaign rules locked: **no X/Twitter/Mastodon** ([feedback_outreach_channels memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_outreach_channels.md)) and **no Fri PM / weekend sends** ([feedback_outreach_timing memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_outreach_timing.md)).
 
 ---
 
@@ -768,11 +770,13 @@ dependencies: LL-032
 #### [ ] LL-043-1 — Content creator + streamer outreach campaign
 
 parent: LL-043 | sprint: 7 | priority: medium | deadline: 2026-05-30
-added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-14
+added: 2026-05-14 | first_engaged: 2026-05-14 | last_engaged: 2026-05-15
 artifacts: [docs/outreach-list.md](docs/outreach-list.md)
 dependencies: LL-032
 
 **Notes:** Per-lane scripted cold outreach (streamer / smart-home / maker / press). Ask = 15-20 min on want/need/cool/problematic re: studio backgrounds and functionality. 14-day no-reply window. Streamer/gaming variant uses nano-banana logo-on-prototype render as visual hook — automatable via n8n; smart-home and press variants are manual. Pipeline outlined in [outreach-list.md § n8n workflow](docs/outreach-list.md#n8n-workflow-outline). Verified contacts captured for Smart Home Solver (Reed), DIY Perks, Hardware Haven, Aztecross (fallback); contact-form-only for Hook Up + Everything Smart Home; remaining names pending verification before send.
+
+**May 15 update:** Hardware Haven (Colten) replied → followup sent same day, validates that the logo-render visual hook works beyond just streamers (Lane B / hardware-reuse creator engaged with it). Monday queue staged with 5 NEW targets, all email-verified via web search: Hackaday (`tips@hackaday.com`, Lane D), iFixit (`press@ifixit.com`, Lane E), Tested (`tips@tested.com`, Lane B/D), Strange Parts / Scotty Allen (`scotty@strangeparts.com`, Lane B indie-founder), Hardware Canucks / Dmitry (`dmitry@hardwarecanucks.com`, Lane C gaming/desk). Mix diversifies from yesterday's Lane-A-heavy batch. **bitluni** dropped to channel-blocked (X / Mastodon / Tindie only). **Drafting calibrations** from the Colten reply added to [feedback_cold_outreach_drafts memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_cold_outreach_drafts.md): positioning > specs (even for gear-heads), specific visual references, don't reflect recipient's stated state back, attach visual hook when the question is visual, "legitimate product" > "actually sellable", self-aware parentheticals are valid peer-tone. Also: no em dashes in outgoing prose ([feedback_no_em_dashes memory](.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_no_em_dashes.md)).
 
 ---
 
