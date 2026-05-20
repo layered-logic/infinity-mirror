@@ -17,6 +17,7 @@ void run_one(void (*fn)(void), const char *name)
 }
 
 /* Suite entry points — one per test file. */
+void suite_auth_logic(void);
 void suite_gesture_primary(void);
 void suite_gesture_recessed(void);
 void suite_cycle_color(void);
@@ -61,6 +62,9 @@ int main(void)
 
     printf("\n[cue state machine]\n");
     suite_cue();
+
+    printf("\n[auth logic]\n");
+    suite_auth_logic();
 
     printf("\n%d run, %d failed\n", g_tests_run, g_tests_failed);
     return g_tests_failed == 0 ? 0 : 1;

@@ -5,6 +5,7 @@
  *   1.  nvs_init               — load persisted state (or defaults on first boot).
  *   2.  state_bus              — seed the bus with that state; everyone subscribes to its loop.
  *   3.  nvs_subscribe          — start debounced save-on-change AFTER the bus exists.
+ *   3a. auth_init/subscribe    — load the paired-mode shared secret; wipe it on factory reset.
  *   4.  provisioning_init      — bring up netif/wifi; connect if creds saved, else
  *                                 configure (but don't start) the SoftAP.
  *   5.  provisioning_subscribe — react to LL_EV_PROVISION_START / FACTORY_RESET /
@@ -27,6 +28,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "auth.h"
 #include "board.h"
 #include "button.h"
 #include "captive_dns.h"
@@ -68,6 +70,11 @@ void app_main(void)
     ll_state_bus_init(&initial);
 
     ESP_ERROR_CHECK(ll_nvs_subscribe());
+
+    /* Auth: load the paired-mode shared secret from NVS (open mode if none);
+     * subscribe so a factory reset wipes it. Per LL-057-D / firmware-security §5. */
+    ESP_ERROR_CHECK(ll_auth_init());
+    ESP_ERROR_CHECK(ll_auth_subscribe());
 
     ESP_ERROR_CHECK(ll_provisioning_init());
     ESP_ERROR_CHECK(ll_provisioning_subscribe());

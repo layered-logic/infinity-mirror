@@ -35,8 +35,8 @@ Gates:
 
 | Name | Channel | Lane fit | Reach via | Sent | Status |
 |---|---|---|---|---|---|
-| Philip DeFranco | News commentary, ~6M | **Weak** — news/talk audience, sponsorships are tax/finance/lifestyle. Brand fit thin. | *fill in* | 2026-05-14 | sent |
-| Corridor Digital | VFX studio, ~6M | **Strong** — maker-aesthetic studio, prop/lighting builds. Long shot at their size, story-aligned. | *fill in* | 2026-05-14 | sent |
+| Philip DeFranco | News commentary, ~6M | **Weak** — news/talk audience, sponsorships are tax/finance/lifestyle. Brand fit thin. | text line | 2026-05-14 | sent |
+| Corridor Digital | VFX studio, ~6M | **Strong** — maker-aesthetic studio, prop/lighting builds. Long shot at their size, story-aligned. | support ticket | 2026-05-14 | sent |
 
 ### Streamers (Discord DM)
 
@@ -52,12 +52,14 @@ Gates:
 | Reed Kleinman | Smart Home Solver | Strongest Lane A pick — direct personal email, audience = "Spec-Head" archetype, ESPHome bootstrap connection. | reed@smarthomesolver.com | 2026-05-14 | sent |
 | Robert Tait | The Hook Up | Unsponsored, engineer-driven reviews — ethos match for the right-to-repair angle. | smarthomehookup@gmail.com | 2026-05-14 | sent |
 | Lewis | Everything Smart Home | Reviews Govee/Nanoleaf-class — direct competitor coverage. UK-based, Home Assistant focus. | everythingsmarthome.co.uk/contact | 2026-05-14 | sent |
+| Brandon Hopkins | TechHut | Home Assistant / homelab, open-source-leaning. | brandon@techhut.tv | 2026-05-14 | sent |
 
 ### Maker / DIY creators (Lane B)
 
 | Name | Channel | Lane fit | Reach via | Sent | Status |
 |---|---|---|---|---|---|
 | Matt Perks | DIY Perks | Premium DIY lighting builds, ~4.9M subs. Direct personal email. Reply odds low at his size but signal from a yes is high. | diyperks@gmail.com | 2026-05-14 | sent |
+| Hardware Haven (Colten) | — | Newer / growing, hardware re-use focus. Direct email = good reply odds. | colten@hardwarehaven.media | 2026-05-14 | **replied 2026-05-15**, swamped through end of month. Followup sent same day: UW HCDE framing + smart-home-indicator positioning + studio-curation question (transposed from [user-interview-outline §1](user-interview-outline.md)) + AI render of mirror with channel logo and real prototype photo attached. Awaiting his read. |
 
 ### Indie-founder / philosophy angle
 
@@ -79,11 +81,11 @@ Bullseye audience overlap with the "Spec-Head" archetype from [stakeholder-map.m
 
 | Name | Channel / handle | Contact | Notes |
 |---|---|---|---|
-| Smart Home Solver — Reed Kleinman | [@smarthomesolver](https://www.youtube.com/channel/UCwOBG77Tm8cE24FPxHb_abw) | ✅ reed@smarthomesolver.com (direct) / sponsors@smarthomesolver.com | Strongest pick. Home Assistant tutorials. Direct personal email published. |
-| The Hook Up — Robert Tait | [@TheHookUp](https://www.youtube.com/c/TheHookUp) | ✅ smarthomehookup@gmail.com (via site contact button) · X: [@TheHookUp1](https://x.com/TheHookUp1) | Self-described engineer doing unsponsored, science-driven reviews. Bullseye for the spec story. |
-| Everything Smart Home — Lewis | [@EverythingSmartHome](https://www.youtube.com/c/EverythingSmartHome) | ⚠️ form at [everythingsmarthome.co.uk/contact](https://everythingsmarthome.co.uk/contact) · [@EverySmartHome](https://x.com/EverySmartHome) · [Discord](https://discord.everythingsmarthome.co.uk) | UK-based. Reviews Govee/Nanoleaf-class products — direct competitor coverage. (I had his name wrong as Stefan earlier — it's Lewis.) |
-| TechHut | [@TechHutMedia](https://www.youtube.com/channel/UCjSEJkpGbcZhvo0lr-44X_w) | ⚠️ About-tab email (not surfaced in search) · mailing addr: 2512 E Evergreen Blvd #102, Vancouver, WA 98661 | Home Assistant, open-source-leaning, homelab. Check YouTube About tab for the business email. |
-| bitluni — Matthias Balwierz | [@bitlunislab](https://youtube.com/bitlunislab) | ⚠️ no email surfaced · X: [@bitluni](https://twitter.com/bitluni) · [Tindie shop](https://www.tindie.com/stores/bitluni/) (has contact) · [GitHub](https://github.com/bitluni) | Germany. ESP32 creative projects. Tindie store DM is probably the right channel — that's where he transacts. |
+| ~~Smart Home Solver — Reed Kleinman~~ | — | — | **Sent 2026-05-14.** Moved to [Sent table](#youtube-creators). |
+| ~~The Hook Up — Robert Tait~~ | — | — | **Sent 2026-05-14.** Moved to [Sent table](#youtube-creators). |
+| ~~Everything Smart Home — Lewis~~ | — | — | **Sent 2026-05-14.** Moved to [Sent table](#youtube-creators). |
+| ~~TechHut — Brandon Hopkins~~ | — | — | **Sent 2026-05-14** via `brandon@techhut.tv`. Moved to [Sent table](#youtube-creators). |
+| ~~bitluni — Matthias Balwierz~~ | — | — | **Channel-blocked.** Only surfaced contacts are X / Mastodon / Tindie. Per [outreach channel rule](../.claude/projects/C--Users-bowhi-Desktop-Independent-Study/memory/feedback_outreach_channels.md): no X/Twitter/Mastodon. Drop unless an email or accepted DM channel surfaces. |
 
 ### Lane B — Maker / DIY tech (story-aligned)
 
@@ -91,8 +93,8 @@ The HCDE narrative (right-to-repair, solo founder, JST-modular, open-source-on-e
 
 | Name | Channel / handle | Contact | Notes |
 |---|---|---|---|
-| DIY Perks — Matt Perks | [@DIYPerks](https://www.youtube.com/channel/UCUQo7nzH1sXVpzL92VesANw) | ✅ diyperks@gmail.com · [Discord](https://discord.gg/diyperks) · [@DIYPerks](https://x.com/diyperks) | ~4.9M subs. Premium-aesthetic DIY builds. Right-to-repair angle resonates. |
-| Hardware Haven | [@HardwareHaven](https://www.youtube.com/@HardwareHaven) | ✅ info@hardwarehaven.media · [Discord](https://discord.gg/25a6qVdSMh) | Newer / growing, hardware re-use focus. Direct email = good reply odds. |
+| ~~DIY Perks — Matt Perks~~ | — | — | **Sent 2026-05-14.** Moved to [Sent table](#maker--diy-creators-lane-b). |
+| ~~Hardware Haven~~ | — | — | **Sent 2026-05-14.** Moved to [Sent table](#maker--diy-creators-lane-b). |
 | Adam Savage / Tested | YouTube — Tested | ❓ editorial tips — verify via [tested.com](https://www.tested.com/) | Champions indie maker stories. Very long shot but the brand value of "covered by Tested" is enormous. |
 | Strange Parts — Scotty Allen | YouTube — Strange Parts | ❓ verify contact | Indie-hardware founder stories with personality. |
 | Big Clive | YouTube — bigclivedotcom | ❓ verify contact | LED-strip + cheap-electronics teardowns. Technical-credibility audience. |

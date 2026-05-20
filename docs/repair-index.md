@@ -71,11 +71,11 @@ These docs aren't part of the repair ecosystem proper but are load-bearing conte
 
 ---
 
-## 6. Pending — the buyer-facing wrapper
+## 6. The buyer-facing wrapper
 
-[**User Repair Guide**](user-repair-guide.md) *(pending — Week 4 → Week 8 final)*
+[**User Repair Guide**](user-repair-guide.md) — *complete (draft), Week 8*
 
-The customer-facing how-to companion. Currently blocked on the assembly guide, which lives upstream in the operations/manufacturing track. The guide will translate the failure-mode files into procedural instructions a non-technical buyer can follow. Specifically: which screwdriver, which strip part number, where to email for the STL, how to use the recessed button to recover from a wedged Wi-Fi state.
+The customer-facing how-to companion. It translates the failure-mode files into procedural instructions a non-technical buyer can follow: which screwdriver, which strip part number, where to email for the STL, how to use the recessed button to recover from a wedged Wi-Fi state. Its teardown steps build on the [Assembly & Teardown Guide](assembly-guide.md) §7 — the operations-track document the repair guide was previously blocked on.
 
 The philosophy + inventory + decisions + scorecard are the *technical* and *values* foundation; the User Repair Guide is the *experiential* surface that lands in the buyer's hand. They share the same backing data; they differ in voice and detail level.
 
@@ -95,7 +95,7 @@ For different readers, in order of expected utility:
 
 | If you are… | Read in this order |
 |---|---|
-| **A buyer wondering "is this thing fixable?"** | Repair Index (this doc, §1–4 summary) → User Repair Guide (when ready) → Failure Mode Inventory README |
+| **A buyer wondering "is this thing fixable?"** | Repair Index (this doc, §1–4 summary) → User Repair Guide → Failure Mode Inventory README |
 | **An advisor reviewing the HCDE portfolio** | Right-to-Repair Philosophy → Repair-Driven Design Decisions → Repairability Scorecard → Sustainability Audit Stage 6–7 |
 | **A regulator checking compliance** | Right-to-Repair Philosophy §3 (commitments) + §5 (compliance) → Failure Mode Inventory → Repairability Scorecard §4 (parts independence) |
 | **A future Layered Logic engineer** | Repair-Driven Design Decisions matrix → Firmware Architecture Scoping → Failure Mode Inventory per-component files |

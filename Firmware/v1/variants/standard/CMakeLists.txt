@@ -19,4 +19,8 @@ idf_component_register(
         provisioning
         telemetry
         transport
+        # auth is listed last on purpose: core/auth pulls in IDF nvs_flash,
+        # and listing auth earlier puts IDF's nvs.h ahead of core/nvs/nvs.h
+        # on main.c's include path — which breaks ll_nvs_init resolution.
+        auth
 )
