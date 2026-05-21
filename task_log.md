@@ -173,3 +173,5 @@ Append-only. Every meaningful task status transition gets one row. Format spec: 
 | 2026-05-20 | LL-080 | done | Shipped in the demofix-1714 USB flash; clean boot verified on silicon; combo recognizer host-tested (8 tests), not live-exercised (destructive) | Firmware/v1/core/button/button_logic.c |
 | 2026-05-20 | LL-079 | progress | AP fallback verified live on the mirror — with no reachable saved network the device broadcasts its SoftAP | Firmware/v1/core/provisioning/provisioning.c |
 | 2026-05-20 | LL-080 | progress | Single-button factory-reset combo verified live on the mirror — the 5s/short/5s sequence triggers a hard reset | Firmware/v1/core/button/button_logic.c |
+| 2026-05-20 | LL-081 | added | LED count reverted to the 32-LED 6x6 default after the LL-080 factory reset on the 66-LED dev proto | tasks.md#LL-081 |
+| 2026-05-20 | LL-081 | done | state_bus.c stamps led_count from LL_LED_COUNT_DEFAULT (board.h) on every g_state seed/reset; OTA-flashed ledfix-1833, get_state verified led_count 66 | Firmware/v1/core/state_bus/state_bus.c |

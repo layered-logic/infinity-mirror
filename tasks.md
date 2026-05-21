@@ -1,7 +1,7 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-081
+next_id: LL-082
 updated: 2026-05-20
 
 ---
@@ -1355,6 +1355,20 @@ dependencies: —
 New `factory_combo_step()` recognizer in `button_logic.c` (pure-C, host-buildable): the deliberately unlikely sequence **5s hold → short press → 5s hold**, each step required within a 3s gap of the previous or the sequence resets. `button.c` feeds it the same primary-button edge stream as the existing gesture machine and posts `LL_EV_FACTORY_RESET` on completion — the same event the recessed hold posts, so the existing pattern_interp red/green confirmation cue and the provisioning factory-reset teardown fire unchanged. Normal primary gestures are suppressed once the combo is past its ambiguous first hold, so the middle tap and final hold don't trigger stray power toggles / colour changes. 8 new host tests in `tests/core/button/test_gesture.c`; full suite 140/140 green, clean `-Werror` build.
 
 Open item — no in-progress LED cue: the user holds 5s twice with no visual feedback until the reset confirmation fires (the recessed hold has a blue-blink progress cue via `LL_EV_RECESSED_HOLD_BEGIN/END`). Acceptable for a dev/proto escape hatch; flagged for V2 if the combo survives into a shipping build. Shipped in the same `demofix-1714` USB flash as [LL-079](#LL-079); clean boot verified on silicon. **Combo verified live on hardware (2026-05-20):** the 5s-hold / short-press / 5s-hold sequence triggers the factory reset.
+
+---
+
+<a id="LL-081"></a>
+### [x] LL-081 — LED count board-default stamp
+
+sprint: 8 | priority: high | deadline: 2026-05-23
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [Firmware/v1/core/state_bus/state_bus.c](Firmware/v1/core/state_bus/state_bus.c)
+dependencies: LL-080
+
+**Notes:** Bug surfaced the moment [LL-080](#LL-080)'s single-button factory reset was first exercised on the dev mirror. The mirror is the 12×12 / 66-LED prototype; after the factory reset it came back reporting `led_count: 32` — the 6×6 production SKU value. Root cause is pre-existing: `state_bus_defaults.c` hardcodes `.led_count = 32` (a pure-C file that can't see `board.h`), and a factory reset resets the live state to those compiled defaults. The C3 proto never had a factory-reset path before LL-080 (no recessed button), so the latent bug had never fired — building the factory-reset feature without checking the post-reset state on this board was the miss.
+
+Fix in `state_bus.c`: a `stamp_board_led_count()` helper sets `led_count` from `LL_LED_COUNT_DEFAULT` (board.h — 66 for `c3_devkit`, 32 for the prod boards) on every path that seeds or resets `g_state` — both `ll_state_bus_init()` and the `LL_EV_FACTORY_RESET` handler. `led_count` is a fixed hardware property (the wire protocol already treats it read-only), so it is now always the board's value regardless of what NVS or the pure-C defaults carry — which also self-corrects a device whose NVS holds a stale count. The `state_bus_defaults.c` placeholder + TODO comment updated; no schema bump, no host-test change (140/140 still green). Shipped as `ledfix-1833`, OTA-flashed to the mirror (the OTA succeeded this time — the otadata reset by the prior USB flash cleared the `ESP_FAIL` condition); **verified on hardware — `get_state` reports `led_count: 66`.**
 
 ---
 
