@@ -275,6 +275,15 @@ static void sm_enter_connecting(int idx);
 static void sm_enter_online(void);
 static void sm_enter_backoff(void);
 
+#if LL_SOFTAP_PROVISIONING
+/* No-network AP fallback (LL-079). After this many consecutive failed
+ * scan/connect backoff cycles, the SM stops staying quiet and layers a
+ * SoftAP onto the still-running STA so the device stays reachable.
+ * Proto-only demo-blocker stopgap — see ensure_ap_fallback_up(). */
+#define LL_WIFI_AP_FALLBACK_BACKOFFS  2
+static void ensure_ap_fallback_up(void);
+#endif
+
 static void sm_enter_scanning(void)
 {
     /* Cancel an in-flight connect-watchdog so it doesn't fire late
@@ -347,6 +356,20 @@ static void sm_enter_backoff(void)
     ESP_LOGI(TAG, "sm: backoff %ds (count=%u)",
              (int)(dur / 1000000), (unsigned)g_sm_backoff_count);
     esp_timer_start_once(g_sm_backoff_timer, dur);
+
+#if LL_SOFTAP_PROVISIONING
+    /* Demo-blocker stopgap: once the SM has failed to reach any saved
+     * network for a couple of cycles, stop hiding — bring up the SoftAP
+     * so the device is reachable even with no usable network. The STA
+     * side keeps scanning on the backoff cadence in the background.
+     * ensure_ap_fallback_up() is idempotent, so calling it on every
+     * later backoff is harmless. The backoff timer was just armed for
+     * >=5s, so the sub-second stop/start it does completes well before
+     * the timer resumes the scan cycle. */
+    if (g_sm_backoff_count >= LL_WIFI_AP_FALLBACK_BACKOFFS) {
+        ensure_ap_fallback_up();
+    }
+#endif
 }
 
 static void sm_backoff_cb(void *arg)
@@ -446,8 +469,24 @@ static void post_wifi_disconnected(uint8_t reason)
         /* Already in disconnected state; don't spam. */
         return;
     }
-    g_last_posted_connected = false;
     g_sta_ssid[0] = '\0';
+
+#if LL_SOFTAP_PROVISIONING
+    /* AP-fallback (APSTA): the SoftAP keeps the device reachable when
+     * the STA link drops, so don't tell downstream modules we're
+     * offline — transport would tear down the HTTP server that AP
+     * clients are still using. The SM re-scans regardless, and a STA
+     * reconnect re-posts LL_EV_WIFI_CONNECTED. */
+    {
+        wifi_mode_t mode;
+        if (esp_wifi_get_mode(&mode) == ESP_OK && mode == WIFI_MODE_APSTA) {
+            ESP_LOGI(TAG, "STA dropped but SoftAP still up — staying reachable");
+            return;
+        }
+    }
+#endif
+
+    g_last_posted_connected = false;
     ll_ev_wifi_disconnected_payload_t payload = { .reason = reason };
     esp_event_post_to(ll_state_bus_get_loop(), LL_STATE_EVENT_BASE,
                       LL_EV_WIFI_DISCONNECTED, &payload, sizeof(payload), 0);
@@ -832,34 +871,36 @@ static void on_ap_started(void *arg, esp_event_base_t base,
 
 static bool g_softap_init_done;
 
-/* Configure the AP and register the AP_START handler — but do NOT
- * call esp_wifi_start. The actual start is deferred to
- * ll_provisioning_kick_softap, which main.c runs after every
- * subscriber (mdns, transport, etc.) has registered. Otherwise the
- * AP comes up so fast that LL_EV_WIFI_CONNECTED fires before anyone
- * is listening, and downstream modules silently miss it. */
-static esp_err_t init_softap(void)
+/* Fill *cfg with the open SoftAP config — SSID "LL-Mirror-<3-byte MAC
+ * suffix>", open auth, channel 1. Shared by the first-boot SoftAP
+ * (init_softap), the cred-apply fallback (bring_up_softap_runtime),
+ * and the no-network AP fallback (ensure_ap_fallback_up). */
+static void build_ap_config(wifi_config_t *cfg)
 {
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
 
-    wifi_config_t cfg = {0};
-    snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
-             LL_AP_SSID_PREFIX "%02X%02X%02X",
-             mac[3], mac[4], mac[5]);
-    cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
-    cfg.ap.channel        = LL_AP_CHANNEL;
-    cfg.ap.authmode       = WIFI_AUTH_OPEN;
-    cfg.ap.max_connection = LL_AP_MAX_CONN;
+    memset(cfg, 0, sizeof(*cfg));
+    snprintf((char *)cfg->ap.ssid, sizeof(cfg->ap.ssid),
+             LL_AP_SSID_PREFIX "%02X%02X%02X", mac[3], mac[4], mac[5]);
+    cfg->ap.ssid_len       = strlen((const char *)cfg->ap.ssid);
+    cfg->ap.channel        = LL_AP_CHANNEL;
+    cfg->ap.authmode       = WIFI_AUTH_OPEN;
+    cfg->ap.max_connection = LL_AP_MAX_CONN;
+}
 
-    esp_err_t err = esp_event_handler_instance_register(
-        WIFI_EVENT, WIFI_EVENT_AP_START, on_ap_started, NULL, NULL);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "ap_start handler register: %s", esp_err_to_name(err));
-        return err;
-    }
+/* Configure the AP — but do NOT call esp_wifi_start. The actual start
+ * is deferred to ll_provisioning_kick_softap, which main.c runs after
+ * every subscriber (mdns, transport, etc.) has registered. Otherwise
+ * the AP comes up so fast that LL_EV_WIFI_CONNECTED fires before
+ * anyone is listening, and downstream modules silently miss it. The
+ * AP_START handler is registered once in ll_provisioning_init. */
+static esp_err_t init_softap(void)
+{
+    wifi_config_t cfg;
+    build_ap_config(&cfg);
 
-    err = esp_wifi_set_mode(WIFI_MODE_AP);
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
     if (err != ESP_OK) return err;
     err = esp_wifi_set_config(WIFI_IF_AP, &cfg);
     if (err != ESP_OK) return err;
@@ -874,23 +915,14 @@ static esp_err_t init_softap(void)
 /* Bring the SoftAP back up at runtime — used by the cred-apply
  * fallback when set_wifi_creds receives an SSID we can't actually join.
  * Re-applies the AP config (cleared when we switched to STA mode in
- * on_wifi_apply_creds) and starts wifi. The existing AP_START handler
- * registered by init_softap() reposts LL_EV_WIFI_CONNECTED with the
+ * on_wifi_apply_creds) and starts wifi. The AP_START handler registered
+ * in ll_provisioning_init() reposts LL_EV_WIFI_CONNECTED with the
  * SoftAP gateway, so transport / mdns / captive_dns all come back up
  * just like at boot. */
 static esp_err_t bring_up_softap_runtime(void)
 {
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
-
-    wifi_config_t cfg = {0};
-    snprintf((char *)cfg.ap.ssid, sizeof(cfg.ap.ssid),
-             LL_AP_SSID_PREFIX "%02X%02X%02X",
-             mac[3], mac[4], mac[5]);
-    cfg.ap.ssid_len       = strlen((const char *)cfg.ap.ssid);
-    cfg.ap.channel        = LL_AP_CHANNEL;
-    cfg.ap.authmode       = WIFI_AUTH_OPEN;
-    cfg.ap.max_connection = LL_AP_MAX_CONN;
+    wifi_config_t cfg;
+    build_ap_config(&cfg);
 
     esp_err_t err = esp_wifi_set_mode(WIFI_MODE_AP);
     if (err != ESP_OK) return err;
@@ -902,6 +934,72 @@ static esp_err_t bring_up_softap_runtime(void)
 
     ESP_LOGW(TAG, "fallback: SoftAP restarted, awaiting fresh creds");
     return ESP_OK;
+}
+
+/* No-network AP fallback (LL-079). The STA connection SM has failed to
+ * reach any saved network for LL_WIFI_AP_FALLBACK_BACKOFFS cycles.
+ * Layer a SoftAP on top of the still-running STA (APSTA mode) so the
+ * device is reachable at 192.168.4.1 even with no usable network — the
+ * user can drive it directly over the AP or re-provision from /setup.
+ * The STA side keeps scanning in the background and will reconnect
+ * (staying APSTA) if a saved network reappears.
+ *
+ * This broadcasts without an explicit user gesture, which the locked
+ * "RF minimal" stance (multi-network-design §10 Q3) otherwise forbids.
+ * It is authorized only as a proto-hardware stopgap for a demo lockout:
+ * the C3 devkit has no recessed button, so a device that can't find a
+ * saved network had no reachable surface and no factory-reset escape
+ * hatch. V2 firmware will gate AP fallback behind a button gesture.
+ *
+ * The live wifi mode is the source of truth — once APSTA is up, repeat
+ * calls are no-ops, so this is safe to call on every later backoff. */
+static void ensure_ap_fallback_up(void)
+{
+    wifi_mode_t mode;
+    if (esp_wifi_get_mode(&mode) != ESP_OK) {
+        return;
+    }
+    if (mode == WIFI_MODE_AP || mode == WIFI_MODE_APSTA) {
+        return;  /* already advertising */
+    }
+
+    ESP_LOGW(TAG, "ap-fallback: no saved network reachable after %d backoff "
+                  "cycles — bringing up SoftAP alongside STA",
+             LL_WIFI_AP_FALLBACK_BACKOFFS);
+
+    /* stop → APSTA → configure AP → start. Same proven sequence as
+     * bring_up_softap_runtime, but APSTA so the STA side keeps trying.
+     * Reached only from sm_enter_backoff, i.e. while disconnected, so
+     * the stop doesn't drop a live STA link. */
+    esp_wifi_stop();
+
+    esp_err_t err = esp_wifi_set_mode(WIFI_MODE_APSTA);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "ap-fallback: set_mode APSTA: %s — restoring STA",
+                 esp_err_to_name(err));
+        esp_wifi_set_mode(WIFI_MODE_STA);
+        esp_wifi_start();
+        return;
+    }
+
+    wifi_config_t ap_cfg;
+    build_ap_config(&ap_cfg);
+    err = esp_wifi_set_config(WIFI_IF_AP, &ap_cfg);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "ap-fallback: set_config AP: %s", esp_err_to_name(err));
+    }
+
+    err = esp_wifi_start();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "ap-fallback: wifi_start APSTA: %s",
+                 esp_err_to_name(err));
+        return;
+    }
+    ll_wifi_disable_ps("ap-fallback APSTA");
+    /* WIFI_EVENT_STA_START fires but the SM is in BACKOFF, so its
+     * handler no-ops and the backoff timer resumes the scan cycle.
+     * WIFI_EVENT_AP_START → on_ap_started posts LL_EV_WIFI_CONNECTED so
+     * transport / captive_dns / mdns come up on the AP. */
 }
 #endif /* LL_SOFTAP_PROVISIONING */
 
@@ -997,6 +1095,16 @@ esp_err_t ll_provisioning_init(void)
     err = esp_event_handler_instance_register(
         WIFI_PROV_EVENT, ESP_EVENT_ANY_ID, on_prov_event, NULL, NULL);
     if (err != ESP_OK) return err;
+
+#if LL_SOFTAP_PROVISIONING
+    /* AP_START handler — needed for both the first-boot SoftAP and the
+     * no-network AP fallback (which can fire from the saved-creds STA
+     * boot path). Registered once here so neither init_softap nor
+     * ensure_ap_fallback_up has to. */
+    err = esp_event_handler_instance_register(
+        WIFI_EVENT, WIFI_EVENT_AP_START, on_ap_started, NULL, NULL);
+    if (err != ESP_OK) return err;
+#endif
 
     const esp_timer_create_args_t targs = {
         .callback = &prov_timeout_cb,

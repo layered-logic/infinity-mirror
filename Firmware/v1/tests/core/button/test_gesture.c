@@ -205,3 +205,132 @@ void suite_gesture_recessed(void)
     RUN(recessed_factory_doesnt_refire);
     RUN(recessed_release_after_factory_doesnt_fire_provision);
 }
+
+/* ---- Single-button factory-reset combo ---- */
+
+/* Walk the recognizer through 5s-hold → tap → 5s-hold. Returns the
+ * result of the final tick (FACTORY_COMBO_FIRED on a clean run). */
+static factory_combo_result_t run_full_combo(factory_combo_t *s)
+{
+    factory_combo_step(s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(s, GESTURE_INPUT_RELEASE, 5000);    /* step 1: 5s hold */
+    factory_combo_step(s, GESTURE_INPUT_PRESS, 6000);
+    factory_combo_step(s, GESTURE_INPUT_RELEASE, 6100);    /* step 2: tap */
+    factory_combo_step(s, GESTURE_INPUT_PRESS, 7000);      /* step 3 begins */
+    return factory_combo_step(s, GESTURE_INPUT_TICK, 12000); /* 5s mark */
+}
+
+static void factory_full_sequence_fires(void)
+{
+    factory_combo_t s = {0};
+    /* Just below the step-3 threshold: nothing yet. */
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 5000);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 6000);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 6100);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 7000);
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 11999),
+              FACTORY_COMBO_NONE);
+    /* At the threshold: fires. */
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 12000),
+              FACTORY_COMBO_FIRED);
+    /* Sequence resets after firing. */
+    ASSERT_EQ(s.phase, FACTORY_COMBO_IDLE);
+}
+
+static void factory_short_first_hold_doesnt_fire(void)
+{
+    factory_combo_t s = {0};
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    /* First hold released 1ms early — not step 1. */
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 4999);
+    ASSERT_EQ(s.phase, FACTORY_COMBO_IDLE);
+}
+
+static void factory_long_middle_press_doesnt_fire(void)
+{
+    factory_combo_t s = {0};
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 5000);   /* step 1 ok */
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 6000);
+    /* Middle press held past the short-tap ceiling — breaks the combo. */
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 6700);
+    ASSERT_EQ(s.phase, FACTORY_COMBO_IDLE);
+}
+
+static void factory_gap_too_long_reinterprets_as_fresh_step1(void)
+{
+    factory_combo_t s = {0};
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 5000);   /* step 1 → WAIT_SHORT */
+    /* Middle press arrives after the gap window: not the tap — it
+     * becomes a candidate fresh step 1 rather than being discarded. */
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 9000);
+    ASSERT_EQ(s.phase, FACTORY_COMBO_LONG1);
+}
+
+static void factory_short_final_hold_doesnt_fire(void)
+{
+    factory_combo_t s = {0};
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 5000);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 6000);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 6100);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 7000);     /* step 3 begins */
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 11000),
+              FACTORY_COMBO_NONE);                         /* 4s — short */
+    /* Released before the threshold: aborts. */
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_RELEASE, 11500),
+              FACTORY_COMBO_NONE);
+    ASSERT_EQ(s.phase, FACTORY_COMBO_IDLE);
+}
+
+static void factory_doesnt_refire_after_firing(void)
+{
+    factory_combo_t s = {0};
+    ASSERT_EQ(run_full_combo(&s), FACTORY_COMBO_FIRED);
+    /* Holding past the threshold must not re-fire. */
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 13000),
+              FACTORY_COMBO_NONE);
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_RELEASE, 14000),
+              FACTORY_COMBO_NONE);
+}
+
+static void factory_idle_tick_returns_none(void)
+{
+    factory_combo_t s = {0};
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 0),
+              FACTORY_COMBO_NONE);
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 100000),
+              FACTORY_COMBO_NONE);
+}
+
+static void factory_recovers_after_stale_wait(void)
+{
+    factory_combo_t s = {0};
+    /* Step 1 completes, then the user wanders off mid-combo. */
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 0);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 5000);
+    factory_combo_step(&s, GESTURE_INPUT_TICK, 60000);     /* long idle */
+    /* A fresh full sequence much later still fires. */
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 100000);
+    ASSERT_EQ(s.phase, FACTORY_COMBO_LONG1);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 105000);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 106000);
+    factory_combo_step(&s, GESTURE_INPUT_RELEASE, 106100);
+    factory_combo_step(&s, GESTURE_INPUT_PRESS, 107000);
+    ASSERT_EQ(factory_combo_step(&s, GESTURE_INPUT_TICK, 112000),
+              FACTORY_COMBO_FIRED);
+}
+
+void suite_gesture_factory(void)
+{
+    RUN(factory_full_sequence_fires);
+    RUN(factory_short_first_hold_doesnt_fire);
+    RUN(factory_long_middle_press_doesnt_fire);
+    RUN(factory_gap_too_long_reinterprets_as_fresh_step1);
+    RUN(factory_short_final_hold_doesnt_fire);
+    RUN(factory_doesnt_refire_after_firing);
+    RUN(factory_idle_tick_returns_none);
+    RUN(factory_recovers_after_stale_wait);
+}

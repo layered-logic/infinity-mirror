@@ -20,6 +20,8 @@
 #include "state_bus.h"
 #include "state_bus_events.h"
 
+#include "board.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -61,6 +63,18 @@ static size_t payload_size_for(ll_event_t ev)
  * factory reset behaves consistently. Closes the on/brightness wire
  * contradiction from post-mini-sprint-bugs.md #2. */
 #define LL_BRIGHTNESS_RESUME_DEFAULT 75
+
+/* led_count is a fixed hardware property of the board — the wire
+ * protocol exposes it read-only, it is not a user setting.
+ * ll_state_defaults() is pure C and can't see board.h, so it carries
+ * the 6x6-SKU placeholder; the firmware stamps the real board value
+ * over it here, on every path that seeds or resets g_state. Without
+ * this a factory reset on the 12x12 dev proto silently drops led_count
+ * to the 6x6 default. */
+static void stamp_board_led_count(void)
+{
+    g_state.led_count = LL_LED_COUNT_DEFAULT;
+}
 
 static void apply_event(ll_event_t ev, const void *payload)
 {
@@ -128,6 +142,7 @@ static void apply_event(ll_event_t ev, const void *payload)
          * erase the flash namespace instead of saving defaults back — so
          * the absent blob survives reboot, not a written "defaults" blob. */
         ll_state_defaults(&g_state);
+        stamp_board_led_count();
         break;
     }
 }
@@ -170,6 +185,10 @@ void ll_state_bus_init(const ll_state_t *initial)
     } else {
         ll_state_defaults(&g_state);
     }
+    /* led_count is board hardware, never a persisted user value — stamp
+     * the board default over whatever NVS or the compiled defaults
+     * carried. Also corrects a device whose NVS holds a stale count. */
+    stamp_board_led_count();
 
     /* Self-heal the on/brightness invariant on boot. A legacy NVS blob
      * from a pre-fix era (post-mini-sprint-bugs.md #2, fixed via

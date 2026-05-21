@@ -191,3 +191,100 @@ recessed_gesture_t recessed_step(recessed_state_t *s,
     }
     return RECESSED_GESTURE_NONE;
 }
+
+/* ---- Single-button factory-reset combo ----
+ *
+ * Recognizes 5s-hold → short-press → 5s-hold on the primary button,
+ * fed the same press/release/tick stream as primary_step. Fires
+ * FACTORY_COMBO_FIRED the moment the final hold reaches the threshold
+ * (don't wait for release — the user needs the LED reset cue as
+ * confirmation, same rationale as the recessed 10s hold).
+ *
+ * The inter-step gap is enforced lazily: a press that arrives after
+ * the window has lapsed isn't discarded, it's re-interpreted as a
+ * possible fresh step 1. So a stale WAIT_* phase needs no timeout —
+ * the next press self-corrects it.
+ */
+static void factory_combo_reset(factory_combo_t *s)
+{
+    s->phase = FACTORY_COMBO_IDLE;
+    s->phase_start_ms = 0;
+}
+
+factory_combo_result_t factory_combo_step(factory_combo_t *s,
+                                          gesture_input_t in,
+                                          uint32_t now_ms)
+{
+    switch (s->phase) {
+    case FACTORY_COMBO_IDLE:
+        if (in == GESTURE_INPUT_PRESS) {
+            s->phase = FACTORY_COMBO_LONG1;
+            s->phase_start_ms = now_ms;
+        }
+        break;
+
+    case FACTORY_COMBO_LONG1:
+        /* Timing the first hold. A release at/after the threshold
+         * completes step 1; a too-early release means it wasn't one. */
+        if (in == GESTURE_INPUT_RELEASE) {
+            if ((now_ms - s->phase_start_ms) >= LL_FACTORY_COMBO_LONG_MS) {
+                s->phase = FACTORY_COMBO_WAIT_SHORT;
+                s->phase_start_ms = now_ms;   /* start the gap clock */
+            } else {
+                factory_combo_reset(s);
+            }
+        }
+        break;
+
+    case FACTORY_COMBO_WAIT_SHORT:
+        if (in == GESTURE_INPUT_PRESS) {
+            if ((now_ms - s->phase_start_ms) <= LL_FACTORY_COMBO_GAP_MS) {
+                s->phase = FACTORY_COMBO_SHORT;
+            } else {
+                /* Gap blown — can't be the middle tap; treat this press
+                 * as a possible fresh step 1. */
+                s->phase = FACTORY_COMBO_LONG1;
+            }
+            s->phase_start_ms = now_ms;
+        }
+        break;
+
+    case FACTORY_COMBO_SHORT:
+        /* Middle press in progress — valid only if it releases as a
+         * short tap. Anything longer breaks the sequence. */
+        if (in == GESTURE_INPUT_RELEASE) {
+            if ((now_ms - s->phase_start_ms) <= LL_FACTORY_COMBO_SHORT_MAX_MS) {
+                s->phase = FACTORY_COMBO_WAIT_LONG2;
+                s->phase_start_ms = now_ms;   /* start the gap clock */
+            } else {
+                factory_combo_reset(s);
+            }
+        }
+        break;
+
+    case FACTORY_COMBO_WAIT_LONG2:
+        if (in == GESTURE_INPUT_PRESS) {
+            if ((now_ms - s->phase_start_ms) <= LL_FACTORY_COMBO_GAP_MS) {
+                s->phase = FACTORY_COMBO_LONG2;
+            } else {
+                s->phase = FACTORY_COMBO_LONG1;   /* gap blown — fresh start */
+            }
+            s->phase_start_ms = now_ms;
+        }
+        break;
+
+    case FACTORY_COMBO_LONG2:
+        /* Timing the final hold. Fire the instant it crosses the
+         * threshold; a release before then aborts the sequence. */
+        if (in == GESTURE_INPUT_TICK
+            && (now_ms - s->phase_start_ms) >= LL_FACTORY_COMBO_LONG_MS) {
+            factory_combo_reset(s);
+            return FACTORY_COMBO_FIRED;
+        }
+        if (in == GESTURE_INPUT_RELEASE) {
+            factory_combo_reset(s);
+        }
+        break;
+    }
+    return FACTORY_COMBO_NONE;
+}
