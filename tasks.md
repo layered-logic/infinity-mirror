@@ -1,7 +1,7 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-078
+next_id: LL-081
 updated: 2026-05-20
 
 ---
@@ -1323,6 +1323,38 @@ dependencies: LL-057-D
 Mirrors the D4 work into [Firmware/v1/webapp/](Firmware/v1/webapp/): new `hmac.ts` (vendored pure-TS SHA-256 + HMAC-SHA256 — the webapp is served over plain HTTP, not a secure context, so `crypto.subtle` is unavailable; byte-identical to App/v1's copy); `ws-client.ts` gained `setSecret()`, `hmac`-last frame signing (`frameFor()`), and the `setAuthMode` / `rotateSecret` ops; `settings.tsx` gained a pairing panel (require / change / remove a passphrase); `app.tsx` gained a needs-secret unlock screen and owns the secret. **The webapp persists the secret in `localStorage`** (works over plain HTTP, unlike the secure-context crypto APIs) so a paired mirror doesn't re-prompt on every page load — a deliberate divergence from the mobile app's in-memory-only secret, each fitting its platform.
 
 Webapp built clean (`tsc -b` + vite; bundle 13.9 KB gzipped), embedded in firmware `webauth-1444`, OTA-flashed to the live mirror. **Verified end-to-end in a browser** against the device-hosted webapp: the pairing panel renders; enabling pairing flips the device to `auth_mode: paired`; a signed `set_state` (color change) is accepted by the paired device's gate; and a full page reload re-authenticates transparently from the persisted secret with no re-prompt. The `remove passphrase` action uses `window.confirm` (same as factory reset) — fine for a real user, though it blocks browser automation, so the unpair leg was confirmed at the protocol level instead. Mirror left in open mode.
+
+---
+
+<a id="LL-079"></a>
+### [x] LL-079 — Proto SoftAP fallback when no saved network is reachable
+
+sprint: 8 | priority: high | deadline: 2026-05-23
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [Firmware/v1/core/provisioning/provisioning.c](Firmware/v1/core/provisioning/provisioning.c)
+dependencies: LL-046
+
+**Notes:** Fixes a demo-blocker Bill hit in a test session. On an unexpected network where none of the mirror's saved Wi-Fi networks were in range, the device sat in the connection state machine's backoff loop indefinitely — no SoftAP, no reachable surface — and with no recessed button on the C3 proto there was no factory-reset escape hatch either. The app could not find the device and no demoable interaction was possible.
+
+Change in `provisioning.c`: once the STA connection SM has failed to reach any saved network for `LL_WIFI_AP_FALLBACK_BACKOFFS` (2) backoff cycles (~30s), `ensure_ap_fallback_up()` layers the open SoftAP `LL-Mirror-<MAC>` onto the still-running STA (APSTA mode). The device becomes reachable at 192.168.4.1 — drivable directly over the AP or re-provisionable from /setup — while the STA side keeps scanning and reconnects if a saved network reappears. `post_wifi_disconnected()` suppresses the downstream "offline" signal while in APSTA so a STA drop doesn't tear down the AP-side HTTP server. AP-config building factored into `build_ap_config()`; the `AP_START` handler moved up into `ll_provisioning_init()` so the fallback path (reachable from the saved-creds STA boot) has it registered.
+
+This deliberately overrides the locked "RF minimal — no broadcast without an explicit user gesture" stance (multi-network-design §10 Q3) — **authorized by Bill as a proto-only stopgap**; V2 firmware (ships with prod) will gate AP fallback behind a button gesture. Built as `demofix-1714` (clean esp32c3, 1% partition headroom; full host suite 140/140) and flashed to the live mirror. The WebSocket OTA path failed — `ESP_FAIL` inside `esp_https_ota` after a successful download, the same otadata symptom as [LL-076](#LL-076) — so it was recovered via a USB `idf.py flash` to COM3, which also rewrites `ota_data_initial.bin` and clears the otadata state. Clean boot verified: `fw_version: demofix-1714`, `uptime_s` 68, `get_state` green, STA reconnected to "IoT". **AP fallback verified live on hardware (2026-05-20):** with no reachable saved network the device broadcasts its SoftAP as designed.
+
+---
+
+<a id="LL-080"></a>
+### [x] LL-080 — Single-button factory-reset combo
+
+sprint: 8 | priority: high | deadline: 2026-05-23
+added: 2026-05-20 | first_engaged: 2026-05-20 | last_engaged: 2026-05-20 | resolved: 2026-05-20
+artifacts: [Firmware/v1/core/button/button_logic.c](Firmware/v1/core/button/button_logic.c) · [Firmware/v1/core/button/button.c](Firmware/v1/core/button/button.c)
+dependencies: —
+
+**Notes:** Adds a factory-reset path that works on the C3 proto, which has no recessed button (`LL_PIN_BUTTON_RESET = -1`) — so the recessed 10s-hold factory reset is physically unreachable, and a device locked out of the network (see [LL-079](#LL-079)) had no recovery gesture at all.
+
+New `factory_combo_step()` recognizer in `button_logic.c` (pure-C, host-buildable): the deliberately unlikely sequence **5s hold → short press → 5s hold**, each step required within a 3s gap of the previous or the sequence resets. `button.c` feeds it the same primary-button edge stream as the existing gesture machine and posts `LL_EV_FACTORY_RESET` on completion — the same event the recessed hold posts, so the existing pattern_interp red/green confirmation cue and the provisioning factory-reset teardown fire unchanged. Normal primary gestures are suppressed once the combo is past its ambiguous first hold, so the middle tap and final hold don't trigger stray power toggles / colour changes. 8 new host tests in `tests/core/button/test_gesture.c`; full suite 140/140 green, clean `-Werror` build.
+
+Open item — no in-progress LED cue: the user holds 5s twice with no visual feedback until the reset confirmation fires (the recessed hold has a blue-blink progress cue via `LL_EV_RECESSED_HOLD_BEGIN/END`). Acceptable for a dev/proto escape hatch; flagged for V2 if the combo survives into a shipping build. Shipped in the same `demofix-1714` USB flash as [LL-079](#LL-079); clean boot verified on silicon. **Combo verified live on hardware (2026-05-20):** the 5s-hold / short-press / 5s-hold sequence triggers the factory reset.
 
 ---
 

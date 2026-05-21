@@ -54,6 +54,7 @@ static TaskHandle_t g_task;
 
 static primary_state_t g_primary;
 static recessed_state_t g_recessed;
+static factory_combo_t g_factory;
 
 /* Per-pin debounce state. */
 static int g_primary_last_level = 1;
@@ -153,6 +154,27 @@ static void dispatch_recessed(recessed_gesture_t g)
     }
 }
 
+/* The single-button factory-reset combo posts the same LL_EV_FACTORY_RESET
+ * as the recessed 10s hold — pattern_interp and provisioning don't care
+ * which trigger fired it. */
+static void dispatch_factory_combo(void)
+{
+    ll_state_bus_post(LL_EV_FACTORY_RESET, NULL);
+    ESP_LOGW(TAG, "primary: single-button factory-reset combo");
+}
+
+/* True once the factory-reset combo is past its ambiguous first hold —
+ * from there the user is clearly mid-combo, so the normal primary
+ * gestures for the middle tap and final hold are suppressed (no stray
+ * power toggles / colour changes). The first hold is NOT suppressed:
+ * until it completes it is indistinguishable from a normal long hold,
+ * and the 600ms power-off HOLD has already fired by then regardless. */
+static bool factory_combo_active(void)
+{
+    return g_factory.phase != FACTORY_COMBO_IDLE
+        && g_factory.phase != FACTORY_COMBO_LONG1;
+}
+
 /* ---- edge → gesture input ---- */
 
 static void apply_edge(int pin, int level, uint32_t ms)
@@ -164,7 +186,15 @@ static void apply_edge(int pin, int level, uint32_t ms)
         g_primary_last_change_ms = ms;
         gesture_input_t in = (level == 0) ? GESTURE_INPUT_PRESS
                                           : GESTURE_INPUT_RELEASE;
-        dispatch_primary(primary_step(&g_primary, in, ms));
+        /* Feed both recognizers the same edge. primary_step still sees
+         * every edge so its state stays consistent; we just withhold
+         * its gesture dispatch while a factory-reset combo is underway. */
+        primary_gesture_t pg = primary_step(&g_primary, in, ms);
+        if (factory_combo_step(&g_factory, in, ms) == FACTORY_COMBO_FIRED) {
+            dispatch_factory_combo();
+        } else if (!factory_combo_active()) {
+            dispatch_primary(pg);
+        }
     } else if (pin == LL_PIN_BUTTON_RESET) {
         if (level == g_recessed_last_level) return;
         if ((ms - g_recessed_last_change_ms) < LL_BUTTON_DEBOUNCE_MS) return;
@@ -206,6 +236,12 @@ static uint32_t next_deadline_ms(void)
         uint32_t t = g_recessed.press_start_ms + LL_RECESSED_FACTORY_MS;
         if (t < d) d = t;
     }
+    /* Final hold of the factory-reset combo fires on a tick at the 5s
+     * mark — wake the task for it even if no edge intervenes. */
+    if (g_factory.phase == FACTORY_COMBO_LONG2) {
+        uint32_t t = g_factory.phase_start_ms + LL_FACTORY_COMBO_LONG_MS;
+        if (t < d) d = t;
+    }
     return d;
 }
 
@@ -234,7 +270,13 @@ static void button_task(void *arg)
         }
         /* Always run ticks — a timeout expiry or an edge may have moved
          * the machine past a deadline. */
-        dispatch_primary(primary_step(&g_primary, GESTURE_INPUT_TICK, now));
+        primary_gesture_t pg = primary_step(&g_primary, GESTURE_INPUT_TICK, now);
+        if (factory_combo_step(&g_factory, GESTURE_INPUT_TICK, now)
+            == FACTORY_COMBO_FIRED) {
+            dispatch_factory_combo();
+        } else if (!factory_combo_active()) {
+            dispatch_primary(pg);
+        }
         dispatch_recessed(recessed_step(&g_recessed, GESTURE_INPUT_TICK, now));
     }
 }

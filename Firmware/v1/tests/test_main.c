@@ -20,6 +20,7 @@ void run_one(void (*fn)(void), const char *name)
 void suite_auth_logic(void);
 void suite_gesture_primary(void);
 void suite_gesture_recessed(void);
+void suite_gesture_factory(void);
 void suite_cycle_color(void);
 void suite_cycle_pattern(void);
 void suite_cycle_brightness(void);
@@ -38,6 +39,9 @@ int main(void)
 
     printf("\n[recessed gesture machine]\n");
     suite_gesture_recessed();
+
+    printf("\n[factory-reset combo]\n");
+    suite_gesture_factory();
 
     printf("\n[color cycle]\n");
     suite_cycle_color();

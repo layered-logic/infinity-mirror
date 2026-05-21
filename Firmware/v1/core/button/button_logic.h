@@ -22,6 +22,18 @@
 #define LL_RECESSED_PROVISION_MS     3000
 #define LL_RECESSED_FACTORY_MS       10000
 
+/* ---- Single-button factory-reset combo (LL-080) ----
+ *
+ * Deliberately unlikely primary-button sequence: a 5s hold, a short
+ * press, then another 5s hold. Each step must follow the previous
+ * within LL_FACTORY_COMBO_GAP_MS or the sequence resets. This is the
+ * only factory-reset path on the C3 proto, which has no recessed
+ * button. Separate from the canonical block above — these are new,
+ * not STM8-inherited. */
+#define LL_FACTORY_COMBO_LONG_MS       5000   /* min hold, steps 1 & 3 */
+#define LL_FACTORY_COMBO_SHORT_MAX_MS  600    /* max press, step 2 (a tap) */
+#define LL_FACTORY_COMBO_GAP_MS        3000   /* max idle between steps */
+
 /* ---- Cycle table sizes ---- */
 #define LL_COLOR_CYCLE_LEN     17
 #define LL_PATTERN_CYCLE_LEN   7
@@ -74,6 +86,37 @@ typedef struct {
 recessed_gesture_t recessed_step(recessed_state_t *s,
                                  gesture_input_t in,
                                  uint32_t now_ms);
+
+/* ---- Single-button factory-reset combo ----
+ *
+ * A recognizer fed the same primary-button press/release/tick stream
+ * as primary_step, running purely additively — it changes no existing
+ * gesture timing. factory_combo_step() returns FACTORY_COMBO_FIRED the
+ * instant the final hold crosses LL_FACTORY_COMBO_LONG_MS. */
+
+typedef enum {
+    FACTORY_COMBO_IDLE = 0,
+    FACTORY_COMBO_LONG1,        /* step 1: timing the first hold */
+    FACTORY_COMBO_WAIT_SHORT,   /* step 1 done; awaiting the middle tap */
+    FACTORY_COMBO_SHORT,        /* step 2: middle press in progress */
+    FACTORY_COMBO_WAIT_LONG2,   /* step 2 done; awaiting the final hold */
+    FACTORY_COMBO_LONG2,        /* step 3: timing the final hold */
+} factory_combo_phase_t;
+
+typedef struct {
+    factory_combo_phase_t phase;
+    uint32_t phase_start_ms;    /* press-start for LONG1/SHORT/LONG2;
+                                   step-release time (gap clock) for WAIT_* */
+} factory_combo_t;
+
+typedef enum {
+    FACTORY_COMBO_NONE = 0,
+    FACTORY_COMBO_FIRED,        /* full 5s-hold / tap / 5s-hold sequence done */
+} factory_combo_result_t;
+
+factory_combo_result_t factory_combo_step(factory_combo_t *s,
+                                          gesture_input_t in,
+                                          uint32_t now_ms);
 
 /* ---- Cycle tables (extern; defined in button_logic.c) ---- */
 
