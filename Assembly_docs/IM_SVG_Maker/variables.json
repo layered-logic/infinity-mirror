@@ -1,0 +1,17 @@
+{
+  "mirror_size_mm": [150, 150],
+  "max_logo_dim_mm": 100,
+  "nozzle_diameter_mm": 0.6,
+  "laser_kerf_mm": 0.1,
+  "inset_clearance_mm": 0.15,
+  "inset_height_mm": 3.0,
+  "base_height_mm": 1.0,
+  "base_offset_min_mm": 2.0,
+  "base_offset_per_island_mm": 0.5,
+  "base_bridge_factor": 1.0,
+  "raster_thickness_mm": 0.75,
+  "raster_threshold": 128,
+  "raster_turdsize": 8,
+  "raster_min_island_area_mm2": 0,
+  "raster_min_feature_width_mm": 0
+}

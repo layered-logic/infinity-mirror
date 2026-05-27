@@ -1,0 +1,5 @@
+# Generated per-input fab outputs — regenerate with `python -m im_svg_maker <svg>`.
+out/
+
+# pip / setuptools build artifacts from `pip install -e .`
+*.egg-info/
