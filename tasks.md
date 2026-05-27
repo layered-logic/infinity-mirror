@@ -1,8 +1,8 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-084
-updated: 2026-05-26
+next_id: LL-086
+updated: 2026-05-27
 
 ---
 
@@ -1397,7 +1397,7 @@ The directory itself is currently untracked in git ([Assembly_docs/IM_SVG_Maker/
 ### [x] LL-083 — IM_SVG_Maker preprocessing port → infinity_mirror_visualizer
 
 sprint: 9 | priority: medium | deadline: 2026-06-06
-added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-26 | resolved: 2026-05-26
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-27 | resolved: 2026-05-26
 artifacts: [Assembly_docs/IM_SVG_Maker/INTEGRATION_PLAN.md](Assembly_docs/IM_SVG_Maker/INTEGRATION_PLAN.md), `C:/Users/bowhi/Desktop/infinity_mirror_visualizer/src/preprocess/` (separate repo)
 dependencies: LL-082
 
@@ -1415,7 +1415,104 @@ Full scope + boundary + library choices + parity-test plan in [INTEGRATION_PLAN.
 
 Rough estimate 3–4 working days end-to-end. Sequential per chunk; each leaves the repo green.
 
-Post-port follow-ups documented in INTEGRATION_PLAN.md (Netlify → Vercel hosting migration; new UX modes — the second is gated on Bill enumerating which modes).
+Post-port follow-ups documented in INTEGRATION_PLAN.md (Netlify → Vercel hosting migration; new UX modes — the second is gated on Bill enumerating which modes). Both addressed in [LL-084](#LL-084) (visualizer hosting moved to Vercel; the bulk of UX cleanup landed).
+
+---
+
+<a id="LL-084"></a>
+### [x] LL-084 — Visualizer cleanup pass + post-port bug fixes
+
+sprint: 9 | priority: medium | deadline: 2026-05-30
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-27 | resolved: 2026-05-27
+artifacts: `infinity_mirror_visualizer` repo (separate, GitHub `bowbikes/infinity_mirror_visualizer`)
+dependencies: LL-083
+
+**Notes:** After Bill deployed [LL-083](#LL-083)'s port to Vercel he asked for a broad code-review-driven cleanup of the visualizer. Spawned 19 small tracked work items covering correctness, perf, security honesty, and dead-code purge. Net diff for the cleanup commit alone: +516 / −1854 lines (1338 lines lighter), bundle dropped from 713 KB → 331 KB gzipped on initial load (preprocessing chunk lazy-loads on file upload via dynamic import).
+
+**Headline correctness fixes (each its own small commit):**
+- **Indexed-merge bug in SvgIcon** (the one that mattered most): `ShapeGeometry` produces indexed triangle buffers; the merge step in SvgIcon concatenated `.position` arrays without expanding indices, so every multi-island custom SVG (dog, snowflake, anything past 1 path) rendered as a garbage triangle salad. Fix expands each indexed geometry into a flat triangle list before concatenating.
+- **`SvgIcon` swapped from Three.js `path.toShapes(false)` to `parseSvgToPolygons`** (clipper-lib `pftEvenOdd` XOR) — winding-direction-independent outer+holes structure, so ring shapes (the dog outline, the Huskies halo) render as actual rings instead of filled silhouettes.
+- **`listColors` default fill** changed from `#000000` (SVG spec default) to `null` — paths whose `fill:none` came from a `<style>` CSS class (e.g. snowflake's `.cls-1`) were being misreported as 1-fill SVGs and routed through fill passthrough, where their stroke-only polylines became degenerate triangles. Null-fill SVGs now route through `strokesToBlackSvg` as intended.
+- **`vite-plugin-node-polyfills` + `define: { __dirname, __filename }`** to make potrace's transitive deps (pngjs, gifwrap, strtok3) actually run in the browser. Without these the JPG-trace path silently died on "Buffer is not defined" or "__dirname is not defined" at runtime.
+- **Removed the client-side "tamper-proof signature" theater** in `exportUtils.js`. The hardcoded `INFINITY_MIRROR_V1` secret was baked into the JS bundle — anyone with the page could re-sign any modified config, so the claim was misleading. Swapped for a SHA-256 integrity checksum and honest copy ("catches corruption, not tampering").
+- **Manufacturer endpoint moved to `import.meta.env.VITE_MANUFACTURER_ENDPOINT`** — when unset, `ExportModal` hides the "Send to manufacturer" radio group so prod can't silently POST to the placeholder URL that was previously hardcoded.
+
+**UX cleanup:**
+- Single render mode (flat fill matching the laser cut); the stroke/outline branches were stripped from SvgIcon. The unified mode is "what's in the bundle is what the laser will cut," with the preview reflecting that directly.
+- **Vector stroke-to-fill** in `svgParse.js::strokesToBlackSvg` — walks each stroked path via Three.js SVGLoader, offsets the polyline by `stroke-width/2` via clipper-lib's `ClipperOffset` with `etOpenRound`. Lossless, preserves the source stroke widths (`stroke-width:1.92px` on the snowflake comes through as a 1.92-unit-wide ribbon). Replaced the rasterize-via-canvas-then-trace fallback for stroke-only SVGs which was bitmap-resolution-bound and lost thin features.
+- **Custom Art preprocessing panel gated on preset = "Custom Upload"** so there's never two upload boxes simultaneously. Panel renders directly under the Icon section in the sidebar.
+- **File-input label** replaced with a styled `<label>` + hidden input — the native "No file chosen" never appears, the label always shows the actual current filename.
+- Renamed `mirrorSpacing` → `frameDepthMm` across App / ControlsPanel / InfinityMirrorScene / InfinityMirrorBox / exportUtils so the state variable matches the user-visible slider label.
+
+**Performance:**
+- Module-level SVG parse cache in `SvgIcon` so the N reflection layers each pay one parse cost, not N.
+- `THREE.Color` scratch reuse in `ReflectionLayers` (was allocating N colors per render frame).
+- `frameBounds` array stabilized via `useMemo` in `InfinityMirrorBox`; per-layer `localFrameBounds` baked into the `ReflectionLayers` memo. SvgIcon wrapped in `React.memo` — now the camera-tick / orbit re-renders don't rebuild geometry.
+- Preprocessing chunk lazy-loaded via `await import('../preprocess/index.js')` in PreprocessPanel — initial bundle ~half-sized for visitors who only browse the presets.
+
+**Validation workflow established:** wired up the `mcp__Claude_Preview__*` browser-automation tools against the dev server. Switched from "push and hope" to "spin up the local preview, upload each torture-test SVG, screenshot, only push when renders look right." Caught two of the three rendering bugs above this way before they shipped.
+
+**Validated on the torture-test corpus** (Bill committed these to `torture test/` in the visualizer repo): dog (thin cyan ring outline ✓), snowflake (6-arm radial with arrowhead tips and hollow center ✓), cage (birdcage with bars ✓), space-needle (tower silhouette ✓). `Rainier.svg` produces ~348K triangles from 61 subpaths and renders as dotted artifacts — deferred as a polygon-simplification follow-up (not in this task's scope).
+
+**Hosting + branches:** Bill set up Vercel pointing at `bowbikes/infinity_mirror_visualizer` main. Merged `bug_fixes` → `main` so production deploys carry the cleanup. Tests stayed 37/37 throughout; build always clean.
+
+LL-084 closed; remaining UX iteration on the controls themselves (sidebar information architecture, defaults, affordances) lives in [LL-085](#LL-085).
+
+---
+
+<a id="LL-085"></a>
+### [x] LL-085 — Visualizer controls UX pass
+
+sprint: 9 | priority: low | deadline: 2026-06-06
+added: 2026-05-27 | first_engaged: 2026-05-27 | last_engaged: 2026-05-27 | resolved: 2026-05-27
+artifacts: `infinity_mirror_visualizer/src/components/ControlsPanel.jsx`, `PreprocessPanel.jsx`, `CustomArtModal.jsx`, `PresetsSection.jsx`, `InfoPopover.jsx`, `ControlsLayout.css`
+dependencies: LL-084
+
+**Notes:** Started with a survey of the right sidebar and presented Bill a prioritized list of improvement opportunities across information architecture, defaults, affordances, live feedback, hierarchy, Custom Art flow, polish, and mobile. He picked Tier 1 (polish) and Tier 2 (most of it — skipped section reorder); after those shipped he greenlit the Tier 3 big-effort items too. Ended up shipping 16 commits across the visualizer repo in one session.
+
+**What landed (in commit order on `infinity_mirror_visualizer` `main`):**
+
+Manufacturability + Custom Art tuning (Bill's specific asks):
+- f71a377 — Nozzle diameter became a discrete picker `[off, 0.25, 0.40, 0.60, 0.80, 1.00]` (no more arbitrary nozzles the printer can't swap to). Min island area default = `ceil(π·(d/2)² × 10) / 10` mm². Min feature width default = nozzle diameter. Both follow the nozzle chip until the user moves them. Yellow "the finished product will not be as fine as the rendered preview" warning under any threshold set to zero. `maxLogoDimMm` slider removed — it didn't affect the visible render, only the threshold unit conversion.
+- d5ae16a — **Edge Thickness now actually does something for custom SVGs.** The slider was previously dead for uploaded art; now it dilates the parsed polygons by `edgeThickness / 2` in scene-space via the existing clipper-backed `offsetPolygons` (promoted from internal to a public preprocess export). Thin lines get thicker, solid shapes grow outward. Slider min lowered from 0.05 → 0 so users can render source art untouched. Thumbnail in the Custom Art panel got a Hide/Show toggle.
+- d396772 — Edge Thickness step 0.05 → 0.01 (finer dial-in); Edge Thickness × Scale interaction deliberately kept proportional (matches manufacturing reality: scaling up the cut makes the cut lines physically thicker); Frame Depth label respects the unit toggle (`1.18in` when in inches, was always `30mm`); Bloom Effect toggle moved out of the floating canvas overlay into the Frame Controls section next to Auto-orbit.
+
+Tier 1 polish:
+- 4cf258d — `Reset all` button (top of panel, snaps every control back to DEFAULTS, preserves custom-art uploads); double-click any slider's label to reset just that slider; numeric input next to every slider (clamps to [min, max] on commit); Units chooser became a two-button `mm | in` toggle instead of a "Use inches" checkbox; hex color text inputs validate on blur with a red border on bad input.
+
+Tier 2 PreprocessPanel:
+- 4851556 — Manufacturability tuners (nozzle / min island / min feature) moved behind a default-closed `▸ Advanced (manufacturability)` toggle so the basic flow is upload → done. 150 ms debounce on the manufacturability re-run effect (was running the full Clipper pipeline on every slider tick). Inline thumbnail of the processed black SVG at the top of the ready stage so users see what the printer cuts without having to read the 3D canvas.
+
+URL hash + presets:
+- 1907b91 — All config knobs serialize to `window.location.hash` as `#cfg=<base64-json>` via `history.replaceState` (no Back-button pollution). Restored once on mount via the `useState` lazy initializer so the encode-on-change effect can't clobber the inbound hash with default state. `Copy share link` button in the Export section flashes "Link copied!" for 1.5s.
+- 635e368 — `PresetsSection` at the top of the panel. Inline naming input → saves the current `SHARED_KEYS` snapshot into `localStorage["imv:presets"]` as `{name, cfg, savedAt}[]`. Saved presets list as name buttons with × delete affordances; click name to apply, × to remove. Same-name save overwrites. Custom-art SVGs are NOT included (too big to fit in a hash or preset, fast to re-upload).
+
+Mobile drawer:
+- ce05461 — `ControlsLayout.css` handles the responsive positioning. Above 900px the panel is a normal 320px flex child (existing desktop layout); below 900px it becomes a fixed-position drawer pinned to the right edge, translated offscreen until the user opens it via a hamburger button in the top-right. Dark scrim overlay; tap-to-close.
+
+Tier 4 polish:
+- b451db4 — Multi-color picker (toggle swatches with a ✓ marker, then `Apply (N colors)` button) — single-tap-and-go was lossy for art whose cut spans several near-black fills. Auto-orbit checkbox folded into Frame Controls (its own one-checkbox "Camera" section felt orphaned). Export note rewritten to "Bundles the configuration with a SHA-256 integrity hash for the manufacturer to verify against." (the old "tamper protection" copy oversold what the hash does). Edge Thickness moved under a new "Appearance" subsection inside Icon Transform — it's a visual property, not a transform.
+
+Custom Art modal wizard (Tier 3):
+- 840a8e0 — Pulled the entire upload + color-pick + manufacturability flow out of the sidebar into a `CustomArtModal` that wraps `PreprocessPanel`. Picking Custom Upload from the preset dropdown auto-opens the modal on first pick. Sidebar gets a compact summary card (64x64 thumbnail + filename + Edit button) when art is uploaded, or a single "Upload custom art…" CTA when not. Modal stays mounted after first open (hidden via `display:none` while closed) so `PreprocessPanel`'s internal state — file, picked colors, slider positions, Advanced collapse — survives close+reopen.
+
+Light + emission perceptual uniformity (Bill's specific ask):
+- 8a46e4e — Preload preprocess module on `PreprocessPanel` mount (was lazy on first file upload, ~200 KB after gzip — moving it earlier lets the import happen while the user is in the OS file picker). `Canvas frameloop="never"` while the Custom Art modal is open — Three.js continuous rendering was eating enough main-thread time that the OS file dialog lagged after clicking Choose file. Preview caption text fixed to "black = illuminated segments, white = mirror base."
+- a382470 — `Light Intensity` slider (0–3×, default 1.0, step 0.05) threads through Scene → Box → ReflectionLayers → SvgIcon and multiplies the per-hue emissive intensity. Joins the URL hash / presets / Reset all.
+- 8a8a08f — **Replaced the six-constant hand-tuned Gaussian curve with a principled inverse-luminance formula** `emission = BASELINE / intrinsic_luminance^POWER` (POWER=1.0 gives mathematically exact perceived uniformity across the entire hue circle; BASELINE=3.4 tuned so default cyan emission matches the previous curve's output). Every hue lands at perceived=3.40. Programmatic 64-hue luminance measurement via WebGL `readPixels` attempted but blocked by the headless preview's rAF being paused (canvas readback returns stale buffers), so derived the formula from first principles instead. Bill should visually scrub with bloom on to confirm.
+- b739ebb — Default `lightIntensity` 1.0 → 0.5 (the new uniform formula lands brighter than the old hand-tuned curve under bloom; 0.5 gives the previous overall feel as the baseline).
+
+Brand corner:
+- f61a57b — `InfoPopover` pinned top-left. One-paragraph description + four-bullet how-to + "Built by Layered Logic — light that layers." footer linking to layeredlogic.cc. Italic Berkeley Mono per the brand decisions in [project_brand_locked_decisions.md](~/.claude/projects/.../memory/project_brand_locked_decisions.md). Dismissable; closed state collapses to a small `ⓘ` button that reopens; dismissal persists via `localStorage["imv:info-dismissed"]`.
+- 9b7ecaa — Swapped the `ⓘ` Unicode glyph for an inline SVG icon (the codepoint was falling through to whatever emoji bitmap font happened to have U+24D8 — looked pixelated at 36 px). Hand-drawn vector now: outer circle + vertical stem + dot. Sharp at any DPR.
+
+Defaults / hash / presets / Reset-all-cascade kept consistent across every state-bearing change. Tests stayed 37/37 throughout. Both `main` and `bug_fixes` kept in sync via `git push home_pc` + ff-only merge per the LL-084 workflow.
+
+**Things Bill flagged for later (not in scope of LL-085):**
+- Visually verify the emission uniformity by scrubbing through hues with Bloom on; bump `POWER` above 1.0 if bloom over-amplifies bright hues in practice.
+- The inverse-luminance formula and the Light Intensity slider give the right tunables — if needed, expose POWER as a knob too.
+
+Validation: dev-server reload pattern + DOM-level interaction tests via `mcp__Claude_Preview__*` carried over from LL-084. The headless WebGL pixel-readback path turned out to be unreliable (rAF appears paused, so the canvas returns whatever was last drawn manually), so visual confidence came from snapshot text + behavioral asserts (slider clamps, hash round-trips, modal open/close cycles, drawer toggle at 600 px viewport, etc.).
 
 ---
 
