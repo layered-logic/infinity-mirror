@@ -290,12 +290,12 @@
     EndSave:  { dy: 100 },
     EndShare: { dy: 100 },
 
-    // Sub-loop entry recovery shifts left along with the sub-loop it
-    // gates. Missing4 follows so the recovery's "No" drop stays a
-    // clean vertical. Q4:s → Q4r:n then bends via the generic Z
-    // route in the clear band between main row and recovery row.
-    Q4r:       { dx: -150 },
-    Missing4:  { dx: -150 },
+    // Sub-loop entry recovery shifts modestly left (-80, not -150) —
+    // shifting further would crash Q4r into Missing3 in the column to
+    // its left. Q4:s → Q4r:n then bends via the generic Z route in
+    // the clear band between main row and recovery row.
+    Q4r:       { dx: -80 },
+    Missing4:  { dx: -80 },
 
     // Sub-loop: shift left to center under Q4-Q5 + push down for
     // clearer separation from the main missing row, with progressively
@@ -315,6 +315,20 @@
   // south is visually distinct from a "No" line dropping out of the
   // same south port.
   const REJOIN_LEG_OFFSET = 5;
+
+  // Sub-flow groupings: each entry draws a soft tinted rounded
+  // rectangle behind the listed nodes, so the sub-loop reads as a
+  // labeled region rather than a loose collection of orange diamonds.
+  const subflowGroups = [
+    {
+      label: 'Custom Art sub-flow',
+      nodes: ['S1', 'S1r', 'MissingS1', 'S2', 'MissingS2', 'S3', 'MissingS3'],
+      fill: '#fff7ed',   // very pale orange-cream
+      stroke: '#ef6c00',
+      strokeDash: '4,3',
+      padding: 16,
+    },
+  ];
 
   // =====================================================================
   // Custom edge renderer
@@ -524,6 +538,53 @@
     return { minX, maxX, maxY, clearYBelow: maxY + 30 };
   }
 
+  function renderSubflowGroups(svg, groups, boxes, topG) {
+    if (!groups || groups.length === 0) return;
+    const layer = document.createElementNS(NS, 'g');
+    layer.setAttribute('id', 'subflow-groups');
+    // Insert FIRST so groups sit beneath edges and nodes
+    topG.insertBefore(layer, topG.firstChild);
+    for (const grp of groups) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      let any = false;
+      for (const name of grp.nodes) {
+        const b = boxes[name];
+        if (!b) continue;
+        any = true;
+        if (b.x < minX) minX = b.x;
+        if (b.x + b.width > maxX) maxX = b.x + b.width;
+        if (b.y < minY) minY = b.y;
+        if (b.y + b.height > maxY) maxY = b.y + b.height;
+      }
+      if (!any) continue;
+      const p = grp.padding ?? 12;
+      const rect = document.createElementNS(NS, 'rect');
+      rect.setAttribute('x', minX - p);
+      rect.setAttribute('y', minY - p - (grp.label ? 14 : 0)); // extra room for label
+      rect.setAttribute('width', (maxX - minX) + 2 * p);
+      rect.setAttribute('height', (maxY - minY) + 2 * p + (grp.label ? 14 : 0));
+      rect.setAttribute('rx', 12);
+      rect.setAttribute('ry', 12);
+      rect.setAttribute('fill', grp.fill || 'transparent');
+      rect.setAttribute('stroke', grp.stroke || '#999');
+      rect.setAttribute('stroke-width', '1');
+      if (grp.strokeDash) rect.setAttribute('stroke-dasharray', grp.strokeDash);
+      rect.setAttribute('opacity', '0.85');
+      layer.appendChild(rect);
+      if (grp.label) {
+        const txt = document.createElementNS(NS, 'text');
+        txt.setAttribute('x', minX - p + 10);
+        txt.setAttribute('y', minY - p - 2);
+        txt.setAttribute('font-family', 'Helvetica');
+        txt.setAttribute('font-size', '11');
+        txt.setAttribute('font-style', 'italic');
+        txt.setAttribute('fill', grp.stroke || '#666');
+        txt.textContent = grp.label;
+        layer.appendChild(txt);
+      }
+    }
+  }
+
   function renderCustomEdges(svg, edgeList) {
     const boxes = collectNodeBoxes(svg);
     // Pass 2 — apply post-layout tweaks (shift specific nodes) so the
@@ -531,11 +592,23 @@
     applyTweaks(svg, nodeTweaks, boxes);
     const bounds = computeBounds(boxes);
 
+    const topG = svg.querySelector('g');
+
+    // Pass 3 — draw subflow grouping backgrounds before the edges so
+    // they sit beneath every other layer.
+    renderSubflowGroups(svg, subflowGroups, boxes, topG);
+
     const layer = document.createElementNS(NS, 'g');
     layer.setAttribute('id', 'custom-edges');
-    // Insert before nodes so edges sit underneath
-    const topG = svg.querySelector('g');
-    topG.insertBefore(layer, topG.firstChild);
+    // Insert edges layer just after the subflow-groups layer (so
+    // edges sit on top of the group tint) but before the node
+    // <g.node> elements (so edges sit beneath the node shapes).
+    const groupLayer = svg.querySelector('#subflow-groups');
+    if (groupLayer) {
+      groupLayer.parentNode.insertBefore(layer, groupLayer.nextSibling);
+    } else {
+      topG.insertBefore(layer, topG.firstChild);
+    }
 
     // Extend the SVG viewBox if our U-shaped backward rejoins dip
     // below the bottommost Graphviz-placed node. The top-level <g>

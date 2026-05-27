@@ -145,6 +145,27 @@ const nodeTweaks = {
 
 The tweak shifts the node visually via `transform="translate(dx dy)"` AND updates its bbox so subsequent edge routing uses the new position. Apply this to happy-end ovals (which sit at recovery-row Y by default), bounces that share a column with a rejoin target, sub-loops you want centered under their parent gates, or anything else Graphviz placed in a path's way.
 
+### Sub-flow groupings (`subflowGroups`)
+
+Sub-loops read better as labeled regions than as loose collections of orange diamonds. Define an entry in `subflowGroups` to draw a soft tinted rounded rectangle behind a named set of nodes, optionally with a label:
+
+```js
+const subflowGroups = [
+  {
+    label: 'Custom Art sub-flow',
+    nodes: ['S1', 'S1r', 'MissingS1', 'S2', 'MissingS2', 'S3', 'MissingS3'],
+    fill: '#fff7ed',       // very pale orange-cream (matches the sub-loop's orange diamonds)
+    stroke: '#ef6c00',     // same orange used on the diamond outlines
+    strokeDash: '4,3',     // dashed border signals "this is a logical grouping"
+    padding: 16,
+  },
+];
+```
+
+The renderer computes the bounding box of all listed node bboxes (post-`nodeTweaks`), adds the configured padding, and draws a `<rect>` underneath every other layer. If `label` is set, an italic label is placed at the top-left inside the padding band. Each group is rendered behind both the edge layer and the node layer, so edges still draw on top and the grouping reads as a background tint.
+
+After tuning the sub-flow's `nodeTweaks` to compress and position it, add the `subflowGroups` entry to give it visual identity. Pick the `fill` color light enough that the diamonds inside still pop; the existing `#fff7ed` works for the orange sub-loop convention.
+
 ---
 
 ## Reusable DOT template

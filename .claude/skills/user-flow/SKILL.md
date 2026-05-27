@@ -89,7 +89,9 @@ Generate the DOT block using the template in [docs/user-flow-authoring.md § Reu
 
 2. **`edges`** — the JS array that drives the visible edge layer. Each entry: `{ from, fromPort, to, toPort, label? }`. Ports are compass shorthand: `n`/`s`/`e`/`w`. The JS router picks the route shape from the port pair (see methodology doc § "Edge routing patterns").
 
-3. **`nodeTweaks`** — optional `{ dx, dy }` offsets for nodes Graphviz placed too close to a routing path. Common case: push happy-end ovals south so they don't share recovery-row Y with rejoin paths.
+3. **`nodeTweaks`** — optional `{ dx, dy }` offsets for nodes Graphviz placed too close to a routing path. Common cases: push happy-end ovals south so they don't share recovery-row Y with rejoin paths; shift sub-loop nodes left to center them under parent gates; progressively larger dx on successive sub-loop gates compresses horizontal spacing.
+
+4. **`subflowGroups`** — optional list of named sub-loop tints. Each entry draws a faint rounded rectangle behind a list of nodes, with a label. Use to visually group sub-flows so they read as a labeled region rather than a loose set of diamonds. See methodology doc § "Sub-flow groupings."
 
 Key invariants:
 - Start = purple oval, happy end = green oval (teal for "transition to next flow"), gates = orange diamonds, bounces = red ovals, recoveries = orange diamonds (same fill as gates), missings = yellow rounded rectangles.
@@ -151,5 +153,7 @@ Before writing the HTML file:
 - [ ] The reorder pause happened.
 - [ ] Happy-end ovals that share a column with a rejoin target have a `nodeTweaks` entry pushing them south.
 - [ ] Sub-loops have uniform `dx` `nodeTweaks` entries to center them under their parent gates.
+- [ ] Sub-loops have a `subflowGroups` entry with a label and a soft fill so they read as a grouped region.
+- [ ] No node-vs-node overlaps after applying `nodeTweaks` — bbox-overlap check after render should be empty.
 
 If any box is unchecked, fix before writing.
