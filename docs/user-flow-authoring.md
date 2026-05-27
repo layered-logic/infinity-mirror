@@ -32,7 +32,11 @@ Six rules that produce predictive, user-centric flows instead of descriptive sys
 
 ### TL;DR
 
-**Use Graphviz via `@viz-js/viz` (WASM). Not Mermaid.** Author in DOT with `rankdir=LR`, `splines=ortho`, explicit port specifiers (`:e`, `:w`, `:s`, `:n`), and per-column `rank=same` groups. Render to SVG in a self-contained HTML preview file at `.preview/<flow-name>.html`.
+**Hybrid Graphviz + JS.** Graphviz (via `@viz-js/viz` WASM) lays out the nodes; a custom JS layer in the HTML preview draws every edge from scratch using pixel-perfect port coordinates and 5-segment Z routing through the clear band between rows. All edges in the DOT are `style=invis` — Graphviz uses them for rank/column assignment but doesn't render them. The JS layer reads each node's `getBBox()` and emits ortho paths that pin to the exact vertex.
+
+This bypasses `splines=ortho`'s built-in port-shifting heuristic, which we proved (empirically, after several rounds of testing) cannot be overridden via any DOT attribute when the route turns upward from a wide diamond.
+
+Output is a self-contained HTML file at `.preview/<flow-name>.html`. No build step. Includes zoom + pan controls so flows with many nodes stay readable.
 
 ### Why not Mermaid
 
@@ -45,12 +49,28 @@ Tried, ruled out — captured here so this isn't re-litigated:
 
 Bottom line: Mermaid is fine for quick decision trees that read top-to-bottom with curved edges. For strict grid-style layouts with user-voice flow conventions, it's the wrong tool.
 
-### Why Graphviz works
+### Why Graphviz for layout, JS for edges
 
-- **`splines=ortho`** routes every edge as right-angle line segments. No bezier curves anywhere.
-- **Explicit port specifiers** pin edges to specific vertices: `Q1:e -> Q2:w` exits the east vertex of Q1 and enters the west vertex of Q2. Strict port-pinned routing is the whole point.
-- **`{ rank=same; A; B; C }` groups** force nodes onto the same rank. Combined with `rankdir=LR`, this gives column-based vertical stacking *(see gotcha below)*.
+- **Graphviz layout is right.** `rankdir=LR` + per-column `rank=same` groups place gates left-to-right with their recoveries/missings stacked beneath. Best-in-class hierarchical layout.
+- **Graphviz edge routing is wrong for our methodology.** Two specific failures, both built into the engine and unconfigurable:
+  1. **Port shift on `splines=ortho`.** For any edge that turns (e.g. recovery rejoin going east-then-up), Graphviz silently shifts the source port from the requested vertex to a nearby face midpoint, to "make the turn easier." Result: visible ~17-pixel offset from the diamond's actual east vertex. Cannot be overridden by `tailclip`, `headport`, HTML labels with explicit `PORT=` attributes, junction nodes, or shape changes. Verified after extensive testing.
+  2. **Label drop on short ortho edges.** Labels on short vertical south-going edges silently don't render. `forcelabels=true` only applies to `xlabel`, not `label`.
+- **The JS layer fixes both.** It reads each node's `getBBox()`, computes port coordinates exactly (no router heuristic), draws every edge as a constructed SVG path with explicit corners, places labels at the geometric midpoint of the appropriate leg, and emits arrowhead polygons at the exact endpoint.
 - **`@viz-js/viz`** ships Graphviz compiled to WebAssembly via jsdelivr. Stable, well-maintained, single-file standalone bundle, no plugin-registration dance.
+
+### Edge routing patterns the JS layer emits
+
+| Edge type | Source port | Target port | Path |
+|---|---|---|---|
+| Happy path (same row) | `e` | `w` | Straight horizontal |
+| `No` drop (same column) | `s` | `n` | Straight vertical |
+| Recovery `Yes` rejoin (up) | `e` | `s` | 5-segment Z: east stub → up to clear band → east → up to target south (shifted 5px west) |
+| Sub-flow entry (down) | `e` | `n` | 5-segment Z: east stub → down to clear band → east → down to target north (shifted 5px west) |
+| Exit gate → happy oval | `e` (or `s`) | `w` (or `n`) | Straight horizontal (or vertical) |
+
+The "clear band" Y coordinate is computed from the source's and target's bounding boxes — it's the midpoint between source's facing edge and target's facing edge. This always lands in the row gap, so the horizontal leg doesn't cross recovery-row content in any column it spans.
+
+The 5px shift on the vertical leg visually separates a rejoin entering a gate's south from a "No" line dropping out of the same south port.
 
 ### The big `rank=same` gotcha
 
@@ -82,15 +102,31 @@ That's the recipe that produced the working Stage 1 preview.
 
 ### Port specifier conventions
 
-Locked across all Layered Logic user-flow diagrams:
+Edges live in a separate JS data structure (not in the DOT). Each entry: `{ from, fromPort, to, toPort, label? }`. Ports are compass shorthand (`n`/`s`/`e`/`w`) — the JS router picks the route shape from the port pair.
 
-| Edge type | Port specifier | Geometry |
-|---|---|---|
-| `Yes` (golden-path forward) | `source:e -> target:w` | Horizontal, right-to-left along the top row |
-| `No` (drops to bounce / recovery / missing) | `source:s -> target:n` | Vertical, top-to-bottom within a column |
-| Recovery `Yes` rejoin | `source:e -> target:w` | Inverted-L: out the right, up, into the left of the next gate |
+| Edge type | Source port | Target port | Visual outcome |
+|---|---|---|---|
+| Happy path forward | `e` | `w` | Straight horizontal at gate row Y |
+| `No` drops to bounce / recovery / missing | `s` | `n` | Straight vertical in same column |
+| Recovery `Yes` rejoin to next gate | `e` | `s` | 5-seg Z up through clear band, lands 5px west of target south |
+| Sub-flow entry from recovery | `e` | `n` | 5-seg Z down through clear band, lands 5px west of target north |
+| Exit gate → happy oval (south) | `s` | `n` | Straight vertical (often the exit oval is pushed further south via nodeTweaks) |
+| Exit gate → happy oval (east) | `e` | `w` | Straight horizontal |
 
-The recovery rejoin case is the only one where `:e -> :w` doesn't produce a purely horizontal edge — because the target is one column right and one row *up*. Graphviz with `splines=ortho` routes this as a clean inverted-L.
+The recovery rejoin and sub-flow entry both shift 5px away from the target's center (toward the source) so they don't share a column with a same-direction `No` line.
+
+### Layout tweaks (`nodeTweaks`)
+
+For nodes that Graphviz packs too close to the rejoin paths, define a `nodeTweaks` entry in the HTML template:
+
+```js
+const nodeTweaks = {
+  EndSave:  { dy: 100 },   // push south so its column doesn't collide with rejoin's vertical leg
+  EndShare: { dy: 100 },
+};
+```
+
+The tweak shifts the node visually via `transform="translate(dx dy)"` AND updates its bbox so subsequent edge routing uses the new position. Apply this to happy-end ovals (which sit at recovery-row Y by default), bounces that share a column with a rejoin target, or anything else Graphviz placed in a path's way.
 
 ---
 
@@ -153,59 +189,22 @@ digraph stage_NAME {
 
 ## Reusable HTML preview template
 
-Drop this at `.preview/<stage>.html`, paste the DOT into the `dotSource` template literal, and open in any modern browser. No build step. No npm install. Just opens.
+The canonical template lives at [`.preview/visualizer.html`](../.preview/visualizer.html) (the first flow built with this methodology — Stages 2 / 2b / 3 of the service blueprint). When authoring a new flow, copy that file, replace the three sections marked below, and open in any modern browser. No build step.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Stage N — TITLE</title>
-<style>
-  body { margin: 0; padding: 32px; background: #f7f5f0; font-family: system-ui, sans-serif; }
-  .card { max-width: 1800px; margin: 0 auto; padding: 24px; background: #fff; border-radius: 12px; }
-  #chart { text-align: center; min-height: 200px; }
-  #chart svg { max-width: 100%; height: auto; }
-  .status { max-width: 1800px; margin: 8px auto 0; padding: 8px 14px; background: #fff; border-radius: 8px; font: 12px ui-monospace, monospace; color: #6e6e73; }
-  .err { color: #b71c1c; background: #ffebee; }
-</style>
-</head>
-<body>
-<header style="max-width:1800px;margin:0 auto 24px;">
-  <h1 style="font-weight:300;font-style:italic;margin:0 0 6px;">Stage N — TITLE</h1>
-</header>
-<div class="card"><div id="chart">Loading Graphviz…</div></div>
-<div class="status" id="status">Initializing renderer…</div>
+**Three sections to replace** for a new flow:
 
-<script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3/lib/viz-standalone.js"></script>
-<script>
-  const dotSource = `digraph { /* paste DOT here */ }`;
-  const chart = document.getElementById("chart");
-  const status = document.getElementById("status");
+1. **`dotSource`** — the DOT block. Same structure as the [Reusable DOT template](#reusable-dot-template) above. All edges are `style=invis` because the JS layer renders them.
+2. **`edges`** — the JS array of `{from, fromPort, to, toPort, label?}` objects. The JS router builds the visible SVG from this.
+3. **`nodeTweaks`** — optional `{ dx, dy }` offsets for nodes that Graphviz packed too close to a routing path.
 
-  function fail(msg, err) {
-    status.className = "status err";
-    status.textContent = msg + (err ? ": " + (err.message || err) : "");
-    chart.textContent = "(rendering failed — see status line)";
-    if (err) console.error(err);
-  }
+The locked template includes:
+- Graphviz layout via `@viz-js/viz@3` (WASM, single CDN script tag)
+- Custom JS edge renderer (`routeEdge`, `portPoint`, `arrowheadAt`, `labelAt`) with the routing patterns documented above
+- Layout-tweak pass (`applyTweaks`) that runs between Graphviz layout and edge rendering
+- Zoom + pan controls (mouse drag, scroll wheel, ± buttons in a zoom bar)
+- Status line showing edges drawn / skipped
 
-  if (typeof Viz === "undefined") {
-    fail("Viz library did not load from CDN. Check network / blockers");
-  } else {
-    Viz.instance().then(viz => {
-      try {
-        const svg = viz.renderSVGElement(dotSource);
-        chart.innerHTML = "";
-        chart.appendChild(svg);
-        status.textContent = "Renderer: Graphviz · splines=ortho · port-pinned edges";
-      } catch (e) { fail("Graphviz render error", e); }
-    }).catch(e => fail("Graphviz instance() failed", e));
-  }
-</script>
-</body>
-</html>
-```
+If you need to lift the template into a different file (cross-repo, etc.), copy `.preview/visualizer.html` verbatim and edit the three sections.
 
 ---
 
@@ -218,8 +217,15 @@ For traceability when iterating later:
 3. **Mermaid + ELK plugin via `mermaid.registerLayoutLoaders()`.** Plugin failed to load from CDN; broke the entire render and left the page showing raw source. Tried `await import()` with try/catch fallback — still flaky.
 4. **Switched to Graphviz via `@viz-js/viz`.** Reliable, stable, no plugin registration. First DOT had the wrong `rank=same` constraints (one big group for the happy path) → top-down primary instead of left-right primary.
 5. **Per-column rank groups + weight=10 on happy-path edges.** Locked. Produces correct grid layout with port-pinned edges.
+6. **Discovered `splines=ortho` port-shift on first multi-row flow.** Recovery rejoin tails were starting ~17 pixels above the diamond's actual east vertex. The shift looked like a bug at first; turns out it's the router intentionally biasing the exit toward the NE face for upward turns.
+7. **Tried every documented override.** None worked: `tailclip=false` / `headclip=false`, `headport=s`, switching diamonds to HTML labels with `PORT=` attributes (whether using compass-aliased names like `e` or distinct names like `right`), invisible junction nodes between source and target, HTML labels inside `shape=diamond` (made the offset 5x worse because ports anchored to the inner label box, not the diamond outline). The shift is a router heuristic, not an attribute.
+8. **Switched to hybrid: Graphviz for layout, JS for edges.** All edges `style=invis` in the DOT; a JS layer reads `getBBox()` per node and emits SVG paths with explicit corners. Pixel-perfect port attachment.
+9. **5-segment Z routing for inverted-L paths.** First version of the JS layer used a 3-segment L (east → up → into target). Worked for vertex pinning but the horizontal leg sat at recovery-row Y, crossing bounces and adjacent recovery diamonds in the columns it spanned. Fix: route the horizontal leg through a "clear band" Y between source's row and target's row, computed from bbox midpoints.
+10. **`nodeTweaks` for post-layout offsets.** Even with clear-band routing, some nodes Graphviz packed at recovery-row level (happy-end ovals) collided visually with rejoin verticals. Added a tweak pass that shifts named nodes by `{dx, dy}` after Graphviz layout and updates their bbox so subsequent edge routing uses the new position.
+11. **5px vertical-leg shift on rejoins.** With the Z routing in place, the rejoin's final vertical segment still landed dead-center on the target's south port, sharing x with the `No` line dropping out the same port. Added a small offset so rejoin lands 5px west of center, visually separating from the No line.
+12. **Zoom + pan in the preview.** Flows past ~6 gates render too small at fit-to-screen. Added a zoom bar (− / 100% / +), mouse-drag pan, and scroll-wheel zoom anchored to cursor.
 
-The `rank=same`-means-same-column gotcha is the highest-value learning here — easy to get wrong, hard to debug from the output (the output looks "almost right" so you don't immediately suspect the rank groups).
+The biggest learning: **Graphviz's edge router is a separate concern from its layout.** Trying to make ortho routing match port specifications is fighting the engine. Owning the edge rendering ourselves was the unlock.
 
 ---
 

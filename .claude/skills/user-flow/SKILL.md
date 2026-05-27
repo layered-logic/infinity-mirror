@@ -83,18 +83,26 @@ This pause is mandated by [feedback_flow_natural_progression](~/.claude/projects
 
 Generate the DOT block using the template in [docs/user-flow-authoring.md § Reusable DOT template](../../../docs/user-flow-authoring.md#reusable-dot-template).
 
+**Copy the canonical template** `.preview/visualizer.html` to `.preview/<flow-name>.html` and replace the three editable sections:
+
+1. **`dotSource`** — the DOT block. Defines node geometry only; all edges are `style=invis` (Graphviz uses them for rank/column assignment but doesn't render them). Use the standard rank-group pattern (one group per gate column, with recovery/missing/bounce stacked beneath the gate). Don't change graph-level attrs (`rankdir`, `splines`, font, etc.) without a reason.
+
+2. **`edges`** — the JS array that drives the visible edge layer. Each entry: `{ from, fromPort, to, toPort, label? }`. Ports are compass shorthand: `n`/`s`/`e`/`w`. The JS router picks the route shape from the port pair (see methodology doc § "Edge routing patterns").
+
+3. **`nodeTweaks`** — optional `{ dx, dy }` offsets for nodes Graphviz placed too close to a routing path. Common case: push happy-end ovals south so they don't share recovery-row Y with rejoin paths.
+
 Key invariants:
-- `rankdir=LR; splines=ortho;`
-- Start = purple oval, happy end = green oval, gates = orange diamonds, bounces = red ovals, recoveries = orange diamonds (same fill as gates), missings = yellow rounded rectangles.
-- Edges:
-  - Happy path (Yes): `Source:e -> Target:w [label="  Yes", weight=10]` — weight=10 on every one.
-  - No drops: `Source:s -> Target:n [label="No"]`.
-  - Recovery rejoin (Yes from a recovery probe back to next gate): `Recovery:e -> NextGate:w [label="  Yes"]` — splines=ortho handles the inverted-L automatically.
-- **Per-column `rank=same` groups only** — one group per gate column containing the gate + its bounce/recovery/missing children. NEVER one big `rank=same` group for the whole happy path (that gotcha kills the LR layout).
+- Start = purple oval, happy end = green oval (teal for "transition to next flow"), gates = orange diamonds, bounces = red ovals, recoveries = orange diamonds (same fill as gates), missings = yellow rounded rectangles.
+- Edge port pairs by type:
+  - Happy path forward: `e → w`
+  - `No` drops: `s → n`
+  - Recovery `Yes` rejoin to next gate: `e → s` (the JS router builds a 5-segment Z through the clear band; shifts vertical leg 5px west of target south)
+  - Sub-flow entry from recovery: `e → n` (same Z pattern, going down)
+  - Exit gate → happy oval: `s → n` (vertical drop) or `e → w` (horizontal)
+- **Per-column `rank=same` groups only** — one group per gate column containing the gate + its bounce/recovery/missing children. NEVER one big `rank=same` group for the whole happy path.
+- Title the HTML (`<title>` and the `<h1>`) with a human-readable stage label (e.g. "Stage 2 — Purchase" or "Stages 2 / 2b / 3 — Visualizer").
 
-Wrap the DOT in the HTML template from the methodology doc § "Reusable HTML preview template" — paste the DOT into the `dotSource` template literal. Set `<title>` and the `<h1>` to a human-readable stage title (e.g. "Stage 2 — Purchase").
-
-Write the file to `.preview/<flow-name>.html`. Don't write a separate `.dot` file — the DOT lives inside the HTML.
+Don't write a separate `.dot` file — the DOT lives inside the HTML.
 
 ## Step 6 — Hand off for review
 
@@ -122,19 +130,22 @@ Then push to whatever remote/branch is current. If the user has uncommitted unre
 - **No recovery probe is fine** — not every pain needs one. Don't pad.
 - **Stage-1 was Discover** — if the user is authoring Stage 2+, the start-state label probably begins where Stage 1's happy-end label ended. Suggest this if not provided.
 - **Yellow `Missing:` items** are concrete build-this backlog items, not vague handwaving. Push back on labels like "Better UX" — ask for the specific asset/copy/signal that would have saved the user.
-- **The HTML template has a CDN script tag** pointing at `@viz-js/viz@3`. Don't change this. The template is locked.
-- **Don't add a Mermaid mirror block** to `service-blueprint-flows.md` — that step was deliberately deferred for now (per the session that authored this skill). If the user later asks for it as a portability artifact, that's a separate task.
+- **Don't touch the JS edge router** in the HTML template. It's locked methodology. Add edges and node tweaks; don't modify `routeEdge`, `portPoint`, `arrowheadAt`, `labelAt`, or `setupZoomPan` unless you're consciously updating the methodology.
+- **Don't add a Mermaid mirror block** to `service-blueprint-flows.md` — that step was deliberately deferred for now. If the user later asks for it as a portability artifact, that's a separate task.
 
 ## Self-check before rendering
 
-Before writing the HTML file, scan the DOT mentally:
+Before writing the HTML file:
 
 - [ ] Every diamond label uses `I` / `me` / `my`.
 - [ ] No `rank=same` group contains more than one gate from the happy path.
-- [ ] Every happy-path edge has `weight=10`.
-- [ ] Every `Yes` edge uses `:e -> :w`. Every `No` edge uses `:s -> :n`.
+- [ ] All DOT edges are `style=invis` (handled by the template's edge default).
+- [ ] Every entry in the JS `edges` array has both `from`/`to` and `fromPort`/`toPort`.
+- [ ] Recovery `Yes` rejoins use port pair `e → s` (NOT `e → w`).
+- [ ] Sub-flow entries use port pair `e → n`.
 - [ ] Bounces are red ovals; recoveries are orange diamonds; missings are yellow rounded rectangles.
 - [ ] No gate forks on channel modality.
 - [ ] The reorder pause happened.
+- [ ] Happy-end ovals that share a column with a rejoin target have a `nodeTweaks` entry pushing them south.
 
 If any box is unchecked, fix before writing.

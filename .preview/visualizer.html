@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Stages 2 / 2b / 3 — Visualizer: Customize → Configure → Commit</title>
+<style>
+  body { margin: 0; padding: 32px; background: #f7f5f0; font-family: system-ui, sans-serif; }
+  .card { max-width: 2200px; margin: 0 auto; padding: 24px; background: #fff; border-radius: 12px; }
+  #chart { text-align: left; min-height: 200px; overflow: auto; max-height: 75vh; cursor: grab; user-select: none; }
+  #chart.dragging { cursor: grabbing; }
+  #chart svg { display: block; transform-origin: 0 0; }
+  .zoom-bar { max-width: 2200px; margin: 8px auto 0; padding: 6px 14px; background: #fff; border-radius: 8px; display: flex; gap: 8px; align-items: center; font: 12px ui-monospace, monospace; color: #6e6e73; }
+  .zoom-bar button { padding: 4px 10px; font: inherit; background: #f7f5f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; }
+  .zoom-bar button:hover { background: #ebe9e3; }
+  .zoom-bar .hint { color: #aaa; margin-left: auto; }
+  .status { max-width: 2200px; margin: 8px auto 0; padding: 8px 14px; background: #fff; border-radius: 8px; font: 12px ui-monospace, monospace; color: #6e6e73; }
+  .err { color: #b71c1c; background: #ffebee; }
+  header { max-width: 2200px; margin: 0 auto 24px; }
+  h1 { font-weight: 300; font-style: italic; margin: 0 0 6px; }
+  .sub { color: #6e6e73; font-size: 13px; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stages 2 / 2b / 3 — Visualizer: Customize → Configure → Commit</h1>
+  <div class="sub">Spans Stage 2 (Consider) + Stage 2b (Consult &amp; co-design via Custom Art) + Stage 3 (Purchase commit). Hands off to Stage 4 — Manufacture &amp; QC at the Send-to-Manufacturer exit. Three happy exits: Save, Share, Send.</div>
+</header>
+<div class="card"><div id="chart">Loading Graphviz…</div></div>
+<div class="zoom-bar">
+  <button onclick="zoomBy(1/1.25)" title="Zoom out (or scroll-wheel down)">−</button>
+  <button onclick="zoomReset()" title="Reset to 100%">⤢ 100%</button>
+  <button onclick="zoomBy(1.25)" title="Zoom in (or scroll-wheel up)">+</button>
+  <span id="zoom-display">100%</span>
+  <span class="hint">drag to pan · scroll to zoom</span>
+</div>
+<div class="status" id="status">Initializing renderer…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3/lib/viz-standalone.js"></script>
+<script>
+  // =====================================================================
+  // DOT source — node definitions + invisible edges for layout only.
+  // Edges are rendered by the custom JS layer below; Graphviz only places
+  // the nodes. The :port specifiers on the invisible edges are still
+  // honored by the dot layout engine for rank/column assignment, so the
+  // overall flow shape (LR happy path along the top, recoveries below)
+  // matches what we want.
+  // =====================================================================
+  const dotSource = `digraph visualizer_stage_2_to_3 {
+    rankdir=LR;
+    splines=ortho;
+    bgcolor=transparent;
+    nodesep=0.55;
+    ranksep=0.95;
+
+    node [fontname="Helvetica", fontsize=10, margin="0.14,0.08", penwidth=2];
+    // Default edge style: invisible. The JS layer below draws all visible
+    // edges using exact port coordinates from the rendered node geometry.
+    edge [style=invis];
+
+    // ===== Start =====
+    Start [shape=oval, style=filled, fillcolor="#b39ddb", color="#4527a0",
+           label="I land on the\\nvisualizer\\n(InfoPopover open)"];
+
+    // ===== Main-row gates =====
+    Q1  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Do I understand\\nwhat this tool\\ndoes?"];
+    Q2  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Is this a tool\\nI want to use?"];
+    Q3  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Can I work\\nwith this\\nlayout?"];
+    Q4  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Do these shapes\\nmatch what I\\nwant to build?"];
+    Q5  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Will this fit\\nmy space?"];
+    Q6  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Does the look\\nmatch my vibe?"];
+    Q7  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Want to save\\nthis for later?"];
+    Q8  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Want a trusted\\nperson's opinion\\nbefore committing?"];
+    Q9  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Am I ready\\nto commit to\\nmaking this?"];
+    Q10 [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Can I trust\\nthis maker?"];
+
+    // ===== Recovery diamonds =====
+    Q1r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I reopen\\nthe info card?"];
+    Q3r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I reset\\nand pick a\\npreset?"];
+    Q4r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I upload\\nmy own art?"];
+    Q5r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I get the\\nright dimensions?"];
+    Q6r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I find\\na better palette?"];
+    Q9r  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Save it\\nand come back\\nlater?"];
+    Q10r [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+          label="Can I get\\nreassurance?"];
+
+    // ===== Bounces (red ovals) =====
+    BounceWrong [shape=oval, style=filled, fillcolor="#ef9a9a", color="#b71c1c",
+                 label="Lost interest —\\nwrong tool"];
+    BounceVibe  [shape=oval, style=filled, fillcolor="#ef9a9a", color="#b71c1c",
+                 label="Lost vibe"];
+
+    // ===== Missing-info terminals =====
+    Missing1  [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: clearer\\nintro / video /\\nstep-by-step"];
+    Missing3  [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: simpler\\nstarter mode /\\nprogressive disclosure"];
+    Missing4  [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: more\\npresets / shape\\nlibrary"];
+    Missing5  [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: AR /\\nroom-mockup\\ntool"];
+    Missing9  [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: low-commit\\nalt (request quote /\\nchat with maker)"];
+    Missing10 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: clear\\nmanufacturer profile /\\nportfolio / SLA"];
+
+    // ===== Happy exits =====
+    EndSave  [shape=oval, style=filled, fillcolor="#a5d6a7", color="#2e7d32",
+              label="I save /\\ndownload\\nmy design"];
+    EndShare [shape=oval, style=filled, fillcolor="#a5d6a7", color="#2e7d32",
+              label="I share\\nmy design"];
+    EndSend  [shape=oval, style=filled, fillcolor="#80cbc4", color="#00695c",
+              label="I send to\\nmanufacturer →\\n(Stage 4)"];
+
+    // ===== Custom Art sub-flow =====
+    S1  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Can the system\\nread my art?"];
+    S2  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Which color\\nis my cut?\\n(if multi-color)"];
+    S3  [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Does the preview\\nlook like what\\nI want cut?"];
+
+    S1r [shape=diamond, style=filled, fillcolor="#ffcc80", color="#ef6c00",
+         label="Different file\\nformat?"];
+
+    MissingS1 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: file-format\\nhelp / sample files"];
+    MissingS2 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: clearer\\n'this is the cut'\\nlabeling"];
+    MissingS3 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
+               label="Missing: auto-clean /\\nauto-thicken /\\nrepair tools"];
+
+    RejoinMarker [shape=oval, style="filled,dashed", fillcolor="#e8f5e9",
+                  color="#2e7d32", fontcolor="#2e7d32", fontsize=10,
+                  label="↑ rejoin at\\nSize gate"];
+
+    // ===== Column rank groups =====
+    { rank=same; Q1;  Q1r;  Missing1; }
+    { rank=same; Q2;  BounceWrong; }
+    { rank=same; Q3;  Q3r;  Missing3; }
+    { rank=same; Q4;  Q4r;  Missing4; }
+    { rank=same; Q5;  Q5r;  Missing5; }
+    { rank=same; Q6;  Q6r;  BounceVibe; }
+    { rank=same; Q7;  EndSave; }
+    { rank=same; Q8;  EndShare; }
+    { rank=same; Q9;  Q9r;  Missing9; }
+    { rank=same; Q10; Q10r; Missing10; }
+    { rank=same; S1; S1r; MissingS1; }
+    { rank=same; S2; MissingS2; }
+    { rank=same; S3; MissingS3; }
+    // RejoinMarker in its own column, immediately east of S3, in the
+    // sub-flow row. Pulls it out from between S3 and MissingS3 so the
+    // S3-south drop doesn't pass through it.
+    { rank=same; RejoinMarker; }
+
+    // ===== Invisible edges for layout =====
+    // These determine the ranks and node placement but don't draw. JS
+    // below draws the visible edges.
+    Start -> Q1 [weight=10];
+    Q1 -> Q2 [weight=10];
+    Q2 -> Q3 [weight=10];
+    Q3 -> Q4 [weight=10];
+    Q4 -> Q5 [weight=10];
+    Q5 -> Q6 [weight=10];
+    Q6 -> Q7 [weight=10];
+    Q7 -> Q8 [weight=10];
+    Q8 -> Q9 [weight=10];
+    Q9 -> Q10 [weight=10];
+    Q10 -> EndSend [weight=10];
+
+    Q1 -> Q1r;  Q1r -> Missing1;
+    Q2 -> BounceWrong;
+    Q3 -> Q3r;  Q3r -> Missing3;
+    Q4 -> Q4r;  Q4r -> Missing4;
+    Q5 -> Q5r;  Q5r -> Missing5;
+    Q6 -> Q6r;  Q6r -> BounceVibe;
+    Q7 -> EndSave;
+    Q8 -> EndShare;
+    Q9 -> Q9r;  Q9r -> Missing9;
+    Q10 -> Q10r; Q10r -> Missing10;
+
+    // Sub-flow layout edges
+    Q4r -> S1;
+    S1 -> S2 [weight=8];
+    S2 -> S3 [weight=8];
+    S1 -> S1r;  S1r -> MissingS1;
+    S2 -> MissingS2;
+    S3 -> MissingS3;
+    S3 -> RejoinMarker [weight=5];
+  }`;
+
+  // =====================================================================
+  // Edge list — what the JS layer draws on top of the Graphviz layout.
+  // Each entry: { from, fromPort, to, toPort, label?, type? }
+  //
+  // Ports use compass shorthand: 'n' / 's' / 'e' / 'w'.
+  // type: 'straight' (default if same axis), 'L' (default for 90° turn).
+  // The router picks the elbow position from port directions:
+  //   horizontal-out → vertical-in: elbow at (target.x, source.y)
+  //   vertical-out → horizontal-in: elbow at (source.x, target.y)
+  // =====================================================================
+  const edges = [
+    // --- Start ---
+    { from: 'Start', fromPort: 'e', to: 'Q1', toPort: 'w' },
+
+    // --- Main happy path (Yes continues right) ---
+    { from: 'Q1',  fromPort: 'e', to: 'Q2',  toPort: 'w', label: 'Yes' },
+    { from: 'Q2',  fromPort: 'e', to: 'Q3',  toPort: 'w', label: 'Yes' },
+    { from: 'Q3',  fromPort: 'e', to: 'Q4',  toPort: 'w', label: 'Yes' },
+    { from: 'Q4',  fromPort: 'e', to: 'Q5',  toPort: 'w', label: 'Yes' },
+    { from: 'Q5',  fromPort: 'e', to: 'Q6',  toPort: 'w', label: 'Yes' },
+    { from: 'Q6',  fromPort: 'e', to: 'Q7',  toPort: 'w', label: 'Yes' },
+    { from: 'Q7',  fromPort: 'e', to: 'Q8',  toPort: 'w', label: 'No' },
+    { from: 'Q8',  fromPort: 'e', to: 'Q9',  toPort: 'w', label: 'No' },
+    { from: 'Q9',  fromPort: 'e', to: 'Q10', toPort: 'w', label: 'Yes' },
+
+    // --- Happy exits ---
+    { from: 'Q7',  fromPort: 's', to: 'EndSave',  toPort: 'n', label: 'Yes' },
+    { from: 'Q8',  fromPort: 's', to: 'EndShare', toPort: 'n', label: 'Yes' },
+    { from: 'Q10', fromPort: 'e', to: 'EndSend',  toPort: 'w', label: 'Yes' },
+
+    // --- Pain → recovery / bounce (south drops) ---
+    { from: 'Q1',  fromPort: 's', to: 'Q1r',         toPort: 'n', label: 'No' },
+    { from: 'Q2',  fromPort: 's', to: 'BounceWrong', toPort: 'n', label: 'No' },
+    { from: 'Q3',  fromPort: 's', to: 'Q3r',         toPort: 'n', label: 'No' },
+    { from: 'Q4',  fromPort: 's', to: 'Q4r',         toPort: 'n', label: 'No' },
+    { from: 'Q5',  fromPort: 's', to: 'Q5r',         toPort: 'n', label: 'No' },
+    { from: 'Q6',  fromPort: 's', to: 'Q6r',         toPort: 'n', label: 'No' },
+    { from: 'Q9',  fromPort: 's', to: 'Q9r',         toPort: 'n', label: 'No' },
+    { from: 'Q10', fromPort: 's', to: 'Q10r',        toPort: 'n', label: 'No' },
+
+    // --- Recovery No → Missing / Bounce ---
+    { from: 'Q1r',  fromPort: 's', to: 'Missing1',   toPort: 'n', label: 'No' },
+    { from: 'Q3r',  fromPort: 's', to: 'Missing3',   toPort: 'n', label: 'No' },
+    { from: 'Q4r',  fromPort: 's', to: 'Missing4',   toPort: 'n', label: 'No' },
+    { from: 'Q5r',  fromPort: 's', to: 'Missing5',   toPort: 'n', label: 'No' },
+    { from: 'Q6r',  fromPort: 's', to: 'BounceVibe', toPort: 'n', label: 'No' },
+    { from: 'Q9r',  fromPort: 's', to: 'Missing9',   toPort: 'n', label: 'No' },
+    { from: 'Q10r', fromPort: 's', to: 'Missing10',  toPort: 'n', label: 'No' },
+
+    // --- Recovery Yes rejoin (inverted-L east-then-up) ---
+    { from: 'Q1r',  fromPort: 'e', to: 'Q2',      toPort: 's', label: 'Yes' },
+    { from: 'Q3r',  fromPort: 'e', to: 'Q4',      toPort: 's', label: 'Yes' },
+    { from: 'Q5r',  fromPort: 'e', to: 'Q6',      toPort: 's', label: 'Yes' },
+    { from: 'Q6r',  fromPort: 'e', to: 'Q7',      toPort: 's', label: 'Yes' },
+    { from: 'Q9r',  fromPort: 'e', to: 'Q10',     toPort: 's', label: 'Yes' },
+    { from: 'Q10r', fromPort: 'e', to: 'EndSend', toPort: 's', label: 'Yes' },
+
+    // --- Sub-flow entry: Q4 recovery Yes drops to S1 (east-then-down) ---
+    { from: 'Q4r', fromPort: 'e', to: 'S1', toPort: 'n', label: 'Yes' },
+
+    // --- Sub-flow happy path ---
+    { from: 'S1', fromPort: 'e', to: 'S2', toPort: 'w', label: 'Yes' },
+    { from: 'S2', fromPort: 'e', to: 'S3', toPort: 'w', label: 'Yes' },
+
+    // --- Sub-flow No → recovery / missing ---
+    { from: 'S1',  fromPort: 's', to: 'S1r',       toPort: 'n', label: 'No' },
+    { from: 'S1r', fromPort: 's', to: 'MissingS1', toPort: 'n', label: 'No' },
+    { from: 'S2',  fromPort: 's', to: 'MissingS2', toPort: 'n', label: 'No' },
+    { from: 'S3',  fromPort: 's', to: 'MissingS3', toPort: 'n', label: 'No' },
+
+    // --- Sub-flow recovery Yes rejoin ---
+    { from: 'S1r', fromPort: 'e', to: 'S2', toPort: 's', label: 'Yes' },
+
+    // --- Sub-flow exit → rejoin marker (east into the marker oval) ---
+    { from: 'S3', fromPort: 'e', to: 'RejoinMarker', toPort: 'w', label: 'Yes' },
+  ];
+
+  // =====================================================================
+  // Layout-tweak pass: post-Graphviz, pre-edge-render offsets.
+  // Graphviz lays out the nodes but sometimes packs exits/recoveries
+  // too close to the rejoin paths. The tweaks map shifts specific
+  // nodes by (dx, dy) and re-uses the shifted bbox when routing.
+  // =====================================================================
+  const nodeTweaks = {
+    // Push happy-end ovals south so the Q7→EndSave / Q8→EndShare
+    // vertical drops don't share their column with the recovery
+    // rejoin's vertical leg landing at Q7:s / Q8:s.
+    EndSave:  { dy: 100 },
+    EndShare: { dy: 100 },
+  };
+
+  // Inverted-L rejoin lines shift their vertical leg this many pixels
+  // away from the target's port-center, so a rejoin entering from the
+  // south is visually distinct from a "No" line dropping out of the
+  // same south port.
+  const REJOIN_LEG_OFFSET = 5;
+
+  // =====================================================================
+  // Custom edge renderer
+  // =====================================================================
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function findNodeG(svg, name) {
+    let found = null;
+    svg.querySelectorAll('g.node').forEach(g => {
+      if (g.querySelector('title')?.textContent === name) found = g;
+    });
+    return found;
+  }
+
+  function collectNodeBoxes(svg) {
+    const map = {};
+    svg.querySelectorAll('g.node').forEach(g => {
+      const name = g.querySelector('title')?.textContent;
+      if (!name) return;
+      const shape = g.querySelector('polygon, ellipse, path');
+      if (!shape) return;
+      try {
+        map[name] = shape.getBBox();
+      } catch (e) {
+        map[name] = g.getBBox();
+      }
+    });
+    return map;
+  }
+
+  function applyTweaks(svg, tweaks, boxes) {
+    for (const [name, tweak] of Object.entries(tweaks)) {
+      const g = findNodeG(svg, name);
+      if (!g || !boxes[name]) continue;
+      const dx = tweak.dx || 0, dy = tweak.dy || 0;
+      // Move the rendered node visually
+      g.setAttribute('transform', `translate(${dx} ${dy})`);
+      // Update its bbox so subsequent edge routing uses the new position
+      boxes[name] = {
+        x: boxes[name].x + dx,
+        y: boxes[name].y + dy,
+        width: boxes[name].width,
+        height: boxes[name].height,
+      };
+    }
+  }
+
+  function portPoint(bbox, port) {
+    const cx = bbox.x + bbox.width / 2;
+    const cy = bbox.y + bbox.height / 2;
+    switch (port) {
+      case 'n': return { x: cx, y: bbox.y };
+      case 's': return { x: cx, y: bbox.y + bbox.height };
+      case 'e': return { x: bbox.x + bbox.width, y: cy };
+      case 'w': return { x: bbox.x, y: cy };
+      default:  return { x: cx, y: cy };
+    }
+  }
+
+  // Route an edge between two ports. Returns { d, arrowAt } so the
+  // arrowhead can sit on whatever endpoint the path actually used
+  // (which may be shifted from the dead-center port).
+  //
+  // For inverted-L rejoins (horizontal-out → vertical-in), the route
+  // is a 5-segment Z that detours through a "clear band" between rows:
+  //
+  //     Q ←────┐                ← target gate (main row)
+  //            │
+  //   ┌────────┘                ← horizontal leg lives in this band,
+  //   │                            BETWEEN main row and recovery row,
+  //   Qr ──┐                       so it doesn't cross recovery-row
+  //        │                       content in the columns it spans
+  //        │
+  //        (vertical leg shifted REJOIN_LEG_OFFSET from target center)
+  //
+  // The vertical leg still shifts off the target's dead-center port so
+  // it visually separates from any same-direction "No" line dropping
+  // out of the same port.
+  function routeEdge(srcBox, srcPort, tgtBox, tgtPort) {
+    const srcPt = portPoint(srcBox, srcPort);
+    const tgtPt = portPoint(tgtBox, tgtPort);
+    const srcHoriz = (srcPort === 'e' || srcPort === 'w');
+    const tgtVert  = (tgtPort === 'n' || tgtPort === 's');
+
+    // Same row, same axis: straight horizontal
+    if (srcHoriz && (tgtPort === 'w' || tgtPort === 'e') && Math.abs(srcPt.y - tgtPt.y) < 1) {
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${tgtPt.x},${tgtPt.y}`,
+        arrowAt: tgtPt,
+      };
+    }
+    // Same column, same axis: straight vertical
+    if (!srcHoriz && (tgtPort === 'n' || tgtPort === 's') && Math.abs(srcPt.x - tgtPt.x) < 1) {
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${tgtPt.x},${tgtPt.y}`,
+        arrowAt: tgtPt,
+      };
+    }
+    // Horizontal out, vertical in → 5-segment Z routing through the
+    // clear band between source's row and target's row.
+    if (srcHoriz && tgtVert) {
+      const shift = (srcPort === 'e') ? -REJOIN_LEG_OFFSET : REJOIN_LEG_OFFSET;
+      const stubDir = (srcPort === 'e') ? +1 : -1;   // east stub vs west stub
+      const stubX = srcPt.x + stubDir * 8;            // small stub past source's face
+      const legX = tgtPt.x + shift;
+      // clearY = midpoint between source's facing edge and target's
+      // facing edge. For target-south (going up), use source.top and
+      // target.bottom; for target-north (going down), use source.bottom
+      // and target.top. Either way, clearY lands in the row gap.
+      let clearY;
+      if (tgtPort === 's') {
+        clearY = (srcBox.y + (tgtBox.y + tgtBox.height)) / 2;
+      } else { // tgtPort === 'n'
+        clearY = ((srcBox.y + srcBox.height) + tgtBox.y) / 2;
+      }
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${stubX},${srcPt.y} L ${stubX},${clearY} L ${legX},${clearY} L ${legX},${tgtPt.y}`,
+        arrowAt: { x: legX, y: tgtPt.y },
+      };
+    }
+    // Vertical out, horizontal in → L
+    if (!srcHoriz && !tgtVert) {
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${srcPt.x},${tgtPt.y} L ${tgtPt.x},${tgtPt.y}`,
+        arrowAt: tgtPt,
+      };
+    }
+    // Same-axis but offset: Z-shape via midpoint
+    if (srcHoriz) {
+      const midX = (srcPt.x + tgtPt.x) / 2;
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${midX},${srcPt.y} L ${midX},${tgtPt.y} L ${tgtPt.x},${tgtPt.y}`,
+        arrowAt: tgtPt,
+      };
+    }
+    const midY = (srcPt.y + tgtPt.y) / 2;
+    return {
+      d: `M ${srcPt.x},${srcPt.y} L ${srcPt.x},${midY} L ${tgtPt.x},${midY} L ${tgtPt.x},${tgtPt.y}`,
+      arrowAt: tgtPt,
+    };
+  }
+
+  function arrowheadAt(pt, tgtPort, size = 5) {
+    const poly = document.createElementNS(NS, 'polygon');
+    let pts;
+    switch (tgtPort) {
+      case 'n': pts = `${pt.x},${pt.y} ${pt.x - size/2},${pt.y - size} ${pt.x + size/2},${pt.y - size}`; break;
+      case 's': pts = `${pt.x},${pt.y} ${pt.x - size/2},${pt.y + size} ${pt.x + size/2},${pt.y + size}`; break;
+      case 'w': pts = `${pt.x},${pt.y} ${pt.x - size},${pt.y - size/2} ${pt.x - size},${pt.y + size/2}`; break;
+      case 'e': pts = `${pt.x},${pt.y} ${pt.x + size},${pt.y - size/2} ${pt.x + size},${pt.y + size/2}`; break;
+      default:  pts = `${pt.x},${pt.y} ${pt.x - size},${pt.y - size/2} ${pt.x - size},${pt.y + size/2}`;
+    }
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', '#444');
+    poly.setAttribute('stroke', '#444');
+    poly.setAttribute('stroke-width', '0.5');
+    return poly;
+  }
+
+  function labelAt(srcPt, srcPort, tgtPt, tgtPort, text) {
+    const srcHoriz = (srcPort === 'e' || srcPort === 'w');
+    let x, y, anchor;
+    if (srcHoriz) {
+      // Label on the horizontal first leg, slightly above the line
+      x = (srcPt.x + (srcHoriz && (tgtPort === 'n' || tgtPort === 's') ? tgtPt.x : tgtPt.x)) / 2;
+      y = srcPt.y - 4;
+      anchor = 'middle';
+    } else {
+      // Vertical leg — label to the right of the line
+      x = srcPt.x + 6;
+      y = (srcPt.y + (tgtPort === 'e' || tgtPort === 'w' ? tgtPt.y : tgtPt.y)) / 2;
+      anchor = 'start';
+    }
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x);
+    t.setAttribute('y', y);
+    t.setAttribute('font-family', 'Helvetica');
+    t.setAttribute('font-size', '9');
+    t.setAttribute('fill', '#444');
+    t.setAttribute('text-anchor', anchor);
+    t.textContent = text;
+    return t;
+  }
+
+  function renderCustomEdges(svg, edgeList) {
+    const boxes = collectNodeBoxes(svg);
+    // Pass 2 — apply post-layout tweaks (shift specific nodes) so the
+    // edge router below sees the adjusted positions.
+    applyTweaks(svg, nodeTweaks, boxes);
+
+    const layer = document.createElementNS(NS, 'g');
+    layer.setAttribute('id', 'custom-edges');
+    // Insert before nodes so edges sit underneath
+    const topG = svg.querySelector('g');
+    topG.insertBefore(layer, topG.firstChild);
+
+    let drawn = 0, skipped = 0;
+    edgeList.forEach(e => {
+      const srcBox = boxes[e.from];
+      const tgtBox = boxes[e.to];
+      if (!srcBox || !tgtBox) {
+        console.warn('Edge skipped — missing node:', e);
+        skipped++;
+        return;
+      }
+      const srcPt = portPoint(srcBox, e.fromPort);
+      const tgtPt = portPoint(tgtBox, e.toPort);
+
+      const route = routeEdge(srcBox, e.fromPort, tgtBox, e.toPort);
+
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', route.d);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#444');
+      path.setAttribute('stroke-width', '1');
+      layer.appendChild(path);
+
+      layer.appendChild(arrowheadAt(route.arrowAt, e.toPort));
+
+      if (e.label) layer.appendChild(labelAt(srcPt, e.fromPort, tgtPt, e.toPort, e.label));
+
+      drawn++;
+    });
+    return { drawn, skipped };
+  }
+
+  // =====================================================================
+  // Boot
+  // =====================================================================
+  const chart = document.getElementById("chart");
+  const status = document.getElementById("status");
+
+  function fail(msg, err) {
+    status.className = "status err";
+    status.textContent = msg + (err ? ": " + (err.message || err) : "");
+    chart.textContent = "(rendering failed — see status line)";
+    if (err) console.error(err);
+  }
+
+  if (typeof Viz === "undefined") {
+    fail("Viz library did not load from CDN. Check network / blockers");
+  } else {
+    Viz.instance().then(viz => {
+      try {
+        const svg = viz.renderSVGElement(dotSource);
+        chart.innerHTML = "";
+        chart.appendChild(svg);
+        // Render must happen after the SVG is in the DOM so getBBox()
+        // returns valid measurements.
+        const r = renderCustomEdges(svg, edges);
+        status.textContent =
+          `Renderer: Graphviz (nodes) + custom JS (edges) · ${r.drawn} edges drawn` +
+          (r.skipped ? ` · ${r.skipped} skipped` : '');
+        setupZoomPan(svg);
+      } catch (e) { fail("Render error", e); }
+    }).catch(e => fail("Graphviz instance() failed", e));
+  }
+
+  // =====================================================================
+  // Zoom + pan
+  // The SVG sits inside #chart (which has overflow:auto). Zoom uses CSS
+  // transform on the SVG; pan uses native scrollLeft/scrollTop on the
+  // container driven by mousedown+mousemove. Scroll wheel zooms.
+  // =====================================================================
+  let currentZoom = 1;
+  function applyZoom() {
+    const svg = document.querySelector('#chart svg');
+    if (!svg) return;
+    svg.style.transform = `scale(${currentZoom})`;
+    // Re-measure: scale changes the rendered size via transform; we
+    // mirror that in width/height so the scroll container knows the
+    // bounds.
+    const bbox = svg.getBBox();
+    svg.style.width  = (bbox.width  * currentZoom) + 'px';
+    svg.style.height = (bbox.height * currentZoom) + 'px';
+    document.getElementById('zoom-display').textContent = Math.round(currentZoom * 100) + '%';
+  }
+  function zoomBy(factor) { currentZoom = Math.max(0.25, Math.min(4, currentZoom * factor)); applyZoom(); }
+  function zoomReset() { currentZoom = 1; applyZoom(); }
+
+  function setupZoomPan(svg) {
+    // Initial sizing
+    applyZoom();
+    const container = document.getElementById('chart');
+
+    // Drag-to-pan
+    let panning = false, startX = 0, startY = 0, startScrollX = 0, startScrollY = 0;
+    container.addEventListener('mousedown', e => {
+      // Only pan with primary button and when clicking the background
+      if (e.button !== 0) return;
+      panning = true;
+      container.classList.add('dragging');
+      startX = e.clientX; startY = e.clientY;
+      startScrollX = container.scrollLeft; startScrollY = container.scrollTop;
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => {
+      if (!panning) return;
+      container.scrollLeft = startScrollX - (e.clientX - startX);
+      container.scrollTop  = startScrollY - (e.clientY - startY);
+    });
+    window.addEventListener('mouseup', () => {
+      panning = false;
+      container.classList.remove('dragging');
+    });
+
+    // Wheel-to-zoom (anchored to cursor position so the point under
+    // the cursor stays put while zooming)
+    container.addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 5) return; // tiny scroll = let it scroll
+      e.preventDefault();
+      const rect = container.getBoundingClientRect();
+      const cx = e.clientX - rect.left + container.scrollLeft;
+      const cy = e.clientY - rect.top  + container.scrollTop;
+      const before = currentZoom;
+      zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1);
+      const ratio = currentZoom / before;
+      container.scrollLeft = cx * ratio - (e.clientX - rect.left);
+      container.scrollTop  = cy * ratio - (e.clientY - rect.top);
+    }, { passive: false });
+  }
+</script>
+</body>
+</html>
