@@ -269,12 +269,12 @@
     { from: 'S1r', fromPort: 'e', to: 'S2', toPort: 's', label: 'Yes' },
 
     // --- Sub-flow exit → real rejoin back to Q5 (Size gate) ---
-    // Backward rejoin (target is left and above source). The JS router
-    // detects this and emits a U-shape through the clear band BELOW
-    // every node, then up to the target's south port. Dashed stroke
-    // signals "this is a loop-back, not a regular forward edge." No
-    // label — the dashed style already reads as "rejoin."
-    { from: 'S3', fromPort: 's', to: 'Q5', toPort: 's', style: 'rejoin' },
+    // Over-the-top routing: exit S3 from the north, up to the clear
+    // band between sub-flow row and missing row, west across, then up
+    // through the gap between Q4's and Q5's columns (dodging Q5r),
+    // and finally east into Q5's west port. Dashed stroke signals
+    // "this is a loop-back, not a regular forward edge."
+    { from: 'S3', fromPort: 'n', to: 'Q5', toPort: 'w', style: 'rejoin' },
   ];
 
   // =====================================================================
@@ -407,16 +407,33 @@
   // The vertical leg still shifts off the target's dead-center port so
   // it visually separates from any same-direction "No" line dropping
   // out of the same port.
-  function routeEdge(srcBox, srcPort, tgtBox, tgtPort, bounds) {
+  function routeEdge(srcBox, srcPort, tgtBox, tgtPort, bounds, style) {
     const srcPt = portPoint(srcBox, srcPort);
     const tgtPt = portPoint(tgtBox, tgtPort);
     const srcHoriz = (srcPort === 'e' || srcPort === 'w');
     const tgtVert  = (tgtPort === 'n' || tgtPort === 's');
 
-    // Backward rejoin (sub-flow loop-back): source is south-and-east of
+    // Backward rejoin OVER-the-top: src goes UP from its north port,
+    // across the clear band ABOVE its row, then UP through the column
+    // gap WEST of the target (dodging the target's recovery diamond
+    // which is typically wider than the gate itself), and finally east
+    // into the target's west port. Used for sub-flow loop-backs when
+    // the layout has more room above than below.
+    if (style === 'rejoin' && srcPort === 'n' && tgtPort === 'w'
+        && srcPt.x > tgtPt.x && srcPt.y > tgtPt.y) {
+      const yClear = srcBox.y - 60;    // 60 px above source's top, in the row gap
+      const xClear = tgtBox.x - 60;    // 60 px west of target's left edge, in column gap
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${srcPt.x},${yClear} L ${xClear},${yClear} L ${xClear},${tgtPt.y} L ${tgtPt.x},${tgtPt.y}`,
+        arrowAt: tgtPt,
+      };
+    }
+
+    // Backward rejoin UNDER-the-bottom: source is south-and-east of
     // target, both ports are south. Route as a wide U through the clear
     // band below every node: down from src.south, west across the
-    // bottom, up to target.south (shifted 5 px west of center).
+    // bottom, up to target.south (shifted 5 px west of center). Use
+    // when there's no clean path through the row gaps above.
     if (srcPort === 's' && tgtPort === 's' && srcPt.x > tgtPt.x && srcPt.y > tgtPt.y && bounds) {
       const legX = tgtPt.x - REJOIN_LEG_OFFSET;
       const clearY = bounds.clearYBelow;
@@ -648,7 +665,7 @@
       const srcPt = portPoint(srcBox, e.fromPort);
       const tgtPt = portPoint(tgtBox, e.toPort);
 
-      const route = routeEdge(srcBox, e.fromPort, tgtBox, e.toPort, bounds);
+      const route = routeEdge(srcBox, e.fromPort, tgtBox, e.toPort, bounds, e.style);
 
       const path = document.createElementNS(NS, 'path');
       path.setAttribute('d', route.d);
