@@ -98,7 +98,9 @@ Key invariants:
   - `No` drops: `s → n`
   - Recovery `Yes` rejoin to next gate: `e → s` (the JS router builds a 5-segment Z through the clear band; shifts vertical leg 5px west of target south)
   - Sub-flow entry from recovery: `e → n` (same Z pattern, going down)
+  - **Sub-flow rejoin back to parent gate**: `s → s` with `style: 'rejoin'` (router emits a U-shape through clear-Y-below, dashed-green stroke marks it as a loop-back)
   - Exit gate → happy oval: `s → n` (vertical drop) or `e → w` (horizontal)
+- **Sub-loops should be visually centered** under the parent gates they span. Apply uniform `dx` `nodeTweaks` to every node in the sub-loop (gates + recoveries + missings) — keep the magnitude small enough that the entry edge still works (sub-loop's first gate must stay east of the entry recovery's east face).
 - **Per-column `rank=same` groups only** — one group per gate column containing the gate + its bounce/recovery/missing children. NEVER one big `rank=same` group for the whole happy path.
 - Title the HTML (`<title>` and the `<h1>`) with a human-readable stage label (e.g. "Stage 2 — Purchase" or "Stages 2 / 2b / 3 — Visualizer").
 
@@ -143,9 +145,11 @@ Before writing the HTML file:
 - [ ] Every entry in the JS `edges` array has both `from`/`to` and `fromPort`/`toPort`.
 - [ ] Recovery `Yes` rejoins use port pair `e → s` (NOT `e → w`).
 - [ ] Sub-flow entries use port pair `e → n`.
+- [ ] Sub-flow rejoins back to a parent gate use port pair `s → s` with `style: 'rejoin'`.
 - [ ] Bounces are red ovals; recoveries are orange diamonds; missings are yellow rounded rectangles.
 - [ ] No gate forks on channel modality.
 - [ ] The reorder pause happened.
 - [ ] Happy-end ovals that share a column with a rejoin target have a `nodeTweaks` entry pushing them south.
+- [ ] Sub-loops have uniform `dx` `nodeTweaks` entries to center them under their parent gates.
 
 If any box is unchecked, fix before writing.

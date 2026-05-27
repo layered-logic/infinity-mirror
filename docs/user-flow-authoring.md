@@ -110,10 +110,13 @@ Edges live in a separate JS data structure (not in the DOT). Each entry: `{ from
 | `No` drops to bounce / recovery / missing | `s` | `n` | Straight vertical in same column |
 | Recovery `Yes` rejoin to next gate | `e` | `s` | 5-seg Z up through clear band, lands 5px west of target south |
 | Sub-flow entry from recovery | `e` | `n` | 5-seg Z down through clear band, lands 5px west of target north |
+| Sub-flow rejoin back to parent gate | `s` | `s` | U-shape: down to clear-Y-below, west across, up to target south; **dashed green** (mark the edge `style: 'rejoin'`) |
 | Exit gate → happy oval (south) | `s` | `n` | Straight vertical (often the exit oval is pushed further south via nodeTweaks) |
 | Exit gate → happy oval (east) | `e` | `w` | Straight horizontal |
 
 The recovery rejoin and sub-flow entry both shift 5px away from the target's center (toward the source) so they don't share a column with a same-direction `No` line.
+
+The **sub-flow rejoin** is a loop-back: source is south-and-east of target. The router detects this (`src.x > tgt.x AND src.y > tgt.y`, both ports `s`) and emits a U-shape through `bounds.clearYBelow` — a Y value 30 px below the bottommost node, computed from all node bboxes at render time. The SVG viewBox is auto-extended so the U-tail doesn't get clipped. Set `style: 'rejoin'` on the edge entry to get the dashed green styling that visually distinguishes it from forward edges.
 
 ### Layout tweaks (`nodeTweaks`)
 
@@ -123,10 +126,24 @@ For nodes that Graphviz packs too close to the rejoin paths, define a `nodeTweak
 const nodeTweaks = {
   EndSave:  { dy: 100 },   // push south so its column doesn't collide with rejoin's vertical leg
   EndShare: { dy: 100 },
+
+  // Center a sub-loop horizontally under the parent gates it spans.
+  // Shift all sub-loop nodes by the same dx so the loop sits visually
+  // under the entry-gate ↔ rejoin-gate range, not stretched off to
+  // one side. Keep the magnitude small enough that the entry edge
+  // (e.g. Q4r:e → S1:n) still resolves cleanly — S1 must stay east
+  // of Q4r's east face.
+  S1:        { dx: -150 },
+  S1r:       { dx: -150 },
+  MissingS1: { dx: -150 },
+  S2:        { dx: -150 },
+  MissingS2: { dx: -150 },
+  S3:        { dx: -150 },
+  MissingS3: { dx: -150 },
 };
 ```
 
-The tweak shifts the node visually via `transform="translate(dx dy)"` AND updates its bbox so subsequent edge routing uses the new position. Apply this to happy-end ovals (which sit at recovery-row Y by default), bounces that share a column with a rejoin target, or anything else Graphviz placed in a path's way.
+The tweak shifts the node visually via `transform="translate(dx dy)"` AND updates its bbox so subsequent edge routing uses the new position. Apply this to happy-end ovals (which sit at recovery-row Y by default), bounces that share a column with a rejoin target, sub-loops you want centered under their parent gates, or anything else Graphviz placed in a path's way.
 
 ---
 

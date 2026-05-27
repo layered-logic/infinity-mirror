@@ -145,10 +145,6 @@
     MissingS3 [shape=box, style="filled,rounded", fillcolor="#fff59d", color="#f9a825",
                label="Missing: auto-clean /\\nauto-thicken /\\nrepair tools"];
 
-    RejoinMarker [shape=oval, style="filled,dashed", fillcolor="#e8f5e9",
-                  color="#2e7d32", fontcolor="#2e7d32", fontsize=10,
-                  label="↑ rejoin at\\nSize gate"];
-
     // ===== Column rank groups =====
     { rank=same; Q1;  Q1r;  Missing1; }
     { rank=same; Q2;  BounceWrong; }
@@ -163,10 +159,6 @@
     { rank=same; S1; S1r; MissingS1; }
     { rank=same; S2; MissingS2; }
     { rank=same; S3; MissingS3; }
-    // RejoinMarker in its own column, immediately east of S3, in the
-    // sub-flow row. Pulls it out from between S3 and MissingS3 so the
-    // S3-south drop doesn't pass through it.
-    { rank=same; RejoinMarker; }
 
     // ===== Invisible edges for layout =====
     // These determine the ranks and node placement but don't draw. JS
@@ -201,7 +193,6 @@
     S1 -> S1r;  S1r -> MissingS1;
     S2 -> MissingS2;
     S3 -> MissingS3;
-    S3 -> RejoinMarker [weight=5];
   }`;
 
   // =====================================================================
@@ -277,8 +268,12 @@
     // --- Sub-flow recovery Yes rejoin ---
     { from: 'S1r', fromPort: 'e', to: 'S2', toPort: 's', label: 'Yes' },
 
-    // --- Sub-flow exit → rejoin marker (east into the marker oval) ---
-    { from: 'S3', fromPort: 'e', to: 'RejoinMarker', toPort: 'w', label: 'Yes' },
+    // --- Sub-flow exit → real rejoin back to Q5 (Size gate) ---
+    // Backward rejoin (target is left and above source). The JS router
+    // detects this and emits a U-shape through the clear band BELOW
+    // every node, then up to the target's south port. Dashed stroke
+    // signals "this is a loop-back, not a regular forward edge."
+    { from: 'S3', fromPort: 's', to: 'Q5', toPort: 's', label: 'Yes (rejoin at Size)', style: 'rejoin' },
   ];
 
   // =====================================================================
@@ -293,6 +288,19 @@
     // rejoin's vertical leg landing at Q7:s / Q8:s.
     EndSave:  { dy: 100 },
     EndShare: { dy: 100 },
+
+    // Center the Custom Art sub-loop under the gates it spans (Q4-Q5)
+    // — Graphviz naturally placed it stretching to the right of Q5
+    // (because S1 enters from Q4r's east), but a small leftward shift
+    // pulls it visually closer to the parent gates without breaking
+    // the entry edge (S1 stays east of Q4r's east face).
+    S1:         { dx: -150 },
+    S1r:        { dx: -150 },
+    MissingS1:  { dx: -150 },
+    S2:         { dx: -150 },
+    MissingS2:  { dx: -150 },
+    S3:         { dx: -150 },
+    MissingS3:  { dx: -150 },
   };
 
   // Inverted-L rejoin lines shift their vertical leg this many pixels
@@ -378,12 +386,24 @@
   // The vertical leg still shifts off the target's dead-center port so
   // it visually separates from any same-direction "No" line dropping
   // out of the same port.
-  function routeEdge(srcBox, srcPort, tgtBox, tgtPort) {
+  function routeEdge(srcBox, srcPort, tgtBox, tgtPort, bounds) {
     const srcPt = portPoint(srcBox, srcPort);
     const tgtPt = portPoint(tgtBox, tgtPort);
     const srcHoriz = (srcPort === 'e' || srcPort === 'w');
     const tgtVert  = (tgtPort === 'n' || tgtPort === 's');
 
+    // Backward rejoin (sub-flow loop-back): source is south-and-east of
+    // target, both ports are south. Route as a wide U through the clear
+    // band below every node: down from src.south, west across the
+    // bottom, up to target.south (shifted 5 px west of center).
+    if (srcPort === 's' && tgtPort === 's' && srcPt.x > tgtPt.x && srcPt.y > tgtPt.y && bounds) {
+      const legX = tgtPt.x - REJOIN_LEG_OFFSET;
+      const clearY = bounds.clearYBelow;
+      return {
+        d: `M ${srcPt.x},${srcPt.y} L ${srcPt.x},${clearY} L ${legX},${clearY} L ${legX},${tgtPt.y}`,
+        arrowAt: { x: legX, y: tgtPt.y },
+      };
+    }
     // Same row, same axis: straight horizontal
     if (srcHoriz && (tgtPort === 'w' || tgtPort === 'e') && Math.abs(srcPt.y - tgtPt.y) < 1) {
       return {
@@ -484,17 +504,57 @@
     return t;
   }
 
+  // Compute chart-wide bounds for routing. clearYBelow = a Y value
+  // below every node, used as the bottom edge of U-shaped loop-back
+  // paths.
+  function computeBounds(boxes) {
+    let maxY = -Infinity, minX = Infinity, maxX = -Infinity;
+    for (const b of Object.values(boxes)) {
+      if (b.y + b.height > maxY) maxY = b.y + b.height;
+      if (b.x < minX) minX = b.x;
+      if (b.x + b.width > maxX) maxX = b.x + b.width;
+    }
+    return { minX, maxX, maxY, clearYBelow: maxY + 30 };
+  }
+
   function renderCustomEdges(svg, edgeList) {
     const boxes = collectNodeBoxes(svg);
     // Pass 2 — apply post-layout tweaks (shift specific nodes) so the
     // edge router below sees the adjusted positions.
     applyTweaks(svg, nodeTweaks, boxes);
+    const bounds = computeBounds(boxes);
 
     const layer = document.createElementNS(NS, 'g');
     layer.setAttribute('id', 'custom-edges');
     // Insert before nodes so edges sit underneath
     const topG = svg.querySelector('g');
     topG.insertBefore(layer, topG.firstChild);
+
+    // Extend the SVG viewBox if our U-shaped backward rejoins dip
+    // below the bottommost Graphviz-placed node. The top-level <g>
+    // in Graphviz's output has a translate(tx ty) that maps local
+    // coords (y negative) into viewBox coords (y positive). Read the
+    // translate, compute how far below the viewBox bottom our
+    // clearYBelow reaches, and add that to the viewBox height.
+    const transform = topG.getAttribute('transform') || '';
+    const tMatch = transform.match(/translate\(([\d.-]+)\s+([\d.-]+)\)/);
+    const ty = tMatch ? parseFloat(tMatch[2]) : 0;
+    const vb = svg.getAttribute('viewBox')?.split(/\s+/).map(Number);
+    if (vb && vb.length === 4) {
+      // local clearYBelow in viewBox coords = local_y + translate_y
+      const tailViewBoxY = bounds.clearYBelow + ty;
+      const vbBottom = vb[1] + vb[3];
+      if (tailViewBoxY > vbBottom) {
+        const extra = tailViewBoxY - vbBottom + 20; // 20 px breathing room
+        svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3] + extra}`);
+        // Also bump the SVG element's height attr if set
+        const h = svg.getAttribute('height');
+        if (h) {
+          const m = h.match(/^([\d.]+)/);
+          if (m) svg.setAttribute('height', (parseFloat(m[1]) + extra) + (h.replace(/^[\d.]+/, '') || ''));
+        }
+      }
+    }
 
     let drawn = 0, skipped = 0;
     edgeList.forEach(e => {
@@ -508,18 +568,36 @@
       const srcPt = portPoint(srcBox, e.fromPort);
       const tgtPt = portPoint(tgtBox, e.toPort);
 
-      const route = routeEdge(srcBox, e.fromPort, tgtBox, e.toPort);
+      const route = routeEdge(srcBox, e.fromPort, tgtBox, e.toPort, bounds);
 
       const path = document.createElementNS(NS, 'path');
       path.setAttribute('d', route.d);
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', '#444');
-      path.setAttribute('stroke-width', '1');
+      // 'rejoin' style: loop-back edge, visually distinct (dashed,
+      // slightly thicker, green) so it reads as a meta-flow connector
+      // rather than a regular forward edge.
+      if (e.style === 'rejoin') {
+        path.setAttribute('stroke', '#2e7d32');
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('stroke-dasharray', '6,3');
+      } else {
+        path.setAttribute('stroke', '#444');
+        path.setAttribute('stroke-width', '1');
+      }
       layer.appendChild(path);
 
-      layer.appendChild(arrowheadAt(route.arrowAt, e.toPort));
+      const arrow = arrowheadAt(route.arrowAt, e.toPort);
+      if (e.style === 'rejoin') {
+        arrow.setAttribute('fill', '#2e7d32');
+        arrow.setAttribute('stroke', '#2e7d32');
+      }
+      layer.appendChild(arrow);
 
-      if (e.label) layer.appendChild(labelAt(srcPt, e.fromPort, tgtPt, e.toPort, e.label));
+      if (e.label) {
+        const lbl = labelAt(srcPt, e.fromPort, tgtPt, e.toPort, e.label);
+        if (e.style === 'rejoin') lbl.setAttribute('fill', '#2e7d32');
+        layer.appendChild(lbl);
+      }
 
       drawn++;
     });
