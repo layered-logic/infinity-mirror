@@ -272,8 +272,9 @@
     // Backward rejoin (target is left and above source). The JS router
     // detects this and emits a U-shape through the clear band BELOW
     // every node, then up to the target's south port. Dashed stroke
-    // signals "this is a loop-back, not a regular forward edge."
-    { from: 'S3', fromPort: 's', to: 'Q5', toPort: 's', label: 'Yes (rejoin at Size)', style: 'rejoin' },
+    // signals "this is a loop-back, not a regular forward edge." No
+    // label — the dashed style already reads as "rejoin."
+    { from: 'S3', fromPort: 's', to: 'Q5', toPort: 's', style: 'rejoin' },
   ];
 
   // =====================================================================
@@ -289,18 +290,24 @@
     EndSave:  { dy: 100 },
     EndShare: { dy: 100 },
 
-    // Center the Custom Art sub-loop under the gates it spans (Q4-Q5)
-    // — Graphviz naturally placed it stretching to the right of Q5
-    // (because S1 enters from Q4r's east), but a small leftward shift
-    // pulls it visually closer to the parent gates without breaking
-    // the entry edge (S1 stays east of Q4r's east face).
-    S1:         { dx: -150 },
-    S1r:        { dx: -150 },
-    MissingS1:  { dx: -150 },
-    S2:         { dx: -150 },
-    MissingS2:  { dx: -150 },
-    S3:         { dx: -150 },
-    MissingS3:  { dx: -150 },
+    // Sub-loop entry recovery shifts left along with the sub-loop it
+    // gates. Missing4 follows so the recovery's "No" drop stays a
+    // clean vertical. Q4:s → Q4r:n then bends via the generic Z
+    // route in the clear band between main row and recovery row.
+    Q4r:       { dx: -150 },
+    Missing4:  { dx: -150 },
+
+    // Sub-loop: shift left to center under Q4-Q5 + push down for
+    // clearer separation from the main missing row, with progressively
+    // larger leftward dx on successive gates to compress horizontal
+    // spacing (max ~50 px per step before adjacent nodes start touching).
+    S1:         { dx: -150, dy: 80 },
+    S1r:        { dx: -150, dy: 80 },
+    MissingS1:  { dx: -150, dy: 80 },
+    S2:         { dx: -200, dy: 80 },
+    MissingS2:  { dx: -200, dy: 80 },
+    S3:         { dx: -250, dy: 80 },
+    MissingS3:  { dx: -250, dy: 80 },
   };
 
   // Inverted-L rejoin lines shift their vertical leg this many pixels
