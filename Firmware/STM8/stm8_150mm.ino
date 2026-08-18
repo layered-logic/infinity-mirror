@@ -17,7 +17,7 @@
 #define BTN_MASK GPIO_PIN_6
 
 // ---- rework pass 2 hardware, 2026-08-17 (see the board's REWORK_SPEC.md) ----
-// USB-C CC sense: /CC1 -> R7 22k -> PD2 (AIN3), /CC2 -> R8 22k -> PD3 (AIN4).
+// USB-C CC sense: /CC1 -> R7 10k -> PD2 (AIN3), /CC2 -> R8 10k -> PD3 (AIN4).
 #define CC1_ADC_CH 3
 #define CC2_ADC_CH 4
 // UART1_TX debug pad TP1 on PD5 (pin 2). TP2 = GND, TP3 = PD4 (spare).
@@ -214,10 +214,12 @@ static uint16_t adc_read(uint8_t ch) {
   uint16_t v = 0;
   ADC1->CSR = ch;                    /* select channel, clear EOC, no interrupt */
   /* Two back-to-back conversions, keep the second. Source impedance is
-     22k + (5.1k || Rp) ~= 27.1k against the 3 pF sample-and-hold, so a single
-     conversion only reaches ~4.6 time constants inside the 0.75 us sample
-     window (~10 LSB worst case). The second starts from the previously held
-     voltage: ~9.2 tau, ~0.03 LSB. Cheaper than slowing fADC. */
+     10k + 5.1k ~= 15.1k against the 3 pF sample-and-hold: ~8.3 time constants
+     inside the 0.75 us sample window, so ONE conversion is already good to
+     ~0.3 LSB. (At the 22k this started life as it was 4.6 tau and ~10 LSB,
+     and the second read was mandatory.) Kept as belt-and-braces -- it costs
+     a few microseconds and makes the result independent of whatever else
+     the ADC is later used for. */
   for (i = 0; i < 2; i++) {
     ADC1->CR1 |= ADC1_CR1_ADON;      /* the second ADON starts a conversion */
     while (!(ADC1->CSR & ADC1_CSR_EOC));

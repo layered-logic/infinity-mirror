@@ -40,7 +40,7 @@ Source file: [stm8_150mm.ino](stm8_150mm.ino) (577 lines).
 | LED data pin | **GPIOC pin 6 (TSSOP20 physical pin 16)** |
 | Button pin | GPIOD pin 6 (active-low, internal pullup) |
 | Power | 5V from USB-C **direct** to MCU + strip — there is no regulator |
-| CC sense | PD2 = AIN3 (/CC1), PD3 = AIN4 (/CC2), each via a 22k series R |
+| CC sense | PD2 = AIN3 (/CC1), PD3 = AIN4 (/CC2), each via a 10k series R |
 | UART debug | TP1 = PD5 (UART1_TX) @115200 8N1, TP2 = GND, TP3 = PD4 spare |
 | IR receiver | J8 (DNP) OUT → PA3 = TIM2_CH3, NEC |
 
@@ -64,7 +64,9 @@ strip is actually fitted, and the brightness caps below assume 32.)
   brightness ceiling follows at 90 / 160 / 255. The cap is applied inside
   `showLEDs()` rather than in the button handlers so nothing can route around
   it. PD2/PD3 must stay input-floating (CR1 clear) — an internal pull-up
-  corrupts the CC divider and misreads even a good 3 A source.
+  corrupts the CC divider and misreads even a good 3 A source. The series R
+  is **10k** (changed from 22k during the BOM pass): 15.1k source impedance
+  settles in ~8.3 time constants, so a single conversion is good to ~0.3 LSB.
 - **UART debug on TP1.** 115200 8N1, transmit only (RX would be PD6, which is
   the button). Prints the CC tier at boot and whenever it changes, plus every
   IR code received.
