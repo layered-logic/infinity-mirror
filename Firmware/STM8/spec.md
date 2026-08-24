@@ -10,6 +10,14 @@ tags: [engineering, firmware, stm8, basic, shipping]
 
 # STM8 Basic Firmware — Spec
 
+> **This documents the 150 mm / 6"×6" firmware.** The rev-2 controller board
+> (`D:\PCBs\Infinity_Mirror_STM8`, JLC order Y12) runs
+> [`../STM8_rev2/`](../STM8_rev2/README.md) instead — a bare-metal SDCC
+> rewrite with a real millisecond timebase, an interrupt vector table that
+> actually contains the TIM2 handler, and an in-spec ADC clock. Behaviour is
+> the same product contract; the sections below still describe it. Do not
+> flash `stm8_150mm.ino` to a rev-2 board.
+
 **Prepared by:** William White
 **Date:** April 22, 2026
 **Status:** Documents the firmware currently running on Layered Logic Basic (6"×6" STM8-based) units. This is the **canonical reference** for pattern visual behavior across the product line.
