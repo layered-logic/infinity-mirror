@@ -34,7 +34,12 @@ static bool             g_inited;
 
 static void entry_key(uint8_t idx, char *out, size_t out_size)
 {
-    snprintf(out, out_size, "entry_%u", (unsigned)idx);
+    /* %hhu, not %u: idx is a uint8_t so the output is at most "entry_255"
+     * (10 bytes incl. NUL) into a 16-byte buffer. The (unsigned) cast threw
+     * that range away, and at -Os GCC inlines entry_key -> erase_entry ->
+     * persist_locked, assumes the full 32-bit range, computes 17 bytes and
+     * trips -Werror=format-truncation. No behaviour change. 2026-08-25. */
+    snprintf(out, out_size, "entry_%hhu", idx);
 }
 
 static esp_err_t open_rw(nvs_handle_t *h)
