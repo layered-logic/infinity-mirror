@@ -1,8 +1,13 @@
 # Sensitive business documents — never commit
 business/
 
-# Claude Code local config
-.claude/
+# Claude Code local config (per-machine settings, launch configs, etc.).
+# Using .claude/* (not .claude/) so we can still descend into the dir
+# and re-include .claude/skills/ — see git's "ignored directory ⇒ files
+# inside cannot be re-included" gotcha.
+.claude/*
+# … but DO track skills — they're project methodology, not per-machine.
+!.claude/skills/
 
 # Obsidian local editor config (per-machine)
 .obsidian/
@@ -30,3 +35,12 @@ Firmware/v1/*.log
 # for the LL-051 dieline generator. Geometry inferred from these gets
 # committed; the source files do not.
 Assembly_docs/Packaging_Templates/
+
+# Local secrets — API tokens, keys, and .env files. NEVER commit
+# (Shopify Admin token, app secret, CI/CD tokens, etc.).
+.env
+*.env
+shopify/
+
+# Cloudflare Wrangler local build cache.
+.wrangler/

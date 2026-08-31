@@ -45,11 +45,45 @@ Source file: [stm8_150mm.ino](stm8_150mm.ino) (577 lines).
 | Clock | 16 MHz internal HSI, no prescaler |
 | LED strip | 32× WS2812B, arranged in one continuous loop around the 6"×6" infinity mirror |
 | Button | 1× tactile momentary, SPST, internal pullup |
-| LED data pin | GPIOC pin 7 (TSSOP20 physical pin 17) |
+| LED data pin | **GPIOC pin 6 (TSSOP20 physical pin 16)** |
 | Button pin | GPIOD pin 6 (active-low, internal pullup) |
-| Power | 5V from USB-C via regulator → direct to MCU + strip |
+| Power | 5V from USB-C **direct** to MCU + strip — there is no regulator |
+| CC sense | PD2 = AIN3 (/CC1), PD3 = AIN4 (/CC2), each via a 10k series R |
+| UART debug | TP1 = PD5 (UART1_TX) @115200 8N1, TP2 = GND, TP3 = PD4 spare |
+| IR receiver | J8 (DNP) OUT → PA3 = TIM2_CH3, NEC |
 
 **LED count: 32** — this is physical hardware, not a config. Changing it requires a new PCB.
+(The rework-pass-2 board is specced to ≤100 LEDs; NUM_LEDS must match whatever
+strip is actually fitted, and the brightness caps below assume 32.)
+
+> **Corrected 2026-08-17.** This table said *GPIOC pin 7 / physical pin 17*.
+> The PCB has routed `/LED_SIG` from **PC6 (pin 16)** since the `5bc9107`
+> baseline — checked against all three board revisions — so the firmware was
+> driving a pin that goes nowhere and the strip stayed dark. It also said the
+> 5 V arrives *via regulator*; it does not, and that matters: **VDD is raw
+> VBUS, so the ADC is ratiometric** and CC thresholds must be fractions of
+> full scale rather than absolute volts.
+
+### Rework pass 2 additions (2026-08-17)
+
+- **CC sense / automatic current budget.** Both CC lines are read once a
+  second; the higher one is the mated orientation. Codes below 130 mean a
+  default-USB source, 130–254 a 1.5 A source, 255+ a 3.0 A source, and the
+  brightness ceiling follows at 90 / 160 / 255. The cap is applied inside
+  `showLEDs()` rather than in the button handlers so nothing can route around
+  it. PD2/PD3 must stay input-floating (CR1 clear) — an internal pull-up
+  corrupts the CC divider and misreads even a good 3 A source. The series R
+  is **10k** (changed from 22k during the BOM pass): 15.1k source impedance
+  settles in ~8.3 time constants, so a single conversion is good to ~0.3 LSB.
+- **UART debug on TP1.** 115200 8N1, transmit only (RX would be PD6, which is
+  the button). Prints the CC tier at boot and whenever it changes, plus every
+  IR code received.
+- **IR (NEC) on PA3**, behind `#define ENABLE_IR`. The command bytes are
+  placeholders — capture your remote's real codes off TP1 first. Leave option
+  byte **AFR1 unprogrammed**, or TIM2_CH3 moves to PD2, which is now AIN3.
+- **Flash cost**, measured with sdcc on the sketch translation unit:
+  2302 → 3217 bytes. Dropping IR (`ENABLE_IR 0`) gives back 443 of that.
+  RAM grew ~13 bytes. On an 8 KB part, check the linker total before flashing.
 
 **Why STM8 for Basic:** unit BOM cost. The STM8S003F3P6 is ~$0.30 at volume vs $3+ for an ESP32 module. Basic is the entry SKU; there's no network stack, no app, no OTA — it's a light that a button turns on and changes.
 

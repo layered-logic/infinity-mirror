@@ -3,6 +3,7 @@
 Launch: streamlit run tools/pricing/app.py
 """
 
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -19,10 +20,25 @@ st.set_page_config(page_title="Layered Logic — Pricing", layout="wide")
 st.title("Layered Logic — Pricing Calculator")
 
 # --- Load config ---
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "Business" / "pricing_config.yaml"
+# The business docs moved out of this repo on 2026-08-31 into the sibling
+# Business workspace (see Business/MOVED.md). Prefer the new home, fall back to
+# the old in-repo path, and let LL_PRICING_CONFIG override both.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_CANDIDATES = [
+    _REPO_ROOT.parent / "Business" / "layered-logic" / "finance" / "pricing_config.yaml",
+    _REPO_ROOT / "Business" / "pricing_config.yaml",
+]
+if os.environ.get("LL_PRICING_CONFIG"):
+    _CANDIDATES.insert(0, Path(os.environ["LL_PRICING_CONFIG"]))
+
+CONFIG_PATH = next((c for c in _CANDIDATES if c.exists()), _CANDIDATES[0])
 
 if not CONFIG_PATH.exists():
-    st.error(f"Config not found at {CONFIG_PATH}. Create Business/pricing_config.yaml first.")
+    looked = ", ".join(str(c) for c in _CANDIDATES)
+    st.error(
+        f"pricing_config.yaml not found. Looked in: {looked}. "
+        "Set LL_PRICING_CONFIG to point at it."
+    )
     st.stop()
 
 config = load_config(CONFIG_PATH)

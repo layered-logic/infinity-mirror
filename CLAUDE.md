@@ -3,6 +3,9 @@
 ## Project Overview
 Long-term independent study project. See memory files for evolving context.
 
+## Business Documents
+Business material lives in the separate `..\Business` workspace (has its own CLAUDE.md), not in this repo. This repo is public. Never write legal, financial, or customer-account material here. The former `Business/` folder was migrated out on 2026-08-31 and holds only a pointer.
+
 ## Conventions
 - Keep documentation up to date as the project evolves.
 - Use git commits to track meaningful milestones.

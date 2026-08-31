@@ -4,6 +4,14 @@
 # overrides. Keep this file minimal — only settings the project
 # requires across every build target belong here.
 
+# --- Target ------------------------------------------------------------
+# 2026-08-25: pinned here after deleting sdkconfig silently retargeted the
+# whole project to classic ESP32. The target used to live ONLY in the
+# generated sdkconfig, so any regenerate-from-defaults reset it to the
+# Kconfig default (esp32) and the build happily produced an Xtensa image
+# with a 0x1000 bootloader offset instead of the C3's 0x0.
+CONFIG_IDF_TARGET="esp32c3"
+
 # --- Flash + partition layout -----------------------------------------
 # 4MB flash with the custom ab_with_factory partition table at
 # Firmware/v1/partitions.csv. See that file for the slot map.
@@ -37,15 +45,20 @@ CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 # --- TLS root certs bundle (telemetry, future OTA) --------------------
-# Embeds Mozilla's root CA bundle (~64KB compressed) so esp_http_client
-# can validate HTTPS endpoints without per-CA cert pinning. Used by
-# core/telemetry for posts to telemetry.layeredlogic.cc/v1/beacon
-# (CF-fronted; chains to standard roots). Will also be used by the
-# production OTA path when ota.layeredlogic.cc lands. The bundle is
-# pulled into mbedtls at build time; runtime cost is ~3KB RAM during
-# the verify handshake.
+# Embeds a root CA bundle so esp_http_client can validate HTTPS endpoints
+# without per-CA pinning. Used by core/telemetry for posts to
+# telemetry.layeredlogic.cc/v1/beacon (CF-fronted; chains to standard
+# roots), and by the production OTA path when ota.layeredlogic.cc lands.
+# Runtime cost is ~3KB RAM during the verify handshake.
+#
+# 2026-08-25: was DEFAULT_FULL. MEASURED cost of the full bundle in the
+# linked image was 118 KB, not the "~64KB compressed" this comment used
+# to claim -- it was the single largest line item in the whole firmware.
+# CMN keeps the common roots, which covers Cloudflare-fronted endpoints,
+# for ~15 KB. If OTA and telemetry ever move behind a CA that CMN does
+# not carry, pin that one CA rather than going back to FULL.
 CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
-CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
 
 # --- Production hardening (deliberately left disabled this sprint) ----
 # All three of these are eFuse burns and irreversible. Per
@@ -53,3 +66,30 @@ CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
 # CONFIG_SECURE_BOOT_V2_ENABLED        — leave unset
 # CONFIG_FLASH_ENCRYPTION_ENABLED      — leave unset
 # CONFIG_BOOTLOADER_APP_ANTI_ROLLBACK  — leave unset
+
+# --- Release build settings (added 2026-08-25) ------------------------
+# The project was building at DEBUG optimisation with full assertions,
+# INFO logging and the error-name table. Measured on the standard /
+# prod_v1_pro target: these four plus the cert-bundle change above took
+# the image from 1,297,088 B (1% free in a 1.25 MB slot) to 1,036,160 B
+# (21% free) -- 255 KB, a 20% reduction, with no features removed.
+#
+# NOTE: -Os inlines far more aggressively than -Og, so it surfaces
+# -Wformat-truncation / -Wstringop diagnostics the debug build never
+# reached. With -Werror=all those are fatal. They are generally the
+# compiler seeing further, not new bugs -- see the %hhu fix in
+# core/ll_wifi/ll_wifi.c for the first one.
+
+# -Os rather than -Og.
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# Keep the assertion CHECKS, drop the file/line/expression strings.
+# SILENT, not DISABLE: with BOOTLOADER_APP_ROLLBACK_ENABLE above we WANT
+# a bad image to abort and roll back, not run on corrupt state.
+CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT=y
+
+# INFO -> WARN. Strips the format strings for every info-level log.
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+
+# Drop the esp_err_t -> string lookup table.
+CONFIG_ESP_ERR_TO_NAME_LOOKUP=n

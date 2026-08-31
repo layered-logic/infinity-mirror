@@ -3,13 +3,53 @@
 // =================== Hardware ===================
 #define NUM_LEDS 32
 
-// LED data on PC7 (custom PCB, TSSOP20 pin 17)
+// LED data on PC6 (custom PCB, TSSOP20 pin 16).
+// Corrected 2026-08-17: this said PC7/pin 17, but the PCB has routed
+// /LED_SIG from PC6 since the 5bc9107 baseline -- verified across all three
+// board revisions. On PC7 the strip simply stayed dark.
 #define DATA_PORT GPIOC
-#define DATA_MASK GPIO_PIN_7
+#define DATA_MASK GPIO_PIN_6
 
-// Button on PB5
+// Mode button on PD6 (TSSOP20 pin 3), active low. The board carries a 10k
+// pull-up and a 100n debounce cap -- which is also why UART1_RX is unusable
+// on this design: RX is physically PD6 and it is already spoken for.
 #define BTN_PORT GPIOD
 #define BTN_MASK GPIO_PIN_6
+
+// ---- rework pass 2 hardware, 2026-08-17 (see the board's REWORK_SPEC.md) ----
+// USB-C CC sense: /CC1 -> R7 10k -> PD2 (AIN3), /CC2 -> R8 10k -> PD3 (AIN4).
+#define CC1_ADC_CH 3
+#define CC2_ADC_CH 4
+// UART1_TX debug pad TP1 on PD5 (pin 2). TP2 = GND, TP3 = PD4 (spare).
+#define ENABLE_UART 1
+#define UART_BAUD_DIV 139           /* 16 MHz / 115200 = 138.9 */
+// IR receiver J8 (fitted DNP) OUT -> PA3 (pin 10) = TIM2_CH3.
+// Set to 0 to reclaim the flash if J8 is never populated.
+#define ENABLE_IR 1
+// Placeholder NEC command bytes -- these are remote-specific. Every received
+// code is printed on TP1, so capture your remote's actual bytes first and
+// then correct these. Left as distinct dummy values so an unknown remote
+// simply does nothing instead of firing the wrong action.
+#define IR_CMD_POWER     0x45
+#define IR_CMD_COLOR     0x46
+#define IR_CMD_PATTERN   0x47
+#define IR_CMD_BRIGHT_UP 0x40
+#define IR_CMD_BRIGHT_DN 0x19
+
+// CC decode. There is NO regulator on this board -- VDD is raw VBUS -- so the
+// ADC is RATIOMETRIC and thresholds must be fractions of full scale, never
+// absolute volts. With Rd = 5.1k the CC node sits at 0.41 V (default USB),
+// 0.92 V (1.5 A) or 1.68 V (3.0 A); across VDD 4.75-5.5 V those land at codes
+// 76-88, 171-198 and 313-362, so the gaps are wide and these sit mid-gap.
+#define CC_TH_1A5 130
+#define CC_TH_3A0 255
+
+// Brightness ceiling per advertised source tier. 32 WS2812 at full white draw
+// roughly 32 x 60 mA = 1.9 A, so each cap is (budget / 1.9 A) scaled to 255.
+#define BRIGHT_CAP_DEFAULT 90       /* <=0.9 A source -> ~0.7 A budget */
+#define BRIGHT_CAP_1A5 160          /* 1.5 A source   -> ~1.2 A budget */
+#define BRIGHT_CAP_3A0 255          /* 3.0 A source   -> unrestricted  */
+#define CC_POLL_TICKS 20            /* re-read CC about once a second */
 
 // =================== Settings ===================
 #define DEFAULT_BRIGHTNESS 128  // 0..255
@@ -152,6 +192,151 @@ static uint8_t loadState(void) {
   return 0;
 }
 
+// =================== USB-C CC sense (ADC) ===================
+// PD2/PD3 MUST stay input-floating (CR1 clear). An internal pull-up would
+// corrupt the CC divider and misread even a good 3 A source -- not a silent
+// failure, so never blanket-init these two pins as pull-up inputs.
+static uint8_t ccTier = 0;                   /* 0 = default, 1 = 1.5A, 2 = 3.0A */
+static uint8_t ccMaxBright = BRIGHT_CAP_DEFAULT;
+
+static void adc_init(void) {
+  volatile uint8_t d;
+  GPIO_Init(GPIOD, (GPIO_Pin_TypeDef)(GPIO_PIN_2 | GPIO_PIN_3),
+            GPIO_MODE_IN_FL_NO_IT);
+  ADC1->CR1 = 0x00;                  /* fmaster/2, single conversion mode */
+  ADC1->CR2 = ADC1_CR2_ALIGN;        /* right aligned -> read DRL before DRH */
+  ADC1->CR1 |= ADC1_CR1_ADON;        /* the first ADON only wakes the ADC */
+  for (d = 0; d < 60; d++) __asm__("nop");   /* tSTAB = 7 us at 16 MHz */
+}
+
+static uint16_t adc_read(uint8_t ch) {
+  uint8_t i;
+  uint16_t v = 0;
+  ADC1->CSR = ch;                    /* select channel, clear EOC, no interrupt */
+  /* Two back-to-back conversions, keep the second. Source impedance is
+     10k + 5.1k ~= 15.1k against the 3 pF sample-and-hold: ~8.3 time constants
+     inside the 0.75 us sample window, so ONE conversion is already good to
+     ~0.3 LSB. (At the 22k this started life as it was 4.6 tau and ~10 LSB,
+     and the second read was mandatory.) Kept as belt-and-braces -- it costs
+     a few microseconds and makes the result independent of whatever else
+     the ADC is later used for. */
+  for (i = 0; i < 2; i++) {
+    ADC1->CR1 |= ADC1_CR1_ADON;      /* the second ADON starts a conversion */
+    while (!(ADC1->CSR & ADC1_CSR_EOC));
+    v = (uint16_t)ADC1->DRL;         /* DRL FIRST when right-aligned */
+    v |= (uint16_t)((uint16_t)ADC1->DRH << 8);
+    ADC1->CSR &= (uint8_t)~ADC1_CSR_EOC;
+  }
+  return v;
+}
+
+static void cc_poll(void) {
+  uint16_t a, b, cc;
+  a = adc_read(CC1_ADC_CH);
+  b = adc_read(CC2_ADC_CH);
+  cc = (a > b) ? a : b;              /* the mated orientation is the higher one */
+  if (cc >= CC_TH_3A0)      ccTier = 2;
+  else if (cc >= CC_TH_1A5) ccTier = 1;
+  else                      ccTier = 0;
+  ccMaxBright = (ccTier == 2) ? BRIGHT_CAP_3A0
+              : (ccTier == 1) ? BRIGHT_CAP_1A5 : BRIGHT_CAP_DEFAULT;
+}
+
+// =================== UART1 debug: TP1 = PD5 (TX), TP2 = GND ===================
+#if ENABLE_UART
+static void uart_init(void) {
+  /* UART1 drives PD5 itself once TEN is set. Transmit only -- RX would be
+     PD6, which is the Mode button. */
+  UART1->CR1 = 0x00;
+  UART1->CR3 = 0x00;                 /* 1 stop bit */
+  UART1->BRR2 = (uint8_t)((UART_BAUD_DIV & 0x0F) |
+                          ((UART_BAUD_DIV >> 8) & 0xF0));
+  UART1->BRR1 = (uint8_t)((UART_BAUD_DIV >> 4) & 0xFF);  /* BRR1 last: it latches */
+  UART1->CR2 = UART1_CR2_TEN;
+}
+
+static void uart_putc(char c) {
+  while (!(UART1->SR & UART1_SR_TXE));
+  UART1->DR = (uint8_t)c;
+}
+
+static void uart_puts(const char *s) {
+  while (*s) uart_putc(*s++);
+}
+
+static void uart_putu16(uint16_t v) {
+  char buf[6];
+  uint8_t i = 5;
+  buf[5] = 0;
+  if (!v) { uart_putc('0'); return; }
+  while (v && i) { buf[--i] = (char)('0' + (uint8_t)(v % 10)); v /= 10; }
+  uart_puts(&buf[i]);
+}
+#else
+#define uart_init()
+#define uart_puts(s)
+#define uart_putu16(v)
+#endif
+
+// =================== IR receiver: J8 (DNP) OUT -> PA3 ===================
+#if ENABLE_IR
+/* PA3 = TIM2_CH3 as the DEFAULT alternate function. Leave option byte AFR1
+   UNPROGRAMMED: it would remap TIM2_CH3 to PD2, which is now AIN3, and the
+   datasheet's bracket notation means an exclusive choice, not a duplicate.
+
+   NEC framing, measured falling edge to falling edge with TIM2 at 8 us/tick:
+   leader 13.5 ms, '0' 1.125 ms, '1' 2.25 ms. showLEDs() disables interrupts
+   for about 1 ms per 50 ms frame, so an edge is occasionally lost; NEC
+   remotes repeat, so a dropped frame is not worth extra machinery. */
+#define IR_LEADER_MIN 1400
+#define IR_LEADER_MAX 1900
+#define IR_ZERO_MIN     90
+#define IR_ZERO_MAX    190
+#define IR_ONE_MIN     220
+#define IR_ONE_MAX     350
+
+static volatile uint32_t irShift = 0;
+static volatile uint16_t irLast = 0;
+static volatile uint8_t irBits = 0;
+static volatile uint8_t irCmd = 0;
+static volatile uint8_t irReady = 0;
+
+static void ir_init(void) {
+  /* Pulled up so the pin does not float on boards where J8 is not fitted. */
+  GPIO_Init(GPIOA, GPIO_PIN_3, GPIO_MODE_IN_PU_NO_IT);
+  TIM2->PSCR = 7;                    /* 16 MHz / 128 = 8 us per tick */
+  TIM2->CCMR3 = 0x01;                /* CC3 = input, mapped to TI3 */
+  TIM2->CCER2 = 0x03;                /* CC3E | CC3P -> capture on falling edge */
+  TIM2->IER = TIM2_IER_CC3IE;
+  TIM2->CR1 = 0x01;                  /* counter on, free running */
+}
+
+INTERRUPT_HANDLER(TIM2_CAPCOM_IRQHandler, 14) {
+  uint16_t now, d;
+  uint8_t cmd, inv;
+  if (!(TIM2->SR1 & TIM2_SR1_CC3IF)) return;
+  now = (uint16_t)(((uint16_t)TIM2->CCR3H << 8) | TIM2->CCR3L);
+  TIM2->SR1 = (uint8_t)~TIM2_SR1_CC3IF;
+  d = (uint16_t)(now - irLast);      /* 16-bit wrap is intentional */
+  irLast = now;
+  if (d >= IR_LEADER_MIN && d <= IR_LEADER_MAX) {
+    irShift = 0; irBits = 0;
+  } else if (d >= IR_ZERO_MIN && d <= IR_ZERO_MAX) {
+    irShift <<= 1; irBits++;
+  } else if (d >= IR_ONE_MIN && d <= IR_ONE_MAX) {
+    irShift = (irShift << 1) | 1UL; irBits++;
+  } else {
+    irBits = 0;                      /* out of spec: resync on the next leader */
+  }
+  if (irBits >= 32) {
+    cmd = (uint8_t)((irShift >> 8) & 0xFF);
+    inv = (uint8_t)(irShift & 0xFF);
+    if ((uint8_t)(~cmd) == inv) { irCmd = cmd; irReady = 1; }
+    irBits = 0;
+  }
+}
+#endif
+
 // =================== WS2812B driver (16MHz STM8) ===================
 #define NOP1 __asm__("nop")
 #define NOP2 NOP1; NOP1
@@ -184,6 +369,9 @@ static void showLEDs(void) {
   for (i = 0; i < NUM_LEDS; i++) {
     // Apply white dimming if color is white (index 0)
     br = currentBrightness;
+    /* Hard ceiling from the USB-C source's advertised current. Applied here,
+       not in the button handlers, so nothing can route around it. */
+    if (br > ccMaxBright) br = ccMaxBright;
     if (currentColor == 0 && currentPattern == PATTERN_SOLID) {
       br = scale8(br, WHITE_DIM_FACTOR);
     }
@@ -493,6 +681,25 @@ void setup() {
   // Button input pull-up
   GPIO_Init(BTN_PORT, BTN_MASK, GPIO_MODE_IN_PU_NO_IT);
 
+  // TP3 / PD4 is a bare debug pad and floats on every assembled board; the
+  // same is true of PA3 when J8 is not fitted (ir_init pulls that one up).
+  // Floating CMOS inputs burn current and pick up noise, so tie them off.
+  GPIO_Init(GPIOD, GPIO_PIN_4, GPIO_MODE_IN_PU_NO_IT);
+
+  adc_init();
+  cc_poll();              // know the source budget before the first frame
+  uart_init();
+#if ENABLE_IR
+  ir_init();
+#endif
+  enableInterrupts();
+
+  uart_puts("\r\nSTM8 mirror ready. CC tier=");
+  uart_putu16(ccTier);
+  uart_puts(" cap=");
+  uart_putu16(ccMaxBright);
+  uart_puts("\r\n");
+
   // Initialize
   delay_ms_soft(100);
   clearLEDs();
@@ -507,6 +714,62 @@ void setup() {
 
 void loop() {
   ButtonEvent btn;
+  static uint8_t ccTick = 0;
+  static uint8_t lastTier = 255;
+
+  // Re-read the CC lines about once a second: the cable can be swapped for a
+  // weaker charger at any time, and the brightness ceiling has to follow.
+  if (++ccTick >= CC_POLL_TICKS) {
+    ccTick = 0;
+    cc_poll();
+    if (ccTier != lastTier) {
+      lastTier = ccTier;
+      uart_puts("CC tier=");
+      uart_putu16(ccTier);
+      uart_puts(" cap=");
+      uart_putu16(ccMaxBright);
+      uart_puts("\r\n");
+    }
+  }
+
+#if ENABLE_IR
+  // Unknown codes are printed rather than ignored: that is how you learn a
+  // given remote's map. Point a terminal at TP1 (115200 8N1, ground on TP2),
+  // press buttons, then fill in the IR_CMD_* defines below.
+  if (irReady) {
+    uint8_t c = irCmd;
+    irReady = 0;
+    uart_puts("IR 0x");
+    uart_putu16(c);
+    uart_puts("\r\n");
+    switch (c) {
+      case IR_CMD_POWER:
+        if (isOn) { saveState(); isOn = 0; clearLEDs(); }
+        else { isOn = 1; loadState(); animStep = 0; breathVal = 0; breathDir = 1; }
+        break;
+      case IR_CMD_COLOR:
+        if (isOn && ++currentColor >= NUM_COLORS) currentColor = 0;
+        break;
+      case IR_CMD_PATTERN:
+        if (isOn) {
+          if (++currentPattern >= NUM_PATTERNS) currentPattern = 0;
+          animStep = 0; breathVal = 0; breathDir = 1;
+          setAllLEDs(0, 0, 0);
+        }
+        break;
+      case IR_CMD_BRIGHT_UP:
+        if (isOn && currentBrightness <= (255 - BRIGHTNESS_STEP))
+          currentBrightness += BRIGHTNESS_STEP;
+        break;
+      case IR_CMD_BRIGHT_DN:
+        if (isOn && currentBrightness >= (MIN_BRIGHTNESS + BRIGHTNESS_STEP))
+          currentBrightness -= BRIGHTNESS_STEP;
+        break;
+      default:
+        break;
+    }
+  }
+#endif
 
   btn = checkButton();
 

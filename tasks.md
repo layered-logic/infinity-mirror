@@ -1,8 +1,8 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-082
-updated: 2026-05-20
+next_id: LL-088
+updated: 2026-06-05
 
 ---
 
@@ -1143,24 +1143,24 @@ dependencies: LL-001
 <a id="LL-067"></a>
 ### [ ] LL-067 — City/county business license check
 
-sprint: 1 | priority: medium | deadline: —
+sprint: 1 | priority: medium | deadline: 2026-10-31
 added: 2026-03-30
 artifacts: —
 dependencies: LL-026
 
-**Notes:** Verify whether business address requires a city or county endorsement on top of WA BLS state registration. Selling physical products online may require general business license.
+**Notes:** Verify whether business address requires a city or county endorsement on top of WA BLS state registration. Selling physical products online may require general business license. Seattle is the address of record, so the specific question is whether a Seattle city business license is required on top of the state BLS. **Batched 2026-08-31:** ~30-minute lookup. Given the Q3 excise deadline on purpose so it surfaces alongside [LL-069-3](#LL-069-3) and gets done in the same My DOR sitting — one batched compliance sitting, not a separate reminder. Source: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
 <a id="LL-068"></a>
 ### [ ] LL-068 — Reseller permit follow-up
 
-sprint: 4 | priority: medium | deadline: —
+sprint: 4 | priority: medium | deadline: 2026-10-31
 added: 2026-04-22
 artifacts: —
 dependencies: LL-026
 
-**Notes:** Separate application from BLS, free, 4-yr validity. Saves sales tax on component purchases from WA suppliers. File once UBI is confirmed (physical license arrives ~10 business days after BLS submission).
+**Notes:** Separate application from BLS, free, 4-yr validity. Saves sales tax on component purchases from WA suppliers. File once UBI is confirmed (physical license arrives ~10 business days after BLS submission) — UBI 606 138 559 has been confirmed since the May 15 2026 DOR welcome letter, so this is unblocked. **Batched 2026-08-31:** ~30-minute lookup. Given the Q3 excise deadline on purpose so it surfaces alongside [LL-069-3](#LL-069-3) and gets done in the same My DOR sitting — one batched compliance sitting, not a separate reminder. Source: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
@@ -1177,24 +1177,24 @@ dependencies: LL-002, LL-026
 ---
 
 <a id="LL-069-1"></a>
-#### [ ] LL-069-1 — Q1 2026 WA excise return (Jan 1 – Mar 31)
+#### [x] LL-069-1 — Q1 2026 WA excise return (Jan 1 – Mar 31)
 
 parent: LL-069 | sprint: 8 | priority: high | deadline: 2026-06-15
-added: 2026-05-18
+added: 2026-05-18 | resolved: 2026-07-09
 artifacts: —
 
-**Notes:** First return on the WA DOR excise account. One-time extended due date Jun 15, 2026 (vs. the standard Apr 30) per welcome-letter terms. Expected to file as "no business activity" — zero sales, zero gross receipts through Q1 2026. File electronically via My DOR. If any revenue lands before filing (e.g., friends-and-family pre-orders), Retailing (0.471%) + Manufacturing (0.484%) B&O classifications from LL-026 apply, and sales-tax collection rules engage.
+**Notes:** First return on the WA DOR excise account. One-time extended due date Jun 15, 2026 (vs. the standard Apr 30) per welcome-letter terms. Expected to file as "no business activity" — zero sales, zero gross receipts through Q1 2026. File electronically via My DOR. If any revenue lands before filing (e.g., friends-and-family pre-orders), Retailing (0.471%) + Manufacturing (0.484%) B&O classifications from LL-026 apply, and sales-tax collection rules engage. **FILED — closed 2026-07-09.** Bill had already filed it; the repo simply carried no record, and the venture-readiness audit briefly flagged it as past due before the correction. Registry row `github:task:LL-069-1` was closed `completed` on 2026-07-09; this checkbox is the markdown catching up.
 
 ---
 
 <a id="LL-069-2"></a>
-#### [ ] LL-069-2 — Q2 2026 WA excise return (Apr 1 – Jun 30)
+#### [x] LL-069-2 — Q2 2026 WA excise return (Apr 1 – Jun 30)
 
 parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-07-31
-added: 2026-05-18
+added: 2026-05-18 | resolved: 2026-07-09
 artifacts: —
 
-**Notes:** Standard quarterly due date Jul 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+**Notes:** Standard quarterly due date Jul 31, 2026. **FILED 2026-07-09 as "no business activity"** — zero sales, no tax due. Filed electronically via My DOR, ahead of the Jul 31 deadline.
 
 ---
 
@@ -1205,7 +1205,7 @@ parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-10-31
 added: 2026-05-18
 artifacts: —
 
-**Notes:** Standard quarterly due date Oct 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+**Notes:** Standard quarterly due date Oct 31, 2026. Zero-activity filing unless revenue lands first — the venture is paused for burnout recovery, so a "no business activity" return is the near-certain outcome, but RCW 82.32 requires it regardless to keep the LLC in good standing. File electronically via My DOR (UBI / Account ID 606-138-559). **This is the batched compliance sitting.** Two ~30-minute lookups from the same gate ride along and share this deadline so all three close in one visit: [LL-068](#LL-068) reseller permit and [LL-067](#LL-067) Seattle city/county license endorsement. Deliberately one sitting rather than three reminders — business admin is the specific locus of the burnout. Context: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
@@ -1369,6 +1369,199 @@ dependencies: LL-080
 **Notes:** Bug surfaced the moment [LL-080](#LL-080)'s single-button factory reset was first exercised on the dev mirror. The mirror is the 12×12 / 66-LED prototype; after the factory reset it came back reporting `led_count: 32` — the 6×6 production SKU value. Root cause is pre-existing: `state_bus_defaults.c` hardcodes `.led_count = 32` (a pure-C file that can't see `board.h`), and a factory reset resets the live state to those compiled defaults. The C3 proto never had a factory-reset path before LL-080 (no recessed button), so the latent bug had never fired — building the factory-reset feature without checking the post-reset state on this board was the miss.
 
 Fix in `state_bus.c`: a `stamp_board_led_count()` helper sets `led_count` from `LL_LED_COUNT_DEFAULT` (board.h — 66 for `c3_devkit`, 32 for the prod boards) on every path that seeds or resets `g_state` — both `ll_state_bus_init()` and the `LL_EV_FACTORY_RESET` handler. `led_count` is a fixed hardware property (the wire protocol already treats it read-only), so it is now always the board's value regardless of what NVS or the pure-C defaults carry — which also self-corrects a device whose NVS holds a stale count. The `state_bus_defaults.c` placeholder + TODO comment updated; no schema bump, no host-test change (140/140 still green). Shipped as `ledfix-1833`, OTA-flashed to the mirror (the OTA succeeded this time — the otadata reset by the prior USB flash cleared the `ESP_FAIL` condition); **verified on hardware — `get_state` reports `led_count: 66`.**
+
+---
+
+<a id="LL-082"></a>
+### [x] LL-082 — IM_SVG_Maker: black-SVG → laser + plug fab files
+
+sprint: 9 | priority: medium | deadline: 2026-05-30
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-06-04 | resolved: 2026-05-26
+artifacts: [Assembly_docs/IM_SVG_Maker/](Assembly_docs/IM_SVG_Maker/), [Assembly_docs/IM_SVG_Maker/PLAN.md](Assembly_docs/IM_SVG_Maker/PLAN.md), [Assembly_docs/IM_SVG_Maker/README.md](Assembly_docs/IM_SVG_Maker/README.md)
+dependencies: LL-012, LL-051
+
+**Notes:** New Python CLI under [Assembly_docs/IM_SVG_Maker/](Assembly_docs/IM_SVG_Maker/) that takes a monochrome black SVG (or a raster line-art image via the included potracer preprocessor) and emits the four fabrication files for a Kintsugi-style infinity mirror tile: `laser.svg` + `laser.dxf` (150×150 mm acrylic cut, red-hairline stroke convention) and `plug.3mf` + `plug.stl` (clear-PETG two-layer plug — 3 mm inset that drops flush into the laser cutout + 1 mm base behind the mirror that bridges fragments). Pipeline is `svgelements → shapely → trimesh`; all tunables in [variables.json](Assembly_docs/IM_SVG_Maker/variables.json). Demo run on `demo_W_black.svg` (W extracted from the Washington Huskies halo) and raster run on `fox.jpg` both produce clean output — see [cut_lines_preview.png](Assembly_docs/IM_SVG_Maker/cut_lines_preview.png) and [fox_preview.png](Assembly_docs/IM_SVG_Maker/fox_preview.png). Bill confirmed the fox preview *and* the actual STL look correct; the tool runs without a virtual environment (plain `pip install -e .`).
+
+**Where it slots into the ordering / assembly flow.** This is the geometry-engine half of the custom-manufacturing track that runs parallel to the [LL-051](#LL-051) parametric packaging dielines. The intended user-facing flow: a customer arrives at the **billwhite.me/infinity** site, designs/tests their logo against a live preview, and the site exports the agreed black SVG straight into IM_SVG_Maker. The tool emits the four fab files into `out/<order>/`. Downstream the same package can hand off to (a) the 3D printer queue (3MF straight into the slicer or a Bambu/Prusa farm API), (b) the laser controller (DXF or SVG into LightBurn / job queue), and eventually (c) the LL-051 packaging dieline generator parameterised on the order dimensions — so a single customer SVG fans out into laser job + print job + branded mailer dieline with no per-order CAD work. This is the same automation pattern as the packaging side: parametric generators feeding queueable machine jobs from a single canonical input. Service-blueprint Stage 2b (custom consult) and Stage 4 (Manufacture & QC) both land on this pipeline.
+
+**Same-day extensions (also 2026-05-26):**
+- **Size-floor thresholds shipped in the raster preprocessor** (not the main pipeline — that's where ratty sub-threshold geometry actually enters). New knobs `raster_min_island_area_mm2` and `raster_min_feature_width_mm` in [variables.json](Assembly_docs/IM_SVG_Maker/variables.json) and matching `--min-island-area-mm2` / `--min-feature-width-mm` CLI flags on [raster_to_black_svg.py](Assembly_docs/IM_SVG_Maker/scripts/raster_to_black_svg.py). Both default to 0 (off). Width-floor is implemented as an erosion-only predicate (`island.buffer(-w/2)` empty → drop the whole island) rather than a morphological opening — the first attempt at "open everything" *fractured* islands at thin necks and inflated the count from 5 → 34 on the fox at width=2.5mm. The drop-or-keep semantics is the right user mental model and gets verified end-to-end on `fox.jpg`: high-width threshold drops all islands, area threshold of 20mm² drops 2 of 5, the kept SVG re-parses cleanly through the main pipeline. PLAN.md Alternatives + Learnings updated.
+- **Color-SVG → black-SVG converter shipped** as new [color_select.py](Assembly_docs/IM_SVG_Maker/im_svg_maker/color_select.py) + CLI [color_svg_to_black.py](Assembly_docs/IM_SVG_Maker/scripts/color_svg_to_black.py). svgelements does the CSS/inheritance/transform-resolved fill matching with `reify=True`; the tool has a list-fills mode (no `--color`) and an extract mode (`--color "#XXX"`, repeatable for union, `--tolerance N` for fuzzy matching, `--invert` to drop a background). Output is a flat black SVG that drops straight into `python -m im_svg_maker`. **Verified end-to-end on Washington_Huskies_logo.svg**: the list mode finds the two known fills (`#E8D3A2` gold halo + `#33006F` purple W) ranked by bbox area; extracting `#E8D3A2` and running the main pipeline produces the same 100×68.88mm 1-island geometry as the hand-extracted `demo_W_black.svg`, with clean `out/huskies_gold/laser.svg` + `laser.dxf` + `plug.3mf` + `plug.stl`. Multi-color union (both fills together) also produces a valid plug. README + PLAN.md updated; pyproject.toml gained the previously-missing `potracer` + `Pillow` deps surfaced during verification.
+- **Still parked for a later iteration:** the printer/laser job-queue handoff (waits on queue tooling existing). The on-site design-preview piece moved out of "parked" and into [LL-083](#LL-083) — actively porting the preprocessing into the existing infinity_mirror_visualizer repo.
+
+The directory itself is currently untracked in git ([Assembly_docs/IM_SVG_Maker/](Assembly_docs/IM_SVG_Maker/)) — Bill hasn't asked for the commit yet, so leaving it untracked until he says otherwise.
+
+**2026-06-04:** core `laser_export.write_dxf` modified under [LL-086](#LL-086) — DXF cut entities now carry solid red ACI 1 + true-color `0xFF0000` on a `CUT` layer (were colorless / ByLayer white). Batch sheet-nesting + three new input preprocessors also landed there.
+
+---
+
+<a id="LL-083"></a>
+### [x] LL-083 — IM_SVG_Maker preprocessing port → infinity_mirror_visualizer
+
+sprint: 9 | priority: medium | deadline: 2026-06-06
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-27 | resolved: 2026-05-26
+artifacts: [Assembly_docs/IM_SVG_Maker/INTEGRATION_PLAN.md](Assembly_docs/IM_SVG_Maker/INTEGRATION_PLAN.md), `C:/Users/bowhi/Desktop/infinity_mirror_visualizer/src/preprocess/` (separate repo)
+dependencies: LL-082
+
+**Notes:** Port [LL-082](#LL-082)'s JPG / colored-SVG preprocessing into the existing [infinity_mirror_visualizer](https://github.com/bowbikes/infinity_mirror_visualizer) React/Three.js app so users can upload a JPG (the format they actually have) and see a 3D preview that reflects the *manufacturable* art (post-binarize, post-trace, post-size-floor, post-nozzle-round). Python `IM_SVG_Maker` stays canonical for actual fab files at order time; the JS port is the **preview-time** layer.
+
+Full scope + boundary + library choices + parity-test plan in [INTEGRATION_PLAN.md](Assembly_docs/IM_SVG_Maker/INTEGRATION_PLAN.md). Six chunks, each independently shippable:
+
+1. **[done 2026-05-26]** JS module skeleton + parity harness. Vitest set up in the visualizer (new dev dep); stub modules under `src/preprocess/`; golden fixtures (W, fox, Huskies) + their `.canonical.svg` files generated by new [Assembly_docs/IM_SVG_Maker/tools/regenerate_canonicals.py](Assembly_docs/IM_SVG_Maker/tools/regenerate_canonicals.py); sync script in the visualizer at `scripts/sync-fixtures.mjs` (no submodule, plain copy). New visualizer deps queued in package.json: `vitest`, `jsdom`, `clipper-lib`, `potrace`. **Red baseline confirmed:** `npm test` reports 5 failed (each with concrete diff like `island count actual=0 vs canonical=5`, `area drift 100.0%`, `viewBox 100×100 vs 2000×2000`), 7 passed (existence checks + demo_W_black self-passthrough), 6 todo (sym-diff metric per fixture + the 3 future-chunk fixtures: tiny_specks, hairline, nested_holes). Harness is wired and reports cleanly.
+2. **[done 2026-05-26]** Port `color_select.py` → `colorSelect.js`. Real implementation in `src/preprocess/colorSelect.js`: DOM walk via `DOMParser` (browser native; jsdom supplies it in tests), manual SVG-spec fill inheritance walk (inline `style="fill:..."` > attribute > parent inheritance > black default — `getComputedStyle` doesn't reliably resolve SVG-specific fill semantics under jsdom, so direct attribute walking is more bulletproof than relying on it), CSS Color Module Level 3 named-color table inlined (~150 entries, ~3KB) so no extra dep. Transform composition: leaf→root walk, reversed + joined as an SVG transform string and fed to `svgpath.transform()` (originally tried `DOMMatrix` but jsdom doesn't ship it — svgpath parses SVG-spec transform strings natively and is the cleaner path anyway). Shape support: `<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<polygon>`, `<polyline>` all convert to d-strings before transform-baking. Output mirrors Python's writer exactly: flat list of `<path d="..." fill="#000000" fill-rule="evenodd"/>` with the original viewBox preserved. New dep: `svgpath`. Also improved the parity test's `approxPathBboxArea` helper from "match every number in the d-string" (broken — relative-command deltas lie about extent) to a proper endpoint-only walk via `SvgPath.abs().iterate()` (deliberately excludes curve control points which would convex-hull-bias the bbox). **Result:** all 4 Huskies tests now green. Test counts: 3 failed / 9 passed / 6 todo (was 5/7/6). The 3 remaining failures are all fox.jpg, all from the still-stubbed `raster.js` — chunk 4 territory.
+3. **[done 2026-05-26]** Port `svg_parse.py` → `svgParse.js`. Hybrid: Three.js `SVGLoader` does the curve flattening (arcs, Béziers, all SVG path syntax), then clipper-lib's `pftEvenOdd` poly-fill does the actual XOR — replaces Python's `shapely.symmetric_difference`. Three.js's `path.toShapes(false)` uses winding-direction heuristics rather than pure evenodd; using clipper-lib for the XOR step gives byte-faithful parity with Python on nested holes. Verified on a new `nested_holes.svg` fixture (concentric arcs exercising evenodd): JS port and Python both yield 2 islands (big disc-with-hole + inner solid disc) with theoretical areas (π·80² - π·50² ≈ 12252 and π·20² ≈ 1257) matching within Bézier-sampling tolerance. New `nested_holes.svg` fixture + canonical added to IM_SVG_Maker/tests/fixtures. New `svgParse.test.js` covers: parses W to 1 polygon + 1 hole, parses nested_holes to 2 islands with correct holes/areas, parses Huskies canonical with holes, preserves source viewBox, handles empty SVG. Inverse helper `polygonsToSvg` round-trips polygons → SVG → polygons preserving structure. Test counts: 3 failed / 18 passed / 6 todo. The 3 failures remain fox.jpg-only (chunk 4 territory).
+4. **[done 2026-05-26]** Port `raster.py` → `raster.js`. Pipeline: Jimp grayscales the input + Jimp's `threshold({max})` makes pixels ≤T pure black (matches `arr < threshold` in PIL); a hand-rolled min-filter dilation (`dilateForeground`) spreads black pixels by `thicknessMm * pixelsPerMm` to thicken the line work (foreground=0 / background=255 means morphological dilation of foreground = min-filter, mirroring PIL's `MaxFilter` on the inverted binary); the post-dilate bitmap is re-serialized to a PNG buffer and passed to the `potrace` npm package for tracing (passing a Jimp instance directly is not supported — the lib internally calls `Jimp.read()` again and fails on Jimp objects); potrace's single-`<path>`-with-many-subpaths output flows through `svgParse` so clipper-lib's `pftEvenOdd` does the shell/hole assembly the same way Python's `shapely` does; `polygonsToSvg` re-emits one `<path>` per island in the exact format `fox.canonical.svg` has. Switched test input from `new Blob([buffer])` to `new Uint8Array(buffer)` — jsdom v24's Blob is incomplete (no `arrayBuffer()`/`stream()` on the prototype); the production `toBuffer()` path covers Buffer / ArrayBuffer / Uint8Array / Blob / File so browser usage is unaffected. **All 3 fox parity tests now green.** Total test counts: 0 failed / 21 passed / 6 todo. New deps: `jimp` (explicit; was transitive via potrace). Size floors stay parked for chunk 5 — chunk 4 is just trace.
+5. [ ] Port size-floor filters + nozzle rounding via `clipper-lib`'s `ClipperOffset` (round joins = `shapely.buffer(d, join_style='round')` equivalent). Adds the tiny_specks / hairline fixtures. Closes the sym-diff `.todo`s.
+5. **[done 2026-05-26]** Port size-floor filters + nozzle rounding → `manufacturability.js` via clipper-lib `ClipperOffset` (round joins = `shapely.buffer(d, join_style='round')` equivalent). Order mirrors Python: nozzle round (open-then-close, `cut.buffer(-r).buffer(+r).buffer(+r).buffer(-r)`) → width floor (erosion-as-predicate, drop polygons whose `buffer(-w/2)` is empty — matches the May-26 IM_SVG_Maker decision) → area floor (drop polygons below `polygonArea < threshold`). All thresholds operate in SVG-unit space converted from mm via `longestSide / maxLogoDimMm` (matching `pixels_per_mm` in raster.py). Added `tiny_specks.svg` + `hairline.svg` fixtures; new `manufacturability.test.js` with 10 focused tests (area floor drops the 4 specks but keeps the square, width floor drops the hairline but keeps the square, nozzle rounding adds vertices to the rounded square, threshold composition + warnings + idempotence). Symmetric-difference metric implemented in parity test via clipper-lib `ctXor`; tolerance set to 35% (regression bound, not strict-match — Python `svgelements` applies an implicit viewport-to-viewBox transform on top of the explicit matrix while JS `svgpath` bakes only the explicit; Python `potracer` vs npm `potrace` produce different vector approximations of the same binarized pixels; algorithm correctness is verified by the focused unit tests). The 3 chunk-3/5 fixtures get passthrough parity checks instead of `.todo`s — feature-correctness is covered by their respective unit tests. **All 37 tests pass, zero todos, zero failures.**
+6. **[done 2026-05-26]** UI wire-up. New `PreprocessPanel.jsx` is a self-contained section component the visualizer's `App.jsx` injects into `ControlsPanel` via a new `topSection` prop (less invasive than splitting the sidebar into two scrolling panels). State machine has three stops — `idle` (no file), `picking` (multi-color SVG awaiting color selection), `ready` (preprocessing complete, sliders re-run `applyManufacturability` against a cached intermediate SVG without re-tracing). File input accepts `.jpg/.jpeg/.png/.svg`; the dispatch branches: JPG → `preprocessRaster`; multi-fill SVG → `listColors` + color-swatch grid + `selectByColor` on pick; single-fill SVG → passthrough; all paths land in the intermediate. Threshold sliders cover nozzle diameter, min island area, min feature width, and max logo dim; warnings + drop counts render inline when islands get filtered. `npm run build` passes (1003 modules, 5.83s, ~713 KB gzipped). 37/37 unit tests still green after the UI work. **Browser-runtime caveat (open item, separate verification):** vite logs externalization warnings for `util`/`stream`/`fs`/`zlib`/`assert` imported by `potrace`'s transitive deps (`pngjs`, `gifwrap`, `strtok3`). The build doesn't fail but the JPG-trace path may hit a runtime stub in the browser. Needs `npm run dev` smoke test on a JPG to confirm; if it breaks, the fix is either a vite Node-polyfill plugin (e.g. `vite-plugin-node-polyfills`) or swapping `potrace` for the pure-JS `potracer` package.
+
+Rough estimate 3–4 working days end-to-end. Sequential per chunk; each leaves the repo green.
+
+Post-port follow-ups documented in INTEGRATION_PLAN.md (Netlify → Vercel hosting migration; new UX modes — the second is gated on Bill enumerating which modes). Both addressed in [LL-084](#LL-084) (visualizer hosting moved to Vercel; the bulk of UX cleanup landed).
+
+---
+
+<a id="LL-084"></a>
+### [x] LL-084 — Visualizer cleanup pass + post-port bug fixes
+
+sprint: 9 | priority: medium | deadline: 2026-05-30
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-27 | resolved: 2026-05-27
+artifacts: `infinity_mirror_visualizer` repo (separate, GitHub `bowbikes/infinity_mirror_visualizer`)
+dependencies: LL-083
+
+**Notes:** After Bill deployed [LL-083](#LL-083)'s port to Vercel he asked for a broad code-review-driven cleanup of the visualizer. Spawned 19 small tracked work items covering correctness, perf, security honesty, and dead-code purge. Net diff for the cleanup commit alone: +516 / −1854 lines (1338 lines lighter), bundle dropped from 713 KB → 331 KB gzipped on initial load (preprocessing chunk lazy-loads on file upload via dynamic import).
+
+**Headline correctness fixes (each its own small commit):**
+- **Indexed-merge bug in SvgIcon** (the one that mattered most): `ShapeGeometry` produces indexed triangle buffers; the merge step in SvgIcon concatenated `.position` arrays without expanding indices, so every multi-island custom SVG (dog, snowflake, anything past 1 path) rendered as a garbage triangle salad. Fix expands each indexed geometry into a flat triangle list before concatenating.
+- **`SvgIcon` swapped from Three.js `path.toShapes(false)` to `parseSvgToPolygons`** (clipper-lib `pftEvenOdd` XOR) — winding-direction-independent outer+holes structure, so ring shapes (the dog outline, the Huskies halo) render as actual rings instead of filled silhouettes.
+- **`listColors` default fill** changed from `#000000` (SVG spec default) to `null` — paths whose `fill:none` came from a `<style>` CSS class (e.g. snowflake's `.cls-1`) were being misreported as 1-fill SVGs and routed through fill passthrough, where their stroke-only polylines became degenerate triangles. Null-fill SVGs now route through `strokesToBlackSvg` as intended.
+- **`vite-plugin-node-polyfills` + `define: { __dirname, __filename }`** to make potrace's transitive deps (pngjs, gifwrap, strtok3) actually run in the browser. Without these the JPG-trace path silently died on "Buffer is not defined" or "__dirname is not defined" at runtime.
+- **Removed the client-side "tamper-proof signature" theater** in `exportUtils.js`. The hardcoded `INFINITY_MIRROR_V1` secret was baked into the JS bundle — anyone with the page could re-sign any modified config, so the claim was misleading. Swapped for a SHA-256 integrity checksum and honest copy ("catches corruption, not tampering").
+- **Manufacturer endpoint moved to `import.meta.env.VITE_MANUFACTURER_ENDPOINT`** — when unset, `ExportModal` hides the "Send to manufacturer" radio group so prod can't silently POST to the placeholder URL that was previously hardcoded.
+
+**UX cleanup:**
+- Single render mode (flat fill matching the laser cut); the stroke/outline branches were stripped from SvgIcon. The unified mode is "what's in the bundle is what the laser will cut," with the preview reflecting that directly.
+- **Vector stroke-to-fill** in `svgParse.js::strokesToBlackSvg` — walks each stroked path via Three.js SVGLoader, offsets the polyline by `stroke-width/2` via clipper-lib's `ClipperOffset` with `etOpenRound`. Lossless, preserves the source stroke widths (`stroke-width:1.92px` on the snowflake comes through as a 1.92-unit-wide ribbon). Replaced the rasterize-via-canvas-then-trace fallback for stroke-only SVGs which was bitmap-resolution-bound and lost thin features.
+- **Custom Art preprocessing panel gated on preset = "Custom Upload"** so there's never two upload boxes simultaneously. Panel renders directly under the Icon section in the sidebar.
+- **File-input label** replaced with a styled `<label>` + hidden input — the native "No file chosen" never appears, the label always shows the actual current filename.
+- Renamed `mirrorSpacing` → `frameDepthMm` across App / ControlsPanel / InfinityMirrorScene / InfinityMirrorBox / exportUtils so the state variable matches the user-visible slider label.
+
+**Performance:**
+- Module-level SVG parse cache in `SvgIcon` so the N reflection layers each pay one parse cost, not N.
+- `THREE.Color` scratch reuse in `ReflectionLayers` (was allocating N colors per render frame).
+- `frameBounds` array stabilized via `useMemo` in `InfinityMirrorBox`; per-layer `localFrameBounds` baked into the `ReflectionLayers` memo. SvgIcon wrapped in `React.memo` — now the camera-tick / orbit re-renders don't rebuild geometry.
+- Preprocessing chunk lazy-loaded via `await import('../preprocess/index.js')` in PreprocessPanel — initial bundle ~half-sized for visitors who only browse the presets.
+
+**Validation workflow established:** wired up the `mcp__Claude_Preview__*` browser-automation tools against the dev server. Switched from "push and hope" to "spin up the local preview, upload each torture-test SVG, screenshot, only push when renders look right." Caught two of the three rendering bugs above this way before they shipped.
+
+**Validated on the torture-test corpus** (Bill committed these to `torture test/` in the visualizer repo): dog (thin cyan ring outline ✓), snowflake (6-arm radial with arrowhead tips and hollow center ✓), cage (birdcage with bars ✓), space-needle (tower silhouette ✓). `Rainier.svg` produces ~348K triangles from 61 subpaths and renders as dotted artifacts — deferred as a polygon-simplification follow-up (not in this task's scope).
+
+**Hosting + branches:** Bill set up Vercel pointing at `bowbikes/infinity_mirror_visualizer` main. Merged `bug_fixes` → `main` so production deploys carry the cleanup. Tests stayed 37/37 throughout; build always clean.
+
+LL-084 closed; remaining UX iteration on the controls themselves (sidebar information architecture, defaults, affordances) lives in [LL-085](#LL-085).
+
+---
+
+<a id="LL-085"></a>
+### [x] LL-085 — Visualizer controls UX pass
+
+sprint: 9 | priority: low | deadline: 2026-06-06
+added: 2026-05-27 | first_engaged: 2026-05-27 | last_engaged: 2026-05-27 | resolved: 2026-05-27
+artifacts: `infinity_mirror_visualizer/src/components/ControlsPanel.jsx`, `PreprocessPanel.jsx`, `CustomArtModal.jsx`, `PresetsSection.jsx`, `InfoPopover.jsx`, `ControlsLayout.css`
+dependencies: LL-084
+
+**Notes:** Started with a survey of the right sidebar and presented Bill a prioritized list of improvement opportunities across information architecture, defaults, affordances, live feedback, hierarchy, Custom Art flow, polish, and mobile. He picked Tier 1 (polish) and Tier 2 (most of it — skipped section reorder); after those shipped he greenlit the Tier 3 big-effort items too. Ended up shipping 16 commits across the visualizer repo in one session.
+
+**What landed (in commit order on `infinity_mirror_visualizer` `main`):**
+
+Manufacturability + Custom Art tuning (Bill's specific asks):
+- f71a377 — Nozzle diameter became a discrete picker `[off, 0.25, 0.40, 0.60, 0.80, 1.00]` (no more arbitrary nozzles the printer can't swap to). Min island area default = `ceil(π·(d/2)² × 10) / 10` mm². Min feature width default = nozzle diameter. Both follow the nozzle chip until the user moves them. Yellow "the finished product will not be as fine as the rendered preview" warning under any threshold set to zero. `maxLogoDimMm` slider removed — it didn't affect the visible render, only the threshold unit conversion.
+- d5ae16a — **Edge Thickness now actually does something for custom SVGs.** The slider was previously dead for uploaded art; now it dilates the parsed polygons by `edgeThickness / 2` in scene-space via the existing clipper-backed `offsetPolygons` (promoted from internal to a public preprocess export). Thin lines get thicker, solid shapes grow outward. Slider min lowered from 0.05 → 0 so users can render source art untouched. Thumbnail in the Custom Art panel got a Hide/Show toggle.
+- d396772 — Edge Thickness step 0.05 → 0.01 (finer dial-in); Edge Thickness × Scale interaction deliberately kept proportional (matches manufacturing reality: scaling up the cut makes the cut lines physically thicker); Frame Depth label respects the unit toggle (`1.18in` when in inches, was always `30mm`); Bloom Effect toggle moved out of the floating canvas overlay into the Frame Controls section next to Auto-orbit.
+
+Tier 1 polish:
+- 4cf258d — `Reset all` button (top of panel, snaps every control back to DEFAULTS, preserves custom-art uploads); double-click any slider's label to reset just that slider; numeric input next to every slider (clamps to [min, max] on commit); Units chooser became a two-button `mm | in` toggle instead of a "Use inches" checkbox; hex color text inputs validate on blur with a red border on bad input.
+
+Tier 2 PreprocessPanel:
+- 4851556 — Manufacturability tuners (nozzle / min island / min feature) moved behind a default-closed `▸ Advanced (manufacturability)` toggle so the basic flow is upload → done. 150 ms debounce on the manufacturability re-run effect (was running the full Clipper pipeline on every slider tick). Inline thumbnail of the processed black SVG at the top of the ready stage so users see what the printer cuts without having to read the 3D canvas.
+
+URL hash + presets:
+- 1907b91 — All config knobs serialize to `window.location.hash` as `#cfg=<base64-json>` via `history.replaceState` (no Back-button pollution). Restored once on mount via the `useState` lazy initializer so the encode-on-change effect can't clobber the inbound hash with default state. `Copy share link` button in the Export section flashes "Link copied!" for 1.5s.
+- 635e368 — `PresetsSection` at the top of the panel. Inline naming input → saves the current `SHARED_KEYS` snapshot into `localStorage["imv:presets"]` as `{name, cfg, savedAt}[]`. Saved presets list as name buttons with × delete affordances; click name to apply, × to remove. Same-name save overwrites. Custom-art SVGs are NOT included (too big to fit in a hash or preset, fast to re-upload).
+
+Mobile drawer:
+- ce05461 — `ControlsLayout.css` handles the responsive positioning. Above 900px the panel is a normal 320px flex child (existing desktop layout); below 900px it becomes a fixed-position drawer pinned to the right edge, translated offscreen until the user opens it via a hamburger button in the top-right. Dark scrim overlay; tap-to-close.
+
+Tier 4 polish:
+- b451db4 — Multi-color picker (toggle swatches with a ✓ marker, then `Apply (N colors)` button) — single-tap-and-go was lossy for art whose cut spans several near-black fills. Auto-orbit checkbox folded into Frame Controls (its own one-checkbox "Camera" section felt orphaned). Export note rewritten to "Bundles the configuration with a SHA-256 integrity hash for the manufacturer to verify against." (the old "tamper protection" copy oversold what the hash does). Edge Thickness moved under a new "Appearance" subsection inside Icon Transform — it's a visual property, not a transform.
+
+Custom Art modal wizard (Tier 3):
+- 840a8e0 — Pulled the entire upload + color-pick + manufacturability flow out of the sidebar into a `CustomArtModal` that wraps `PreprocessPanel`. Picking Custom Upload from the preset dropdown auto-opens the modal on first pick. Sidebar gets a compact summary card (64x64 thumbnail + filename + Edit button) when art is uploaded, or a single "Upload custom art…" CTA when not. Modal stays mounted after first open (hidden via `display:none` while closed) so `PreprocessPanel`'s internal state — file, picked colors, slider positions, Advanced collapse — survives close+reopen.
+
+Light + emission perceptual uniformity (Bill's specific ask):
+- 8a46e4e — Preload preprocess module on `PreprocessPanel` mount (was lazy on first file upload, ~200 KB after gzip — moving it earlier lets the import happen while the user is in the OS file picker). `Canvas frameloop="never"` while the Custom Art modal is open — Three.js continuous rendering was eating enough main-thread time that the OS file dialog lagged after clicking Choose file. Preview caption text fixed to "black = illuminated segments, white = mirror base."
+- a382470 — `Light Intensity` slider (0–3×, default 1.0, step 0.05) threads through Scene → Box → ReflectionLayers → SvgIcon and multiplies the per-hue emissive intensity. Joins the URL hash / presets / Reset all.
+- 8a8a08f — **Replaced the six-constant hand-tuned Gaussian curve with a principled inverse-luminance formula** `emission = BASELINE / intrinsic_luminance^POWER` (POWER=1.0 gives mathematically exact perceived uniformity across the entire hue circle; BASELINE=3.4 tuned so default cyan emission matches the previous curve's output). Every hue lands at perceived=3.40. Programmatic 64-hue luminance measurement via WebGL `readPixels` attempted but blocked by the headless preview's rAF being paused (canvas readback returns stale buffers), so derived the formula from first principles instead. Bill should visually scrub with bloom on to confirm.
+- b739ebb — Default `lightIntensity` 1.0 → 0.5 (the new uniform formula lands brighter than the old hand-tuned curve under bloom; 0.5 gives the previous overall feel as the baseline).
+
+Brand corner:
+- f61a57b — `InfoPopover` pinned top-left. One-paragraph description + four-bullet how-to + "Built by Layered Logic — light that layers." footer linking to layeredlogic.cc. Italic Berkeley Mono per the brand decisions in [project_brand_locked_decisions.md](~/.claude/projects/.../memory/project_brand_locked_decisions.md). Dismissable; closed state collapses to a small `ⓘ` button that reopens; dismissal persists via `localStorage["imv:info-dismissed"]`.
+- 9b7ecaa — Swapped the `ⓘ` Unicode glyph for an inline SVG icon (the codepoint was falling through to whatever emoji bitmap font happened to have U+24D8 — looked pixelated at 36 px). Hand-drawn vector now: outer circle + vertical stem + dot. Sharp at any DPR.
+
+Defaults / hash / presets / Reset-all-cascade kept consistent across every state-bearing change. Tests stayed 37/37 throughout. Both `main` and `bug_fixes` kept in sync via `git push home_pc` + ff-only merge per the LL-084 workflow.
+
+**Things Bill flagged for later (not in scope of LL-085):**
+- Visually verify the emission uniformity by scrubbing through hues with Bloom on; bump `POWER` above 1.0 if bloom over-amplifies bright hues in practice.
+- The inverse-luminance formula and the Light Intensity slider give the right tunables — if needed, expose POWER as a knob too.
+
+Validation: dev-server reload pattern + DOM-level interaction tests via `mcp__Claude_Preview__*` carried over from LL-084. The headless WebGL pixel-readback path turned out to be unreliable (rAF appears paused, so the canvas returns whatever was last drawn manually), so visual confidence came from snapshot text + behavioral asserts (slider clamps, hash round-trips, modal open/close cycles, drawer toggle at 600 px viewport, etc.).
+
+---
+
+<a id="LL-086"></a>
+### [x] LL-086 — IM_SVG_Maker: multi-order sheet nesting + stroke/outline/flourish preprocessors
+
+sprint: 10 | priority: medium | deadline: 2026-06-06
+added: 2026-06-04 | first_engaged: 2026-06-04 | last_engaged: 2026-06-04 | resolved: 2026-06-04
+artifacts: [tile_sheet.py](Assembly_docs/IM_SVG_Maker/scripts/tile_sheet.py), [stroke_svg_to_black.py](Assembly_docs/IM_SVG_Maker/scripts/stroke_svg_to_black.py), [outline_black_svg.py](Assembly_docs/IM_SVG_Maker/scripts/outline_black_svg.py), [ll_flourish.py](Assembly_docs/IM_SVG_Maker/scripts/ll_flourish.py), [preview_black_svg.py](Assembly_docs/IM_SVG_Maker/scripts/preview_black_svg.py), [laser_export.py](Assembly_docs/IM_SVG_Maker/im_svg_maker/laser_export.py)
+dependencies: LL-082
+
+**Notes:** Extends the single-tile geometry engine ([LL-082](#LL-082)) into a **batch-order workflow that maximizes each physical cut sheet**. The motivating job: cut four different mirror logos (fox, the Huskies "W", the Layered Logic mark, and Bill's sister's empowder festival logo) from one 300×300 mm acrylic sheet in a single laser run instead of four separate 150×150 setups. Four new `scripts/` tools + a red-color fix in the core exporter.
+
+**The nesting wrapper — `tile_sheet.py`** (the headline deliverable). Reads four IM_SVG_Maker `laser.dxf` tiles (each geometry centered on origin, 150 mm square spanning ±75) and translates them into a 2×2 grid on the stock sheet, each tile on its own DXF layer (`tile_1..4`), writing a combined `sheet.dxf` + `sheet.svg`. No outer sheet boundary cut. `--gap` (inter-tile spacing) and `--sheet` (stock edge, for the SVG frame + overhang check) are parameters. A `--squares-only` mode emits just the four 150 mm frame squares (no logo geometry) for cutting blank tiles — same positioning logic, no tile inputs needed. Key constraint surfaced: 4×150 = 300 exactly fills 300 mm stock, so any gap pushes the footprint past the material (0.5 mm gap → 300.5 mm → 0.25 mm overhang per side); the tool warns when footprint > sheet. Shipped both `sheet_gap0.dxf` (300.0, edge-to-edge, double-traced center seam) and `sheet.dxf` (300.5, clean 0.5 mm gap, needs slightly-oversize stock) and the matching squares-only frames. Filename gotcha logged: `--out foo_gap0.5` truncates to `foo_gap0` because `Path.with_suffix` treats `.5` as an extension — use dot-free stems.
+
+**Three input-format preprocessors** (all narrow, all emit the black-fill SVG the main pipeline wants — same contract discipline as the LL-082 raster/color preprocessors):
+- **`stroke_svg_to_black.py`** — stroke-based SVG → filled bands. The Layered Logic mono mark is `fill="none"` strokes (nested L's, width 7/6), which the existing color/raster preprocessors skip; this buffers each stroked segment by `stroke-width/2` with round caps to recover solid ribbons. Handles `<line>`/`<polyline>`/`<path>`.
+- **`outline_black_svg.py`** — solid silhouette → constant-width ribbon (`ribbon = island − erode(island, band)`). Used to turn the empowder logo from a full-fill flower+mountain into a 3 mm outline so it reads as line-art and doesn't remove a huge mirror area. Band width given in true mm (input normalized to `max_logo_dim_mm` first). The empowder source was a raster PNG embedded in an SVG via a luminance mask — extracted the grayscale silhouette, inverted to black-on-white, traced through the existing raster preprocessor (2 islands, center hole preserved), then outlined.
+- **`ll_flourish.py`** — LL-specific. Freezes the animated P5 mark's mouse-reactive histogram (documented in [logo-code-notes.md](assets/brand/logo/logo-code-notes.md)) into a static cut: Gaussian-enveloped, `barSteps`-quantized ticks growing perpendicular off each vertical arm, same stroke weight as the L. Bill chose symmetric/subtle (max-bar 40) with staggered per-L peaks (outer L upper 0.33, inner L mid 0.5). **Direction fix:** first render had bars facing inward (toward each other); flipped so each L's bars grow off its own outer side. A two-color diagnostic render disambiguated the direction before committing.
+
+**Core exporter change — solid red cut color.** `laser_export.write_dxf` previously wrote geometry with no explicit color (defaulted to ACI 7 / ByLayer white, which laser software won't read as a cut). Now every cut entity is ACI 1 **and** true-color `0xFF0000`, on a red `CUT` layer; `tile_sheet.py` does the same on its `tile_1..4` layers. SVG side was already `#FF0000`. (This touches the LL-082 package file — its `last_engaged` bumped accordingly.)
+
+**`preview_black_svg.py`** — shared raster-preview helper: parses any black-fill SVG exactly as the pipeline reads it (post `max_logo_dim` scaling) and renders islands/holes to PNG. Used throughout this session to eyeball every preprocessor output before committing it to a fab run.
+
+**Open decision (not blocking):** which sheet to actually cut depends on real stock size — `sheet_gap0.dxf` for exactly-300 mm, `sheet.dxf` for slightly-over. **Still untracked in git** per the LL-082 convention; intermediate artifacts (extracted PNGs, variant previews) left in `inputs/Empowder/` + `inputs/LayeredLogic/` pending a cleanup call. Reopened the parked P5 logo work ([reference: logo P5 repo](~/.claude)) only far enough to freeze a cut-specific pose — no brand-side changes (palette, canonical rest pose stay parked).
+
+---
+
+<a id="LL-087"></a>
+### [x] LL-087 — Home Assistant custom integration (HACS) for the mirror
+
+sprint: 10 | priority: medium | deadline: —
+added: 2026-06-05 | first_engaged: 2026-06-05 | last_engaged: 2026-06-05 | resolved: 2026-06-05
+artifacts: https://github.com/bowbikes/layered-logic-mirror-ha (public, HACS custom-repo installable) · local working copy `../layered-logic-mirror-ha`
+dependencies: LL-027, LL-035
+
+**Notes:** Re-integrate the mirror into Home Assistant using the **existing V1 firmware unchanged** (Bill's ask). Chose a **HACS-ready custom integration** (pure-Python `custom_components`) over MQTT/ESPHome because those would require firmware changes; the firmware already exposes a complete LAN control surface ([control-protocol-spec](docs/control-protocol-spec.md)) that maps 1:1 onto a HA `light` entity.
+
+**Shape.** One `light` entity per mirror: on/off, brightness (HA 0–255 ↔ device 0–100), RGB (`base_color`), and the 7 built-in patterns as the effect list. `iot_class: local_push` — entity state comes from the device's authoritative WS `state` broadcasts, not polling. `manifest.json` wires `zeroconf: ["_layeredlogic._tcp.local."]` so a same-LAN mirror auto-discovers; config flow also takes a **manual IP** (the primary path since Bill's HA is on a different subnet from the mirror and mDNS doesn't cross subnets). Optional `secret` field = paired-mode HMAC. Zero external Python deps (aiohttp from HA core; stdlib `hmac`/`hashlib`).
+
+**Key port.** `protocol.py` reproduces `App/v1/src/ws-client.ts:frameFor` + `hmac.ts` byte-for-byte: compact `json.dumps(…, ensure_ascii=False)`, drop trailing `}`, HMAC the prefix, append `,"hmac":"…"}`. `coordinator.py` owns one reconnecting WS, correlates req/resp by `req_id`, and pushes broadcasts to entities.
+
+**Verified on silicon (open mode).** `verify_mirror.py` ran ALL-PASS against the dev mirror (192.168.5.229, fw `ledfix-1833`, id `b2332c`): `GET /api/info` identity, `get_state`, and `set_state` for on/brightness/base_color/pattern_id — each confirmed via the authoritative `state` broadcast. Learned the firmware's `set_state` **response** is best-effort and races the writer task (returns stale fields), so the harness (and the integration) assert against broadcasts, never the response — matches the LL-035-2-2 design note. **Paired-mode HMAC** is a direct stdlib port (correct by construction) but not yet exercised on silicon — device is open mode; `verify_mirror.py --secret` will confirm it once Bill enables paired mode. **HA-side install + Assist-MCP cross-check still pending** — needs the component copied into a running HA instance (Bill's HA isn't reachable from this repo).
+
+**Spun into a standalone HACS repo** at `../layered-logic-mirror-ha` (sibling to this study repo, the canonical home — manifest's documentation URL): repo-root `custom_components/layered_logic_mirror/`, `hacs.json`, `info.md`, MIT `LICENSE`, `.gitattributes`, `.github/workflows/validate.yml` (hassfest + HACS CI), and `scripts/verify_mirror.py` (re-ran ALL-PASS from the new layout). **Installed + verified live in Bill's HA (HA OS) on Jun 5.** Manual install (Samba add-on → copy into `config/custom_components/`); config flow added the mirror by IP (open mode). Caught + fixed a **coordinator concurrency bug**: the initial `get_state` was awaited *before* the read loop started, so the response was never drained → "no response" setup loop. Fix runs the snapshot `get_state` as a task concurrent with `_read_loop` (the same pattern `verify_mirror.py` always used). After the fix the entity goes green and controls the mirror. Then **published**: genericized the dev-tool IP examples (no device-specific IP/id in the repo), committed, and pushed public to **https://github.com/bowbikes/layered-logic-mirror-ha** (topics set, MIT). CI is **green 8/8** (hassfest + HACS validation): the `validate.yml` workflow was added via the GitHub web editor (the `gh` token lacks `workflow` scope), and the HACS **brands** check is satisfied by **local brand assets** rendered from the canonical rest-pose mark (`scripts/render_brand.py` → `custom_components/.../brand/{icon,logo}.png`, no logo redesign). The in-study `homeassistant/` copy was removed to keep a single source of truth; LL-087 tracking docs stay here, to be committed later.
+
+**HACS default-store submission done (Jun 5):** created GitHub **release v0.1.0** and opened **[hacs/default#8245](https://github.com/hacs/default/pull/8245)** (adds `bowbikes/layered-logic-mirror-ha`). All 11 PR checks green (Sorted, Releases, HACS action, Hassfest, Owner, …), OPEN + MERGEABLE, awaiting maintainer merge — after which it's searchable in HACS with no URL. The expected `home-assistant/brands` PR turned out **unnecessary**: the local `brand/icon.png` + HA's brands-proxy (since 2026.3) satisfy the brands check. Deferred: Alexa/Google/Apple-via-HA expose guide (#2, held per Bill); paired-mode HMAC on-silicon check.
 
 ---
 
