@@ -1,8 +1,8 @@
 ---
 title: Task Registry
 type: task-registry
-next_id: LL-086
-updated: 2026-05-27
+next_id: LL-088
+updated: 2026-06-05
 
 ---
 
@@ -1376,7 +1376,7 @@ Fix in `state_bus.c`: a `stamp_board_led_count()` helper sets `led_count` from `
 ### [x] LL-082 — IM_SVG_Maker: black-SVG → laser + plug fab files
 
 sprint: 9 | priority: medium | deadline: 2026-05-30
-added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-05-26 | resolved: 2026-05-26
+added: 2026-05-26 | first_engaged: 2026-05-26 | last_engaged: 2026-06-04 | resolved: 2026-05-26
 artifacts: [Assembly_docs/IM_SVG_Maker/](Assembly_docs/IM_SVG_Maker/), [Assembly_docs/IM_SVG_Maker/PLAN.md](Assembly_docs/IM_SVG_Maker/PLAN.md), [Assembly_docs/IM_SVG_Maker/README.md](Assembly_docs/IM_SVG_Maker/README.md)
 dependencies: LL-012, LL-051
 
@@ -1390,6 +1390,8 @@ dependencies: LL-012, LL-051
 - **Still parked for a later iteration:** the printer/laser job-queue handoff (waits on queue tooling existing). The on-site design-preview piece moved out of "parked" and into [LL-083](#LL-083) — actively porting the preprocessing into the existing infinity_mirror_visualizer repo.
 
 The directory itself is currently untracked in git ([Assembly_docs/IM_SVG_Maker/](Assembly_docs/IM_SVG_Maker/)) — Bill hasn't asked for the commit yet, so leaving it untracked until he says otherwise.
+
+**2026-06-04:** core `laser_export.write_dxf` modified under [LL-086](#LL-086) — DXF cut entities now carry solid red ACI 1 + true-color `0xFF0000` on a `CUT` layer (were colorless / ByLayer white). Batch sheet-nesting + three new input preprocessors also landed there.
 
 ---
 
@@ -1513,6 +1515,53 @@ Defaults / hash / presets / Reset-all-cascade kept consistent across every state
 - The inverse-luminance formula and the Light Intensity slider give the right tunables — if needed, expose POWER as a knob too.
 
 Validation: dev-server reload pattern + DOM-level interaction tests via `mcp__Claude_Preview__*` carried over from LL-084. The headless WebGL pixel-readback path turned out to be unreliable (rAF appears paused, so the canvas returns whatever was last drawn manually), so visual confidence came from snapshot text + behavioral asserts (slider clamps, hash round-trips, modal open/close cycles, drawer toggle at 600 px viewport, etc.).
+
+---
+
+<a id="LL-086"></a>
+### [x] LL-086 — IM_SVG_Maker: multi-order sheet nesting + stroke/outline/flourish preprocessors
+
+sprint: 10 | priority: medium | deadline: 2026-06-06
+added: 2026-06-04 | first_engaged: 2026-06-04 | last_engaged: 2026-06-04 | resolved: 2026-06-04
+artifacts: [tile_sheet.py](Assembly_docs/IM_SVG_Maker/scripts/tile_sheet.py), [stroke_svg_to_black.py](Assembly_docs/IM_SVG_Maker/scripts/stroke_svg_to_black.py), [outline_black_svg.py](Assembly_docs/IM_SVG_Maker/scripts/outline_black_svg.py), [ll_flourish.py](Assembly_docs/IM_SVG_Maker/scripts/ll_flourish.py), [preview_black_svg.py](Assembly_docs/IM_SVG_Maker/scripts/preview_black_svg.py), [laser_export.py](Assembly_docs/IM_SVG_Maker/im_svg_maker/laser_export.py)
+dependencies: LL-082
+
+**Notes:** Extends the single-tile geometry engine ([LL-082](#LL-082)) into a **batch-order workflow that maximizes each physical cut sheet**. The motivating job: cut four different mirror logos (fox, the Huskies "W", the Layered Logic mark, and Bill's sister's empowder festival logo) from one 300×300 mm acrylic sheet in a single laser run instead of four separate 150×150 setups. Four new `scripts/` tools + a red-color fix in the core exporter.
+
+**The nesting wrapper — `tile_sheet.py`** (the headline deliverable). Reads four IM_SVG_Maker `laser.dxf` tiles (each geometry centered on origin, 150 mm square spanning ±75) and translates them into a 2×2 grid on the stock sheet, each tile on its own DXF layer (`tile_1..4`), writing a combined `sheet.dxf` + `sheet.svg`. No outer sheet boundary cut. `--gap` (inter-tile spacing) and `--sheet` (stock edge, for the SVG frame + overhang check) are parameters. A `--squares-only` mode emits just the four 150 mm frame squares (no logo geometry) for cutting blank tiles — same positioning logic, no tile inputs needed. Key constraint surfaced: 4×150 = 300 exactly fills 300 mm stock, so any gap pushes the footprint past the material (0.5 mm gap → 300.5 mm → 0.25 mm overhang per side); the tool warns when footprint > sheet. Shipped both `sheet_gap0.dxf` (300.0, edge-to-edge, double-traced center seam) and `sheet.dxf` (300.5, clean 0.5 mm gap, needs slightly-oversize stock) and the matching squares-only frames. Filename gotcha logged: `--out foo_gap0.5` truncates to `foo_gap0` because `Path.with_suffix` treats `.5` as an extension — use dot-free stems.
+
+**Three input-format preprocessors** (all narrow, all emit the black-fill SVG the main pipeline wants — same contract discipline as the LL-082 raster/color preprocessors):
+- **`stroke_svg_to_black.py`** — stroke-based SVG → filled bands. The Layered Logic mono mark is `fill="none"` strokes (nested L's, width 7/6), which the existing color/raster preprocessors skip; this buffers each stroked segment by `stroke-width/2` with round caps to recover solid ribbons. Handles `<line>`/`<polyline>`/`<path>`.
+- **`outline_black_svg.py`** — solid silhouette → constant-width ribbon (`ribbon = island − erode(island, band)`). Used to turn the empowder logo from a full-fill flower+mountain into a 3 mm outline so it reads as line-art and doesn't remove a huge mirror area. Band width given in true mm (input normalized to `max_logo_dim_mm` first). The empowder source was a raster PNG embedded in an SVG via a luminance mask — extracted the grayscale silhouette, inverted to black-on-white, traced through the existing raster preprocessor (2 islands, center hole preserved), then outlined.
+- **`ll_flourish.py`** — LL-specific. Freezes the animated P5 mark's mouse-reactive histogram (documented in [logo-code-notes.md](assets/brand/logo/logo-code-notes.md)) into a static cut: Gaussian-enveloped, `barSteps`-quantized ticks growing perpendicular off each vertical arm, same stroke weight as the L. Bill chose symmetric/subtle (max-bar 40) with staggered per-L peaks (outer L upper 0.33, inner L mid 0.5). **Direction fix:** first render had bars facing inward (toward each other); flipped so each L's bars grow off its own outer side. A two-color diagnostic render disambiguated the direction before committing.
+
+**Core exporter change — solid red cut color.** `laser_export.write_dxf` previously wrote geometry with no explicit color (defaulted to ACI 7 / ByLayer white, which laser software won't read as a cut). Now every cut entity is ACI 1 **and** true-color `0xFF0000`, on a red `CUT` layer; `tile_sheet.py` does the same on its `tile_1..4` layers. SVG side was already `#FF0000`. (This touches the LL-082 package file — its `last_engaged` bumped accordingly.)
+
+**`preview_black_svg.py`** — shared raster-preview helper: parses any black-fill SVG exactly as the pipeline reads it (post `max_logo_dim` scaling) and renders islands/holes to PNG. Used throughout this session to eyeball every preprocessor output before committing it to a fab run.
+
+**Open decision (not blocking):** which sheet to actually cut depends on real stock size — `sheet_gap0.dxf` for exactly-300 mm, `sheet.dxf` for slightly-over. **Still untracked in git** per the LL-082 convention; intermediate artifacts (extracted PNGs, variant previews) left in `inputs/Empowder/` + `inputs/LayeredLogic/` pending a cleanup call. Reopened the parked P5 logo work ([reference: logo P5 repo](~/.claude)) only far enough to freeze a cut-specific pose — no brand-side changes (palette, canonical rest pose stay parked).
+
+---
+
+<a id="LL-087"></a>
+### [x] LL-087 — Home Assistant custom integration (HACS) for the mirror
+
+sprint: 10 | priority: medium | deadline: —
+added: 2026-06-05 | first_engaged: 2026-06-05 | last_engaged: 2026-06-05 | resolved: 2026-06-05
+artifacts: https://github.com/bowbikes/layered-logic-mirror-ha (public, HACS custom-repo installable) · local working copy `../layered-logic-mirror-ha`
+dependencies: LL-027, LL-035
+
+**Notes:** Re-integrate the mirror into Home Assistant using the **existing V1 firmware unchanged** (Bill's ask). Chose a **HACS-ready custom integration** (pure-Python `custom_components`) over MQTT/ESPHome because those would require firmware changes; the firmware already exposes a complete LAN control surface ([control-protocol-spec](docs/control-protocol-spec.md)) that maps 1:1 onto a HA `light` entity.
+
+**Shape.** One `light` entity per mirror: on/off, brightness (HA 0–255 ↔ device 0–100), RGB (`base_color`), and the 7 built-in patterns as the effect list. `iot_class: local_push` — entity state comes from the device's authoritative WS `state` broadcasts, not polling. `manifest.json` wires `zeroconf: ["_layeredlogic._tcp.local."]` so a same-LAN mirror auto-discovers; config flow also takes a **manual IP** (the primary path since Bill's HA is on a different subnet from the mirror and mDNS doesn't cross subnets). Optional `secret` field = paired-mode HMAC. Zero external Python deps (aiohttp from HA core; stdlib `hmac`/`hashlib`).
+
+**Key port.** `protocol.py` reproduces `App/v1/src/ws-client.ts:frameFor` + `hmac.ts` byte-for-byte: compact `json.dumps(…, ensure_ascii=False)`, drop trailing `}`, HMAC the prefix, append `,"hmac":"…"}`. `coordinator.py` owns one reconnecting WS, correlates req/resp by `req_id`, and pushes broadcasts to entities.
+
+**Verified on silicon (open mode).** `verify_mirror.py` ran ALL-PASS against the dev mirror (192.168.5.229, fw `ledfix-1833`, id `b2332c`): `GET /api/info` identity, `get_state`, and `set_state` for on/brightness/base_color/pattern_id — each confirmed via the authoritative `state` broadcast. Learned the firmware's `set_state` **response** is best-effort and races the writer task (returns stale fields), so the harness (and the integration) assert against broadcasts, never the response — matches the LL-035-2-2 design note. **Paired-mode HMAC** is a direct stdlib port (correct by construction) but not yet exercised on silicon — device is open mode; `verify_mirror.py --secret` will confirm it once Bill enables paired mode. **HA-side install + Assist-MCP cross-check still pending** — needs the component copied into a running HA instance (Bill's HA isn't reachable from this repo).
+
+**Spun into a standalone HACS repo** at `../layered-logic-mirror-ha` (sibling to this study repo, the canonical home — manifest's documentation URL): repo-root `custom_components/layered_logic_mirror/`, `hacs.json`, `info.md`, MIT `LICENSE`, `.gitattributes`, `.github/workflows/validate.yml` (hassfest + HACS CI), and `scripts/verify_mirror.py` (re-ran ALL-PASS from the new layout). **Installed + verified live in Bill's HA (HA OS) on Jun 5.** Manual install (Samba add-on → copy into `config/custom_components/`); config flow added the mirror by IP (open mode). Caught + fixed a **coordinator concurrency bug**: the initial `get_state` was awaited *before* the read loop started, so the response was never drained → "no response" setup loop. Fix runs the snapshot `get_state` as a task concurrent with `_read_loop` (the same pattern `verify_mirror.py` always used). After the fix the entity goes green and controls the mirror. Then **published**: genericized the dev-tool IP examples (no device-specific IP/id in the repo), committed, and pushed public to **https://github.com/bowbikes/layered-logic-mirror-ha** (topics set, MIT). CI is **green 8/8** (hassfest + HACS validation): the `validate.yml` workflow was added via the GitHub web editor (the `gh` token lacks `workflow` scope), and the HACS **brands** check is satisfied by **local brand assets** rendered from the canonical rest-pose mark (`scripts/render_brand.py` → `custom_components/.../brand/{icon,logo}.png`, no logo redesign). The in-study `homeassistant/` copy was removed to keep a single source of truth; LL-087 tracking docs stay here, to be committed later.
+
+**HACS default-store submission done (Jun 5):** created GitHub **release v0.1.0** and opened **[hacs/default#8245](https://github.com/hacs/default/pull/8245)** (adds `bowbikes/layered-logic-mirror-ha`). All 11 PR checks green (Sorted, Releases, HACS action, Hassfest, Owner, …), OPEN + MERGEABLE, awaiting maintainer merge — after which it's searchable in HACS with no URL. The expected `home-assistant/brands` PR turned out **unnecessary**: the local `brand/icon.png` + HA's brands-proxy (since 2026.3) satisfy the brands check. Deferred: Alexa/Google/Apple-via-HA expose guide (#2, held per Bill); paired-mode HMAC on-silicon check.
 
 ---
 
