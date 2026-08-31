@@ -61,21 +61,34 @@ def write_svg(laser_geom: MultiPolygon, cfg: Config, out: Path) -> None:
     out.write_text("\n".join(parts), encoding="utf-8")
 
 
+# Solid red (FF0000) cut convention. ACI 1 is "red" for software that keys off
+# the color index; true_color pins it to exact FF0000 for software that reads RGB.
+RED_ACI = 1
+RED_TRUE = 0xFF0000
+_RED = {"color": RED_ACI, "true_color": RED_TRUE}
+
+
 def write_dxf(laser_geom: MultiPolygon, cfg: Config, out: Path) -> None:
     doc = ezdxf.new(setup=True)
     doc.units = ezdxf.units.MM
     msp = doc.modelspace()
     mw, mh = cfg.mirror_size_mm
 
+    # Dedicated red CUT layer so the file reads as red even via BYLAYER.
+    cut = doc.layers.add("CUT")
+    cut.color = RED_ACI
+    cut.rgb = (255, 0, 0)
+    attribs = {"layer": "CUT", **_RED}
+
     # Mirror rectangle as a closed LWPOLYLINE.
     msp.add_lwpolyline(
         [(-mw/2, -mh/2), (mw/2, -mh/2), (mw/2, mh/2), (-mw/2, mh/2)],
-        close=True,
+        close=True, dxfattribs=dict(attribs),
     )
 
     for poly in laser_geom.geoms:
-        msp.add_lwpolyline(list(poly.exterior.coords), close=True)
+        msp.add_lwpolyline(list(poly.exterior.coords), close=True, dxfattribs=dict(attribs))
         for hole in poly.interiors:
-            msp.add_lwpolyline(list(hole.coords), close=True)
+            msp.add_lwpolyline(list(hole.coords), close=True, dxfattribs=dict(attribs))
 
     doc.saveas(out)
