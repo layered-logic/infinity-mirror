@@ -1143,24 +1143,24 @@ dependencies: LL-001
 <a id="LL-067"></a>
 ### [ ] LL-067 — City/county business license check
 
-sprint: 1 | priority: medium | deadline: —
+sprint: 1 | priority: medium | deadline: 2026-10-31
 added: 2026-03-30
 artifacts: —
 dependencies: LL-026
 
-**Notes:** Verify whether business address requires a city or county endorsement on top of WA BLS state registration. Selling physical products online may require general business license.
+**Notes:** Verify whether business address requires a city or county endorsement on top of WA BLS state registration. Selling physical products online may require general business license. Seattle is the address of record, so the specific question is whether a Seattle city business license is required on top of the state BLS. **Batched 2026-08-31:** ~30-minute lookup. Given the Q3 excise deadline on purpose so it surfaces alongside [LL-069-3](#LL-069-3) and gets done in the same My DOR sitting — one batched compliance sitting, not a separate reminder. Source: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
 <a id="LL-068"></a>
 ### [ ] LL-068 — Reseller permit follow-up
 
-sprint: 4 | priority: medium | deadline: —
+sprint: 4 | priority: medium | deadline: 2026-10-31
 added: 2026-04-22
 artifacts: —
 dependencies: LL-026
 
-**Notes:** Separate application from BLS, free, 4-yr validity. Saves sales tax on component purchases from WA suppliers. File once UBI is confirmed (physical license arrives ~10 business days after BLS submission).
+**Notes:** Separate application from BLS, free, 4-yr validity. Saves sales tax on component purchases from WA suppliers. File once UBI is confirmed (physical license arrives ~10 business days after BLS submission) — UBI 606 138 559 has been confirmed since the May 15 2026 DOR welcome letter, so this is unblocked. **Batched 2026-08-31:** ~30-minute lookup. Given the Q3 excise deadline on purpose so it surfaces alongside [LL-069-3](#LL-069-3) and gets done in the same My DOR sitting — one batched compliance sitting, not a separate reminder. Source: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
@@ -1177,24 +1177,24 @@ dependencies: LL-002, LL-026
 ---
 
 <a id="LL-069-1"></a>
-#### [ ] LL-069-1 — Q1 2026 WA excise return (Jan 1 – Mar 31)
+#### [x] LL-069-1 — Q1 2026 WA excise return (Jan 1 – Mar 31)
 
 parent: LL-069 | sprint: 8 | priority: high | deadline: 2026-06-15
-added: 2026-05-18
+added: 2026-05-18 | resolved: 2026-07-09
 artifacts: —
 
-**Notes:** First return on the WA DOR excise account. One-time extended due date Jun 15, 2026 (vs. the standard Apr 30) per welcome-letter terms. Expected to file as "no business activity" — zero sales, zero gross receipts through Q1 2026. File electronically via My DOR. If any revenue lands before filing (e.g., friends-and-family pre-orders), Retailing (0.471%) + Manufacturing (0.484%) B&O classifications from LL-026 apply, and sales-tax collection rules engage.
+**Notes:** First return on the WA DOR excise account. One-time extended due date Jun 15, 2026 (vs. the standard Apr 30) per welcome-letter terms. Expected to file as "no business activity" — zero sales, zero gross receipts through Q1 2026. File electronically via My DOR. If any revenue lands before filing (e.g., friends-and-family pre-orders), Retailing (0.471%) + Manufacturing (0.484%) B&O classifications from LL-026 apply, and sales-tax collection rules engage. **FILED — closed 2026-07-09.** Bill had already filed it; the repo simply carried no record, and the venture-readiness audit briefly flagged it as past due before the correction. Registry row `github:task:LL-069-1` was closed `completed` on 2026-07-09; this checkbox is the markdown catching up.
 
 ---
 
 <a id="LL-069-2"></a>
-#### [ ] LL-069-2 — Q2 2026 WA excise return (Apr 1 – Jun 30)
+#### [x] LL-069-2 — Q2 2026 WA excise return (Apr 1 – Jun 30)
 
 parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-07-31
-added: 2026-05-18
+added: 2026-05-18 | resolved: 2026-07-09
 artifacts: —
 
-**Notes:** Standard quarterly due date Jul 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+**Notes:** Standard quarterly due date Jul 31, 2026. **FILED 2026-07-09 as "no business activity"** — zero sales, no tax due. Filed electronically via My DOR, ahead of the Jul 31 deadline.
 
 ---
 
@@ -1205,7 +1205,7 @@ parent: LL-069 | sprint: 8 | priority: medium | deadline: 2026-10-31
 added: 2026-05-18
 artifacts: —
 
-**Notes:** Standard quarterly due date Oct 31, 2026. Zero-activity filing unless revenue lands first. File electronically via My DOR.
+**Notes:** Standard quarterly due date Oct 31, 2026. Zero-activity filing unless revenue lands first — the venture is paused for burnout recovery, so a "no business activity" return is the near-certain outcome, but RCW 82.32 requires it regardless to keep the LLC in good standing. File electronically via My DOR (UBI / Account ID 606-138-559). **This is the batched compliance sitting.** Two ~30-minute lookups from the same gate ride along and share this deadline so all three close in one visit: [LL-068](#LL-068) reseller permit and [LL-067](#LL-067) Seattle city/county license endorsement. Deliberately one sitting rather than three reminders — business admin is the specific locus of the burnout. Context: `Business/layered-logic/strategy/venture-readiness.md` §5.
 
 ---
 
