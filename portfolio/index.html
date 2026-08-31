@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Layered Logic — Process</title>
+<!--
+  LL-061 Portfolio Case Study — "Process"
+  Self-contained, iframe-embeddable (billwhite.me). No build step.
+  Brand tokens from docs/brand-positioning.md + docs/typography-decisions.md.
+  Licensed faces (Neue Haas Grotesk, Berkeley Mono) are preferred if the host
+  serves them; otherwise falls back to Archivo + JetBrains Mono (free, CDN).
+
+  HERO / PRODUCT SHOTS STILL TO CAPTURE (placeholders rendered in-page):
+    SHOT 1 (hero, primary): infinity mirror lit, dusk, in a real styled living
+       space, slightly off-axis so the tunnel depth reads. Curator framing:
+       ambient presence in a room, NOT product-on-white. Indigo default pattern.
+       Landscape, with quiet headroom to overlay the thesis line.
+    SHOT 2 (hero, secondary): same mirror powered OFF in daylight, same framing.
+       Proves it reads as a quiet object even dark ("how it looks off").
+    SHOT 3 (layers): exploded / stacked macro of the physical layers
+       (back panel -> controller -> LED grid -> acrylic -> one-way film -> frame).
+       Literalizes "Layered Logic." Top-down or 3/4.
+    SHOT 4 (bench): the workbench reality. Proto C3 boards, the dev mirror,
+       iron, laptop showing a firmware build. The "made by one person" honesty shot.
+    SHOT 5 (custom): a finished kintsugi-style custom tile (Huskies W or fox) lit,
+       beside its clear PETG plug. Output of the custom pipeline.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,500;0,700;1,200;1,300;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Structural / editorial layer */
+    --ground:      #0B0A0F;
+    --ground-2:    #100E18;
+    --cream:       #F4EFE6;
+    --grey:        #8A8A8E;
+    --grey-dim:    #5C5C63;
+
+    /* Brand anchor */
+    --indigo-ref:    #4A25FF;
+    --indigo-signal: #3214FF;
+    --indigo-stone:  #4F3FB0;
+    --indigo-deep:   #150A4A;
+
+    /* Single permitted friction accent (echoes the service-blueprint orange) */
+    --friction:    #E8B04B;
+
+    --font-display: "Neue Haas Grotesk Display", "Neue Haas Grotesk", Archivo, "Helvetica Neue", Arial, sans-serif;
+    --font-body:    "Neue Haas Grotesk Text", "Neue Haas Grotesk", Archivo, "Helvetica Neue", Arial, sans-serif;
+    --font-mono:    "Berkeley Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --maxw: 1180px;
+    --px-per-day: 9;   /* used in JS for proportional date spacing */
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--ground);
+    color:var(--cream);
+    font-family:var(--font-body);
+    font-style:italic;            /* italic is the default posture */
+    font-weight:300;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+
+  /* Upright is the gear-shift: technical / structural moments */
+  .mono{ font-family:var(--font-mono); font-style:normal; font-weight:400; letter-spacing:.02em; }
+  .up{ font-style:normal; }
+  b, strong{ font-style:normal; font-weight:500; }  /* upright = the emphasis cue */
+
+  a{ color:inherit; text-decoration:none; }
+
+  .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 28px; }
+
+  /* ---------- HERO ---------- */
+  .hero{ position:relative; padding:96px 0 72px; overflow:hidden; }
+  .hero::before{   /* indigo bloom behind italic display type */
+    content:""; position:absolute; z-index:0;
+    left:-8%; top:-18%; width:62%; height:120%;
+    background:radial-gradient(closest-side, rgba(74,37,255,.55), rgba(74,37,255,.10) 55%, transparent 72%);
+    filter:blur(70px);
+    pointer-events:none;
+  }
+  .hero .wrap{ position:relative; z-index:1; }
+  .kicker{ color:var(--grey); font-size:13px; }
+  .kicker .dot{ color:var(--indigo-ref); }
+  h1.thesis{
+    font-family:var(--font-display);
+    font-weight:200; font-style:italic;
+    font-size:clamp(40px, 7vw, 86px);
+    line-height:1.02; letter-spacing:-.01em;
+    margin:18px 0 0; max-width:14ch;
+  }
+  .thesis .turn{ font-style:normal; font-weight:500; }   /* "system" upright = the gear-shift */
+  .lede{ font-size:clamp(17px,2.1vw,22px); color:#cfcad6; max-width:46ch; margin:22px 0 0; }
+
+  /* legend */
+  .legend{ display:flex; flex-wrap:wrap; gap:26px 40px; margin-top:44px; align-items:flex-start; }
+  .legend h4{ margin:0 0 10px; font-style:normal; font-weight:500; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--grey); }
+  .legend ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .legend li{ font-size:13.5px; color:#bdb8c4; display:flex; align-items:center; gap:9px; }
+  .swatch{ width:11px; height:11px; border-radius:2px; flex:none; }
+  .swatch.product{ background:var(--indigo-ref); }
+  .swatch.business{ background:var(--indigo-stone); }
+  .swatch.customers{ background:var(--grey); }
+  .dotkey{ width:12px; text-align:center; flex:none; color:var(--grey); }
+  .dotkey.shipped{ color:var(--indigo-ref); }
+  .dotkey.iterated{ color:#9b86ff; }
+  .dotkey.friction{ color:var(--friction); }
+  .dotkey.open{ color:var(--grey-dim); }
+
+  /* hero shot placeholder */
+  .shot{
+    position:relative; border:1px solid rgba(244,239,230,.16);
+    border-radius:6px; background:
+      linear-gradient(135deg, rgba(74,37,255,.10), rgba(11,10,15,0)) , var(--ground-2);
+    color:var(--grey); font-size:13px; padding:22px;
+    display:flex; flex-direction:column; gap:6px; justify-content:center;
+  }
+  .shot .tag{ font-family:var(--font-mono); font-style:normal; font-size:11px; letter-spacing:.08em; color:var(--indigo-ref); }
+  .shot .ph{ font-style:normal; font-weight:500; color:var(--cream); }
+  .hero .shot{ margin-top:46px; min-height:230px; }
+  .shot .framelabel{ position:absolute; top:8px; right:12px; font-family:var(--font-mono); font-style:normal; font-size:10px; color:var(--grey-dim); }
+
+  /* ---------- LANE HEADER (sticky) ---------- */
+  .lanehead{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(var(--ground), rgba(11,10,15,.92));
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid rgba(244,239,230,.10);
+    padding:14px 0 12px;
+  }
+  .lanehead .row{ display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:28px; align-items:end; }
+  .lanehead .datecol{ font-family:var(--font-mono); font-style:normal; font-size:11px; color:var(--grey-dim); }
+  .lanehead .lname{ font-style:normal; font-weight:500; font-size:13px; letter-spacing:.04em; padding-bottom:6px; border-bottom:2px solid; }
+  .lname.product{ border-color:var(--indigo-ref); }
+  .lname.business{ border-color:var(--indigo-stone); }
+  .lname.customers{ border-color:var(--grey); }
+  .lname small{ display:block; font-family:var(--font-mono); font-style:normal; font-weight:400; font-size:10px; letter-spacing:.04em; color:var(--grey-dim); margin-top:3px; }
+
+  /* ---------- PHASE BANDS ---------- */
+  .phase{ position:relative; padding:30px 0 6px; }
+  .phase.p1{ background:linear-gradient(180deg, rgba(21,10,74,.10), transparent 120px); }
+  .phase.p2{ background:linear-gradient(180deg, rgba(74,37,255,.08), transparent 120px); }
+  .phase.p3{ background:linear-gradient(180deg, rgba(79,63,176,.12), transparent 120px); }
+  .phase.p4{ background:linear-gradient(180deg, rgba(125,211,252,.06), transparent 120px); }
+  .phasehead{ position:sticky; top:62px; z-index:10; padding:12px 0;
+    background:linear-gradient(var(--ground), rgba(11,10,15,.94));
+    backdrop-filter:blur(6px); border-bottom:1px solid rgba(244,239,230,.07); }
+  .phasehead .wrap{ display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 16px; }
+  .phasehead .pn{ font-family:var(--font-mono); font-style:normal; font-size:12px; color:var(--indigo-ref); }
+  .phasehead h2{ font-family:var(--font-display); font-style:italic; font-weight:200; font-size:clamp(24px,3.4vw,38px); margin:0; }
+  .phasehead .dates{ font-family:var(--font-mono); font-style:normal; font-size:12px; color:var(--grey); }
+  .phasehead .goal{ flex-basis:100%; color:#bdb8c4; font-size:15px; max-width:62ch; margin-top:2px; }
+  .milestone{ margin:14px 0 4px; position:relative; z-index:1; }
+  .milestone .wrap{ display:flex; gap:12px; align-items:baseline; }
+  .milestone .m{ font-family:var(--font-mono); font-style:normal; font-size:11px; color:var(--ground); background:var(--indigo-ref); padding:3px 8px; border-radius:3px; }
+  .milestone .t{ font-style:italic; color:#cfcad6; font-size:14px; }
+
+  /* ---------- TIMELINE ROWS ---------- */
+  #timeline{ position:relative; }
+
+  /* swim-lane separators with an infinity-mirror reflection behind each line */
+  .lanesep{ position:absolute; inset:0; z-index:0; pointer-events:none; }
+  .lanesep .wrap{ height:100%; }
+  .sepgrid{ display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:28px; height:100%; }
+  .sepgrid > i{ position:relative; }
+  /* one reflection unit: a bright centre line flanked by symmetric dimming echoes
+     (the infinity-mirror depth). 72px box; gradient symmetric about its centre (36px),
+     so the unit can be re-centred on any target by setting left/right. */
+  .refline{
+    position:absolute; top:0; bottom:0; width:72px; background-repeat:no-repeat;
+    background-image:
+      linear-gradient(90deg,transparent 9px ,rgba(74,37,255,.038) 9px ,rgba(74,37,255,.038) 10px,transparent 10px),
+      linear-gradient(90deg,transparent 18px,rgba(74,37,255,.075) 18px,rgba(74,37,255,.075) 19px,transparent 19px),
+      linear-gradient(90deg,transparent 25px,rgba(74,37,255,.14) 25px,rgba(74,37,255,.14) 26px,transparent 26px),
+      linear-gradient(90deg,transparent 31px,rgba(74,37,255,.26) 31px,rgba(74,37,255,.26) 32px,transparent 32px),
+      linear-gradient(90deg,transparent 36px,rgba(74,37,255,.46) 36px,rgba(74,37,255,.46) 37px,transparent 37px),
+      linear-gradient(90deg,transparent 41px,rgba(74,37,255,.26) 41px,rgba(74,37,255,.26) 42px,transparent 42px),
+      linear-gradient(90deg,transparent 47px,rgba(74,37,255,.14) 47px,rgba(74,37,255,.14) 48px,transparent 48px),
+      linear-gradient(90deg,transparent 54px,rgba(74,37,255,.075) 54px,rgba(74,37,255,.075) 55px,transparent 55px),
+      linear-gradient(90deg,transparent 63px,rgba(74,37,255,.038) 63px,rgba(74,37,255,.038) 64px,transparent 64px);
+    -webkit-mask:linear-gradient(180deg,transparent 0,#000 3%,#000 97%,transparent);
+            mask:linear-gradient(180deg,transparent 0,#000 3%,#000 97%,transparent);
+  }
+  .refline.axis { left:calc(100% - 30.5px); }  /* date-column right edge: centred on the date bullets */
+  .refline.gutL { left:-50px; }                 /* lane left-gutter centre (gap 28 -> 14 + 36) */
+  .refline.edgeR{ right:-36px; }                /* far-right close-off: centred on customers' right edge */
+  .daterow{ display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:28px; align-items:start; position:relative; z-index:1; }
+  .daterow .datecell{
+    font-family:var(--font-mono); font-style:normal; font-size:12px; color:var(--grey);
+    padding-top:4px; position:relative;
+  }
+  .daterow .datecell::after{   /* the continuous axis tick */
+    content:""; position:absolute; right:-9px; top:9px; width:7px; height:7px;
+    border-radius:50%; background:var(--indigo-ref); box-shadow:0 0 0 4px rgba(74,37,255,.15);
+  }
+  .lanecell{ display:flex; flex-direction:column; gap:12px; }
+
+  /* ---------- NODE CARD ---------- */
+  .node{
+    display:block; width:100%; text-align:left; cursor:pointer;
+    background:var(--ground-2); color:inherit;
+    border:1px solid rgba(244,239,230,.12);
+    border-left:3px solid var(--indigo-ref);
+    border-radius:6px; padding:13px 15px; font:inherit;
+    transition:border-color .18s, transform .18s, background .18s;
+  }
+  .node:hover{ background:#15131f; transform:translateY(-1px); }
+  .node:focus-visible{ outline:2px solid var(--indigo-ref); outline-offset:2px; }
+  .lane--product .node{ border-left-color:var(--indigo-ref); }
+  .lane--business .node{ border-left-color:var(--indigo-stone); }
+  .lane--customers .node{ border-left-color:var(--grey); }
+  .node--friction{ border-left-color:var(--friction) !important; }
+  .node--open{ border-style:dashed; border-left-style:solid; border-left-color:var(--grey-dim) !important; opacity:.92; }
+
+  .node__meta{ font-family:var(--font-mono); font-style:normal; font-size:10.5px; letter-spacing:.04em; color:var(--grey-dim); display:flex; gap:8px; align-items:center; }
+  .node__stat{ font-style:normal; }
+  .node--shipped .node__stat{ color:var(--indigo-ref); }
+  .node--iterated .node__stat{ color:#9b86ff; }
+  .node--friction .node__stat{ color:var(--friction); }
+  .node--open .node__stat{ color:var(--grey-dim); }
+  .node__title{ display:block; font-style:normal; font-weight:500; font-size:15px; margin:6px 0 3px; line-height:1.25; }
+  .node__one{ display:block; font-size:13.5px; color:#b6b1bf; line-height:1.45; }
+  .node__detail{ max-height:0; overflow:hidden; transition:max-height .28s ease; }
+  .node[aria-expanded="true"] .node__detail{ max-height:760px; }
+  .node[aria-expanded="true"]{ background:#15131f; }
+  .node__beat{ font-size:13.5px; color:#d6d2dd; line-height:1.55; margin:12px 0 0; padding-top:12px; border-top:1px solid rgba(244,239,230,.10); }
+  .node__friction{ font-size:12.5px; color:var(--friction); font-style:italic; margin:10px 0 0; }
+  .node__friction .lbl{ font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:.06em; margin-right:6px; }
+  .node__art{ font-family:var(--font-mono); font-style:normal; font-size:10.5px; color:var(--grey); margin-top:10px; word-break:break-all; }
+  .node__link{ display:inline-block; margin-top:11px; font-style:normal; font-weight:500; font-size:13px; color:#bda9ff; border-bottom:1px solid rgba(189,169,255,.4); padding-bottom:1px; }
+  .node__link:hover{ color:var(--cream); }
+  .node__chev{ margin-left:auto; color:var(--grey-dim); transition:transform .2s; font-style:normal; }
+  .node[aria-expanded="true"] .node__chev{ transform:rotate(180deg); color:var(--indigo-ref); }
+
+  /* ---------- HERO STAT BAND ---------- */
+  .statband{ position:relative; margin-top:50px; padding-top:24px; border-top:1px solid rgba(244,239,230,.12); }
+  .statband .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:24px 18px; }
+  .stat .n{ font-family:var(--font-mono); font-style:normal; font-size:clamp(26px,3.2vw,38px); line-height:1; color:var(--cream); letter-spacing:-.01em; }
+  .stat .n .u{ font-size:.46em; color:var(--indigo-ref); margin-left:3px; }
+  .stat .n .pos{ color:var(--indigo-ref); }
+  .stat .l{ display:block; margin-top:8px; font-size:12.5px; color:var(--grey); max-width:22ch; }
+  .stat .l b{ color:var(--cream); }
+
+  /* ---------- NODE MICRO-VIZ (shown on the collapsed card) ---------- */
+  .node__viz{ margin-top:13px; font-family:var(--font-mono); font-style:normal; }
+  .viz-row{ display:flex; align-items:center; flex-wrap:wrap; gap:5px 9px; font-size:10.5px; color:var(--grey); }
+  .viz-bars{ display:flex; align-items:flex-end; gap:5px; height:26px; }
+  .viz-bar{ width:13px; background:var(--indigo-stone); border-radius:2px 2px 0 0; min-height:3px; }
+  .viz-bar.hi{ background:var(--indigo-ref); }
+  .viz-delta{ font-size:11px; color:var(--indigo-ref); }
+  .viz-dots{ display:inline-flex; gap:4px; flex-wrap:wrap; }
+  .viz-dot{ width:8px; height:8px; border-radius:50%; background:var(--indigo-ref); }
+  .viz-dot.off{ background:rgba(244,239,230,.14); }
+  .viz-range{ position:relative; height:8px; flex:1; min-width:120px; max-width:230px; background:rgba(74,37,255,.14); border-radius:4px; }
+  .viz-range .fill{ position:absolute; top:0; bottom:0; background:rgba(74,37,255,.42); border-radius:4px; }
+  .viz-range .mk{ position:absolute; top:-4px; width:2px; height:16px; background:var(--cream); }
+  .viz-seg{ display:inline-flex; gap:5px; flex-wrap:wrap; }
+  .viz-seg span{ padding:3px 8px; border:1px solid var(--indigo-ref); border-radius:3px; font-size:10px; color:var(--cream); background:rgba(74,37,255,.12); }
+
+  /* ---------- ARTIFACT THUMBNAILS + FILMSTRIP ---------- */
+  .thumb{ margin-top:13px; }
+  .thumb .frame{ border:1px solid rgba(244,239,230,.16); border-radius:5px; overflow:hidden; background:#F4EFE6; max-width:300px; }
+  .thumb .frame.dark{ background:#0A0A0A; }
+  .thumb img{ display:block; width:100%; height:auto; }
+  .thumb .cap{ font-family:var(--font-mono); font-style:normal; font-size:10px; color:var(--grey); margin-top:6px; letter-spacing:.03em; }
+
+  .filmstrip{ padding:34px 0 6px; }
+  .filmstrip .lead{ font-family:var(--font-mono); font-style:normal; font-size:12px; color:var(--indigo-ref); letter-spacing:.08em; }
+  .filmstrip h3{ font-family:var(--font-display); font-style:italic; font-weight:200; font-size:clamp(22px,3vw,32px); margin:7px 0 20px; }
+  .strip{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(190px,1fr); gap:16px; overflow-x:auto; padding-bottom:14px; scroll-snap-type:x proximity; }
+  .strip .cell{ scroll-snap-align:start; }
+  .strip .frame{ height:156px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(244,239,230,.16); border-radius:6px; overflow:hidden; background:#F4EFE6; padding:8px; }
+  .strip .frame.dark{ background:#0A0A0A; }
+  .strip .frame img{ max-width:100%; max-height:100%; width:auto; height:auto; display:block; }
+  .strip .cap{ font-family:var(--font-mono); font-style:normal; font-size:10.5px; color:var(--grey); margin-top:9px; }
+  .strip .cap b{ color:var(--cream); }
+
+  /* ---------- REFLECTION SECTION ---------- */
+  .reflect{ padding:80px 0 30px; }
+  .reflect h2, .closing h2{ font-family:var(--font-display); font-style:italic; font-weight:200; font-size:clamp(28px,4vw,46px); margin:0 0 6px; }
+  .section-kicker{ font-family:var(--font-mono); font-style:normal; font-size:12px; color:var(--indigo-ref); letter-spacing:.08em; }
+  .reflect .sub{ color:#b6b1bf; max-width:58ch; margin:10px 0 36px; font-size:15.5px; }
+  .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:34px; }
+  .col h3{ font-style:normal; font-weight:500; font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--grey); margin:0 0 16px; }
+  .strength, .fric{ border:1px solid rgba(244,239,230,.12); border-radius:6px; padding:15px 16px; margin-bottom:12px; background:var(--ground-2); }
+  .strength{ border-left:3px solid var(--indigo-ref); }
+  .fric{ border-left:3px solid var(--friction); }
+  .strength .h, .fric .h{ font-style:normal; font-weight:500; font-size:14.5px; }
+  .strength p, .fric p{ font-size:13.5px; color:#c4bfcd; margin:7px 0 0; line-height:1.5; }
+  .fric .mit{ margin-top:9px; font-size:13px; color:#d6d2dd; }
+  .fric .mit .lbl{ font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:.06em; color:var(--friction); margin-right:7px; }
+
+  /* ---------- CLOSING ---------- */
+  .closing{ position:relative; padding:78px 0 40px; overflow:hidden; }
+  .closing::before{
+    content:""; position:absolute; right:-10%; top:-10%; width:55%; height:120%;
+    background:radial-gradient(closest-side, rgba(74,37,255,.34), transparent 72%);
+    filter:blur(80px); pointer-events:none;
+  }
+  .closing .wrap{ position:relative; z-index:1; }
+  .closing .lede{ max-width:54ch; }
+  .open-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:30px; }
+
+  /* ---------- FOOTER ---------- */
+  footer{ border-top:1px solid rgba(244,239,230,.12); padding:34px 0 56px; margin-top:40px; }
+  footer .wrap{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px; align-items:center; }
+  .ll{ font-style:normal; }
+  .ll .name{ font-weight:500; font-size:15px; }
+  .ll .tag{ font-style:italic; color:var(--grey); font-size:14px; }
+  .flinks{ display:flex; gap:22px; flex-wrap:wrap; }
+  .flinks a{ font-style:normal; font-size:13.5px; color:#bda9ff; border-bottom:1px solid rgba(189,169,255,.4); padding-bottom:1px; }
+  .flinks a:hover{ color:var(--cream); }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:780px){
+    .lanehead{ display:none; }
+    .lanesep{ display:none; }                         /* lanes stack on mobile, no vertical rules */
+    .daterow{ display:block; }                       /* neutralize inline grid-column placements */
+    .daterow .datecell{ font-size:13px; color:var(--indigo-ref); padding:14px 0 4px; }
+    .daterow .datecell::after{ display:none; }
+    .lanecell{ display:block; }
+    .lanecell:empty{ display:none; }
+    .lanecell .node{ margin-bottom:10px; }
+    .node__meta::before{ content:attr(data-lane); font-family:var(--font-mono); font-style:normal; color:var(--grey); margin-right:6px; }
+    .twocol{ grid-template-columns:1fr; gap:8px; }
+    .phasehead{ top:0; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker mono">LAYERED LOGIC <span class="dot">/</span> SPRING 2026 <span class="dot">/</span> LL-061 <span class="dot">/</span> PROCESS CASE STUDY</div>
+    <h1 class="thesis">Designing a <span class="turn">system</span>, not a gadget.</h1>
+    <p class="lede">Eleven weeks turning an infinity mirror into a near sellable product. Three lanes running at once, the work shown in public, and the dead ends left in.</p>
+
+    <div class="legend">
+      <div>
+        <h4>The three lanes</h4>
+        <ul>
+          <li><span class="swatch product"></span> Product <span class="mono" style="color:var(--grey-dim);font-size:11px;">&nbsp;engineering &amp; design</span></li>
+          <li><span class="swatch business"></span> Business <span class="mono" style="color:var(--grey-dim);font-size:11px;">&nbsp;the venture</span></li>
+          <li><span class="swatch customers"></span> Customers <span class="mono" style="color:var(--grey-dim);font-size:11px;">&nbsp;research &amp; service</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Each node</h4>
+        <ul>
+          <li><span class="dotkey shipped">●</span> Shipped</li>
+          <li><span class="dotkey iterated">●</span> Iterated &nbsp;<span class="mono" style="color:var(--grey-dim);font-size:11px;">found the answer by trying</span></li>
+          <li><span class="dotkey friction">●</span> Friction &nbsp;<span class="mono" style="color:var(--grey-dim);font-size:11px;">where I struggle</span></li>
+          <li><span class="dotkey open">○</span> Still open</li>
+        </ul>
+      </div>
+      <div>
+        <h4>How to read it</h4>
+        <ul>
+          <li style="max-width:30ch;color:#bdb8c4;">The axis is real time, top to bottom. Tap any node to see the decision behind it.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="statband">
+      <div class="grid">
+        <div class="stat"><div class="n">11<span class="u">wks</span></div><span class="l">research to near-sellable</span></div>
+        <div class="stat"><div class="n">4</div><span class="l">phases, three lanes in parallel</span></div>
+        <div class="stat"><div class="n">32</div><span class="l">milestones in the sprint record</span></div>
+        <div class="stat"><div class="n">10</div><span class="l">stage end-to-end service blueprint</span></div>
+        <div class="stat"><div class="n">17</div><span class="l">failure modes documented for repair</span></div>
+        <div class="stat"><div class="n">1,476</div><span class="l">soak iterations, <b>0</b> errors</span></div>
+        <div class="stat"><div class="n"><span class="pos">&minus;46%</span></div><span class="l">control latency after hardening</span></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <span class="framelabel">SHOT 01 / 16:9 / HERO</span>
+      <span class="tag">PHOTO TO CAPTURE</span>
+      <span class="ph">The mirror lit, at dusk, in a real room.</span>
+      <span>Shot slightly off axis so the tunnel depth reads. Ambient presence in a styled space, not product on white. Indigo default pattern, quiet headroom for the title.</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== STICKY LANE HEADER ===================== -->
+<div class="lanehead">
+  <div class="wrap">
+    <div class="row">
+      <div class="datecol">TIME &darr;</div>
+      <div class="lname product">Product <small>ENGINEERING &amp; DESIGN</small></div>
+      <div class="lname business">Business <small>THE VENTURE</small></div>
+      <div class="lname customers">Customers <small>RESEARCH &amp; SERVICE</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TIMELINE (rendered by JS) ===================== -->
+<main id="timeline"></main>
+
+<!-- ===================== ARTIFACT FILMSTRIP ===================== -->
+<section class="filmstrip">
+  <div class="wrap">
+    <div class="lead mono">// ARTIFACTS</div>
+    <h3>A few of the things the process produced.</h3>
+    <div class="strip">
+      <div class="cell"><div class="frame dark"><img src="assets/logo-dark.svg" alt="Layered Logic nested-L logo"></div><div class="cap"><b>Brand mark</b> &middot; nested-L, indigo</div></div>
+      <div class="cell"><div class="frame"><img src="assets/wf-home.svg" alt="Home / controls wireframe"></div><div class="cap"><b>App wireframe</b> &middot; home + controls</div></div>
+      <div class="cell"><div class="frame"><img src="assets/wf-settings.svg" alt="Settings / wi-fi wireframe"></div><div class="cap"><b>App wireframe</b> &middot; settings + wi-fi</div></div>
+      <div class="cell"><div class="frame"><img src="assets/dielines.png" alt="Packaging dielines"></div><div class="cap"><b>Packaging dielines</b> &middot; mailer + insert</div></div>
+      <div class="cell"><div class="frame"><img src="assets/fox.png" alt="Custom-tile fabrication preview"></div><div class="cap"><b>Custom-tile fab</b> &middot; cut + plug geometry</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== STRENGTHS / FRICTION ===================== -->
+<section class="reflect">
+  <div class="wrap">
+    <div class="section-kicker mono">// WHAT I LEARNED ABOUT HOW I WORK</div>
+    <h2>Where I am strong, and where I hit friction.</h2>
+    <p class="sub">A process is only honest if it names its own weak points. Here is what came easily this quarter, and what did not, with what I am doing about the parts that did not.</p>
+    <div class="twocol">
+      <div class="col">
+        <h3>Strengths</h3>
+        <div class="strength"><span class="h up">Engineering verified on real hardware.</span><p>Every firmware change ran build, flash, boot capture, and on device measurement against a live mirror before it counted. The resilience work was proven with a soak test of 1,476 iterations at zero errors, not asserted.</p></div>
+        <div class="strength"><span class="h up">Systems thinking.</span><p>The ten stage service blueprint, the stakeholder map, and the failure mode catalog treat the product as a system of interactions. The blueprint is the proof of the thesis, not a slide about it.</p></div>
+        <div class="strength"><span class="h up">Automation and tooling.</span><p>Parametric generators turn one customer SVG into a laser job, a 3D print, and a packaging dieline with no per order CAD. The instinct is to build the machine that builds the thing.</p></div>
+        <div class="strength"><span class="h up">Documentation discipline.</span><p>Decisions are captured with their rejected alternatives, so the reasoning survives. This page exists because the process was written down as it happened.</p></div>
+      </div>
+      <div class="col">
+        <h3>Friction, and the plan</h3>
+        <div class="fric"><span class="h up">Outreach.</span><p>My weakest lane by a distance. The contact list sat stale for weeks, and pitching myself fights my instincts.</p><p class="mit"><span class="lbl mono">MITIGATING</span>Tightened the cold message templates to one anchor idea and a peer tone, set a five a day cadence, and built a verified contact pipeline so that sending is a mechanical batch task instead of an emotional one.</p></div>
+        <div class="fric"><span class="h up">User interviews keep slipping.</span><p>The interview agenda has been ready since week 4, but talking to strangers about my own work is the part I most avoid, so the design rationale is still founder intuition more than validated fact.</p><p class="mit"><span class="lbl mono">MITIGATING</span>Reframed interviews as ongoing and impromptu against a fixed agenda, with a venue sourcing method, rather than a milestone to schedule and dread.</p></div>
+        <div class="fric"><span class="h up">A backlog of visual checks.</span><p>I am fast at logic and slow to look. Plenty of UI verification got deferred to my next session.</p><p class="mit"><span class="lbl mono">MITIGATING</span>Built a scripted browser automation loop that injects test inputs and compares renders before any push. It already caught two rendering bugs that would have shipped.</p></div>
+        <div class="fric"><span class="h up">Business and legal confidence.</span><p>I am stronger on the technical side than the legal and financial side of running a company.</p><p class="mit"><span class="lbl mono">MITIGATING</span>Policy drafts ship with an explicit needs counsel review gate, and compliance is tracked as a living checklist with advisor check ins, so nothing is mistaken for settled.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CLOSING / NOT DONE ===================== -->
+<section class="closing">
+  <div class="wrap">
+    <div class="section-kicker mono">// THE STORY IS NOT DONE</div>
+    <h2>One switch flip from live.</h2>
+    <p class="lede">By design, the quarter ends ready to sell, not sold. The goal was flip the switch readiness: every system in place so the only thing left is the decision to begin. These are the pieces still open, and they are roadmap, not shortfall.</p>
+    <div class="open-grid" id="openGrid"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="ll up">
+      <div class="name">Built by Layered Logic.</div>
+      <div class="tag">Light that layers.</div>
+    </div>
+    <div class="flinks">
+      <a href="https://billwhite.me/infinity" target="_blank" rel="noopener">Try the custom mirror studio &rarr; billwhite.me/infinity</a>
+      <a href="https://layeredlogic.cc" target="_blank" rel="noopener">layeredlogic.cc</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   DATA — curated process nodes. lane: product|business|customers
+   status: shipped|iterated|friction|open
+   ============================================================ */
+const PHASES = [
+  { id:'p1', n:'PHASE 1', title:'Research & Ethical Foundation', dates:'Mar 21 – Apr 18', goal:'Move from tinkering to design strategy: define the values, the market, and the people the product is built around.', milestone:'Business foundation and ethics documented. Hardware prototyping underway.' },
+  { id:'p2', n:'PHASE 2', title:'Interaction Design & Branding', dates:'Apr 19 – May 9', goal:'Design the interface (the app), the identity (the brand), and the firmware that makes the object real. Ground it in pro consumer values.', milestone:'Brand identity locked. App driving a live mirror. Firmware on silicon.' },
+  { id:'p3', n:'PHASE 3', title:'System Hardening & Value Strategy', dates:'May 10 – May 30', goal:'Make the venture as robust as the hardware. Blueprint the whole service, harden the firmware, and build the custom order pipeline that is the real differentiator.', milestone:'Service blueprint complete. Firmware hardened and verified. Custom pipeline live.' },
+  { id:'p4', n:'PHASE 4', title:'Synthesis & The Go / No-Go', dates:'Jun 2 – Jun 12', goal:'Package the quarter as a professional case study and audit what it would take to actually start selling.', milestone:'Portfolio delivered. Venture readiness audited. Golden sample boxed.' },
+];
+
+const NODES = [
+  // ---------- PHASE 1 ----------
+  { p:'p1', date:'2026-03-23', lane:'business', status:'shipped', id:'LL-001',
+    title:'Layered Logic LLC formed',
+    one:'A legal entity before week one.',
+    beat:'The certificate of formation was filed before the quarter even started, so every downstream decision (banking, sales tax, IP, warranty) had a real company standing behind it rather than a someday plan.',
+    art:'Business / WA Certificate of Formation' },
+  { p:'p1', date:'2026-04-02', lane:'business', status:'shipped', id:'LL-002 / LL-003',
+    title:'EIN issued + pricing calculator',
+    one:'Margin math became a tool, not a spreadsheet.',
+    beat:'EIN in hand and a pricing calculator MVP built at tools/pricing/. Treating the cost model as a re runnable tool instead of a one off spreadsheet meant every later BOM and sourcing change could be re priced instantly.',
+    art:'tools/pricing/' },
+  { p:'p1', date:'2026-04-04', lane:'customers', status:'shipped', id:'LL-004',
+    title:'Stakeholder map',
+    one:'Everyone the product touches, not just the buyer.',
+    beat:'Mapped housemates, gift recipients, installers, and the end of life waste stream as stakeholders. Naming the waste stream as a stakeholder is what set up the sustainability and right to repair work that defines the brand.',
+    art:'docs/stakeholder-map.md' },
+  { p:'p1', date:'2026-04-06', lane:'business', status:'shipped', id:'LL-005',
+    title:'Operating agreement signed',
+    one:'Ownership and decision rights on paper.',
+    beat:'A single member operating agreement drafted and signed. Not always required by the state, but it documents the structure and protects the LLC liability shield.',
+    art:'Business / operating_agreement_outline.md' },
+  { p:'p1', date:'2026-04-06', lane:'customers', status:'shipped', id:'LL-007',
+    title:'Market analysis',
+    one:'Found the gap above the Etsy saturation band.',
+    beat:'Mapped the LED art market: Etsy handmade at 50 to 120 dollars and saturated, gallery pieces, and Amazon commodity. The opening sits above 200 dollars, where a repairable design object has no real competitor. That number anchored the whole positioning.',
+    art:'docs/Market Analysis Report.md' },
+  { p:'p1', date:'2026-04-09', lane:'product', status:'iterated', id:'LL-006 / LL-011',
+    title:'Prototype hardware + schematic',
+    one:'ESP32-C3 picked, level shifter confirmed, KiCad started.',
+    beat:'Selected the ESP32-C3, wired the dev board prototype, and confirmed the 5V level shifter pinout for the LED logic. Five STM8 test boards were already on hand; the production PCB order was deliberately deferred rather than rushed, since the firmware target was the dev board for now.',
+    art:'docs/esp32-module-shortlist.md' },
+  { p:'p1', date:'2026-04-09', lane:'customers', status:'shipped', id:'LL-009',
+    title:'Sustainability audit',
+    one:'The artifact that earns the human-centered claim.',
+    beat:'Documented the full product life cycle and the end of life plan: can the LEDs be replaced, is the frame recyclable, where does it go when it dies. This is what backs the human centered venture angle instead of just asserting it.',
+    art:'docs/sustainability-audit.md' },
+  { p:'p1', date:'2026-04-14', lane:'business', status:'shipped', id:'LL-010',
+    title:'BOM + margin tiers',
+    one:'Costed at 1, 10, and 50 units.',
+    beat:'Variable COGS landed at 49 to 82 dollars for the basic 6x6, with 65 dollars as the recommended retail anchor and PCBs near a dollar a board at volume. Margin analysis at each tier, not a single guess.',
+    art:'docs/bom-breakdown-basic-6x6.md' },
+  { p:'p1', date:'2026-04-14', lane:'business', status:'shipped', id:'LL-012',
+    title:'Made-to-order operations',
+    one:'The operation, not just the product.',
+    beat:'Mapped the Order, Build, QC, Package, Ship workflow with per unit assembly time, tools required, and workspace needs. Designing the garage scale operation as a deliberate strength to own rather than hide.',
+    art:'docs/' },
+
+  // ---------- PHASE 2 ----------
+  { p:'p2', date:'2026-04-20', lane:'product', status:'shipped', id:'LL-013',
+    title:'Brand identity system',
+    one:'The system this very page is built in.',
+    beat:'Locked a full identity: an indigo anchor, a signature type inversion where italic is the default voice and upright is the gear shift into the technical register, Berkeley Mono as the hard edged counterpoint, and light that layers as a reusable tagline motif. The name is literal: layers of print, of mirror, of process, of data.',
+    art:'docs/brand-positioning.md + docs/typography-decisions.md' },
+  { p:'p2', date:'2026-04-20', lane:'customers', status:'shipped', id:'LL-030',
+    title:'Right-to-repair philosophy',
+    one:'Wrote the values before designing around them.',
+    beat:'Set the pro consumer stance up front: repairable with a screwdriver in ten years, documented from day one, commodity parts, and open source on founder exit. Everything downstream (the repair guide, the warranty, the modular electronics) is downstream of this document.',
+    art:'docs/right-to-repair-philosophy.md' },
+  { p:'p2', date:'2026-04-22', lane:'business', status:'shipped', id:'LL-026 / LL-028',
+    title:'LLC compliance',
+    one:'Sales tax filed, BOI exemption confirmed.',
+    beat:'Filed the WA sales tax registration (UBI issued) and confirmed the federal beneficial ownership report is currently exempt for US formed entities. Compliance tracked as a living checklist with a re check date, not a last minute scramble.',
+    art:'sprint_plan.md / LLC Compliance Checklist' },
+  { p:'p2', date:'2026-04-22', lane:'product', status:'shipped', id:'LL-027',
+    title:'Firmware rewrite kickoff',
+    one:'Greenfield, from principles up.',
+    beat:'Started a from scratch proprietary firmware on the ESP32-C3 (the old ESPHome YAML is a feature checklist, not a port source). Locked the principles that still govern it: works with no smart home connection, the app is the pattern editor, closed binary with self hosted OTA and a reflash backstop.',
+    art:'docs/firmware-architecture-scoping.md' },
+  { p:'p2', date:'2026-04-28', lane:'product', status:'shipped', id:'firmware v1',
+    title:'Firmware running on silicon',
+    one:'Six modules live on the real C3.',
+    beat:'Six firmware modules implemented and verified on the actual XIAO ESP32-C3 prototype, with the architecture decisions locked. The product stopped being a plan and started being a thing that lights up.',
+    art:'Firmware/v1/' },
+  { p:'p2', date:'2026-05-05', lane:'product', status:'iterated', id:'LL-035',
+    title:'Live demo: webapp + Android app',
+    one:'Both clients driving a real mirror, five days early.',
+    beat:'An eight session engineering push landed end to end demos of both the device hosted webapp and the React Native Android app controlling a live ESP32 mirror for the faculty advisor. The demo gate was hit five days ahead of schedule.',
+    art:'docs/mini-sprint-app-demo.md' },
+  { p:'p2', date:'2026-05-09', lane:'business', status:'shipped', id:'LL-050',
+    title:'Supply-chain map',
+    one:'Every part to a lead time and a backup.',
+    beat:'Mapped every component to its lead time, cost, and a backup supplier, with risk framed as tariff before lead time before single source. Sourcing cascades down a chain (Amazon to AliExpress to factory; JLCPCB to PCBWay to OSH Park) so no single vendor is load bearing.',
+    art:'docs/supply-chain-map.md' },
+
+  // ---------- PHASE 3 ----------
+  { p:'p3', date:'2026-05-12', lane:'business', status:'iterated', id:'LL-051',
+    title:'Parametric packaging generators',
+    one:'Dieline geometry for any box size, 10/10 tests pass.',
+    beat:'Two production ready part libraries that emit mailer and insert dieline geometry for any dimensions, validated 10 out of 10 against reference cut files. The path went hand sketch, then per coordinate formula recovery, then a named parts architecture with mirror symmetry as a hard constraint. One bug, a fold axis off by ten times the material thickness, was caught by a symmetry test rather than a ruined cut.',
+    art:'Assembly_docs/packaging/' },
+  { p:'p3', date:'2026-05-13', lane:'customers', status:'shipped', id:'LL-053 / LL-054',
+    title:'Service blueprint + custom-order deep dive',
+    one:'The full journey, four lanes, every fail point named.',
+    beat:'Mapped the complete journey from Discover to End of life across four lanes, with moments of truth and named fail points at every stage. The custom order branch, the real value differentiator, got its own ten step flow from inquiry to deposit to ship. This blueprint is the single clearest proof of the thesis: a system of interactions, not a gadget.',
+    art:'docs/service-blueprint.md' },
+  { p:'p3', date:'2026-05-13', lane:'customers', status:'iterated', id:'LL-074',
+    title:'A reusable user-flow grammar',
+    one:'Mermaid ruled out, Graphviz locked, one expensive gotcha.',
+    beat:'Built a diagram language where pain points are reframed as user voice questions (Can I imagine this in my space) with two layer recovery probes and a friction versus exit shape grammar. Ruled out Mermaid because its curves would not behave, switched to Graphviz with orthogonal edges. The costly lesson, captured so it never bites again: in a left to right layout, rank=same means same column, not same row.',
+    art:'docs/user-flow-authoring.md' },
+  { p:'p3', date:'2026-05-14', lane:'customers', status:'shipped', id:'LL-047',
+    title:'Wireframes + design rationale',
+    one:'Five screens, each with its rejected alternatives.',
+    beat:'Five app screens as lo fi SVG wireframes, each paired with a rationale chapter: the decision, the considered and rejected alternatives, and an honesty table marking which choices are founder intuition versus hardware validated versus code validated. Design rationale that admits what is still a guess.',
+    art:'docs/wireframes/' },
+  { p:'p3', date:'2026-05-14', lane:'customers', status:'friction', id:'LL-043',
+    title:'Cold outreach campaign',
+    one:'First batch sent against a five a day target.',
+    beat:'Sent the first real batch of cold messages to smart home and maker creators, and locked a tighter draft style in the process: one anchor idea, peer tone, no spec flexes, no academic framing.',
+    friction:'This is my weakest lane. The list sat stale for weeks before this, and self promotion fights my instincts every time.',
+    art:'docs/outreach-list.md' },
+  { p:'p3', date:'2026-05-15', lane:'product', status:'iterated', id:'LL-055',
+    title:'The firmware resilience saga',
+    one:'Four verified sessions hardening the live control path.',
+    beat:'Hardened the real time path in four measured steps: a 30ms broadcast debounce, then moving fanout to a dedicated FreeRTOS task so one slow client cannot stall everyone, then a per IP token bucket rate limit, then a full characterization under reconnect storms, injected latency, and injected packet loss. A five minute soak ran 1,476 iterations with zero errors and roughly zero latency drift. Every step was build, OTA, and measure on the live mirror.',
+    art:'Firmware/v1/scripts/' },
+  { p:'p3', date:'2026-05-15', lane:'product', status:'shipped', id:'LL-057-C',
+    title:'Telemetry pipeline, end to end',
+    one:'Worker + app toggle + firmware, privacy by design.',
+    beat:'Built all three layers of opt in diagnostics: a Cloudflare Worker beacon endpoint, app and webapp toggles, and firmware emission over verified TLS. Privacy first by construction: pseudonymous device id, no IP retention, opt in only. End to end testing caught two real bugs, including a Cloudflare bot filter rejecting the default user agent.',
+    art:'cloudflare-workers/telemetry/' },
+  { p:'p3', date:'2026-05-15', lane:'product', status:'open', id:'LL-057-B',
+    title:'Real-time OTA progress (parked, honestly)',
+    one:'Knowing when to stop is part of the process.',
+    beat:'Tried three different ways to stream firmware update progress to the app. Each one broke the install. Bisected it to a genuine architectural constraint, and chose to park it cleanly rather than ship something flaky. Forward compatible scaffolding shipped on the app side so the feature lights up the moment the firmware path is solved.',
+    art:'sprint_log.md / LL-057-B' },
+  { p:'p3', date:'2026-05-20', lane:'business', status:'shipped', id:'LL-056',
+    title:'Terms of service + warranty',
+    one:'Repair-first, with an honest counsel gate.',
+    beat:'A thirteen section policy: a repair first limited warranty, a seven year parts commitment, the fifty fifty custom order deposit terms, and closed binary firmware terms. Shipped as a draft with a clear needs counsel review banner, honest about where founder drafting ends and a lawyer begins.',
+    art:'docs/terms-of-service-and-warranty.md' },
+  { p:'p3', date:'2026-05-20', lane:'customers', status:'shipped', id:'LL-042',
+    title:'User repair guide',
+    one:'The philosophy turned into something a buyer can use.',
+    beat:'Customer facing and first person: a symptom finder decision tree and step by step repair procedures covering all seventeen catalogued failure modes, plus a parts sourcing table and the RMA path. The right to repair stance made concrete.',
+    art:'docs/user-repair-guide.md' },
+  { p:'p3', date:'2026-05-20', lane:'product', status:'shipped', id:'LL-077',
+    title:'Assembly + teardown guide',
+    one:'Operations documentation, not marketing.',
+    beat:'A twenty station build sequence plus the teardown procedure the repair guide depends on. The unglamorous document that makes both manufacturing and repair repeatable.',
+    art:'docs/assembly-guide.md' },
+  { p:'p3', date:'2026-05-20', lane:'product', status:'shipped', id:'LL-057-D / LL-078',
+    title:'Paired-mode authentication',
+    one:'HMAC across firmware, app, and webapp, byte-exact.',
+    beat:'End to end HMAC-SHA256 authentication across all three clients, backed by a host testable pure C crypto reference with twenty one known answer tests so every signer agrees byte for byte. Replay protection without a wall clock, via a monotonic timestamp guard plus a request id dedup ring.',
+    art:'Firmware/v1/core/auth/' },
+  { p:'p3', date:'2026-05-20', lane:'product', status:'iterated', id:'LL-079 / LL-080 / LL-081',
+    title:'Demo-resilience fixes',
+    one:'Field failures turned into fixes, on real hardware.',
+    beat:'Three issues found by actually using the device became fixes: a SoftAP fallback when no saved network is reachable, a single button factory reset combo for the button less prototype, and an LED count default bug that the very act of testing that reset surfaced. Caught on silicon, not in theory.',
+    art:'Firmware/v1/core/' },
+  { p:'p3', date:'2026-05-20', lane:'customers', status:'friction', id:'LL-048 / LL-049',
+    title:'Interview + cafe-partner scaffold',
+    one:'The scaffold is built; the conversations are the hard part.',
+    beat:'Built the cafe and showcase partner contact scaffold and the end buyer interview agenda, with a venue sourcing method and per conversation data targets.',
+    friction:'The interviews keep slipping. Walking up to strangers about my own work is exactly the thing I avoid, so the design rationale stays intuition until I go do them.',
+    art:'docs/user-interview-outline.md' },
+  { p:'p3', date:'2026-05-26', lane:'product', status:'shipped', id:'LL-082',
+    title:'Custom-mirror fab generator',
+    one:'One logo in, four fabrication files out.',
+    beat:'A tool that turns a black logo SVG (or a traced raster image) into the four fabrication files for one kintsugi style tile: the laser cut files for the acrylic, and a two layer clear PETG plug that drops flush into the cutout. A single customer input fans out into a laser job and a print job with zero per order CAD work.',
+    art:'Assembly_docs/IM_SVG_Maker/' },
+  { p:'p3', date:'2026-05-27', lane:'product', status:'iterated', id:'LL-083 / 084 / 085',
+    title:'Live in-browser visualizer',
+    one:'Upload your art, preview the manufacturable result.',
+    beat:'Ported the manufacturability pipeline into the 3D visualizer so a customer can upload their own art and preview the real, manufacturable result, not a fantasy of it. Then a deep cleanup: fixed a multi island geometry bug (the triangle salad), replaced fake client side signature security theater with an honest integrity checksum, halved the bundle, and reworked the controls into a guided modal. Validated with a scripted browser automation loop instead of push and hope.',
+    art:'github: bowbikes/infinity_mirror_visualizer',
+    link:'https://billwhite.me/infinity', linkLabel:'Try it live at billwhite.me/infinity' },
+];
+
+const OPEN_NODES = [
+  { lane:'product',  id:'LL-060', title:'The golden sample', text:'A pre production mirror built and boxed exactly as if shipping to a customer.' },
+  { lane:'product',  id:'LL-058', title:'Product photography', text:'The hero imagery this page is waiting on. The thing the whole story deserves to be seen as.' },
+  { lane:'business', id:'LL-062 / LL-063', title:'Kickstarter + readiness audit', text:'Reward tiers, a funding goal, and a remaining risk audit so the go or no go decision is informed rather than hopeful.' },
+  { lane:'product',  id:'LL-071', title:'Production OTA + signed binaries', text:'ota.layeredlogic.cc with signed binaries, anti rollback eFuse, and staged rollout. The dev OTA path graduates to production.' },
+  { lane:'customers',id:'LL-048', title:'Run the interview round', text:'Validate the design rationale against real buyers and cafe partners. The friction I owe the work.' },
+];
+
+// per-node micro-viz (rendered on the collapsed card) + artifact thumbnails
+// (rendered in the expanded detail). Keyed by node id so the NODES array stays clean.
+const VIZ = {
+  'LL-055':            {type:'delta', before:155, after:84,  unit:'ms', pct:'-46%', label:'first-response latency'},
+  'LL-051':            {type:'dots',  filled:10,  total:10,  label:'reference DXF tests pass'},
+  'LL-010':            {type:'range', min:49, max:82, mark:65, label:'$49-82 unit COGS, $65 retail'},
+  'LL-083 / 084 / 085':{type:'delta', before:713, after:331, unit:'KB', pct:'-54%', label:'initial bundle, gzipped'},
+  'LL-057-C':          {type:'stack', segs:['Worker','App','Firmware'], label:'pipeline, end to end'},
+  'LL-057-D / LL-078': {type:'dots',  filled:21,  total:21,  label:'crypto known-answer tests'},
+};
+const THUMB = {
+  'LL-013': {src:'assets/logo-dark.svg',  cap:'logo / nested-L, dark mode', dark:true},
+  'LL-035': {src:'assets/wf-home.svg',    cap:'wireframe / home + controls'},
+  'LL-047': {src:'assets/wf-settings.svg',cap:'wireframe / settings + wi-fi'},
+  'LL-051': {src:'assets/dielines.png',   cap:'dielines / mailer + insert tray'},
+  'LL-082': {src:'assets/fox.png',        cap:'fab preview / cut + plug, 3 islands'},
+};
+
+function vizHTML(v){
+  if(v.type==='delta'){
+    const max=Math.max(v.before,v.after);
+    const hb=Math.max(3,Math.round(26*v.before/max)), ha=Math.max(3,Math.round(26*v.after/max));
+    return '<div class="viz-row"><span class="viz-bars">'
+      + '<span class="viz-bar" style="height:'+hb+'px"></span>'
+      + '<span class="viz-bar hi" style="height:'+ha+'px"></span></span>'
+      + '<span class="viz-delta">'+v.before+'&rarr;'+v.after+' '+v.unit+' &middot; '+esc(v.pct)+'</span>'
+      + '<span>'+esc(v.label)+'</span></div>';
+  }
+  if(v.type==='dots'){
+    let d=''; for(let i=0;i<v.total;i++){ d+='<span class="viz-dot'+(i<v.filled?'':' off')+'"></span>'; }
+    return '<div class="viz-row"><span class="viz-dots">'+d+'</span><span>'+v.filled+'/'+v.total+' '+esc(v.label)+'</span></div>';
+  }
+  if(v.type==='range'){
+    return '<div class="viz-row"><span class="viz-range"><span class="fill" style="left:'+v.min+'%;width:'+(v.max-v.min)+'%"></span>'
+      + '<span class="mk" style="left:'+v.mark+'%"></span></span><span>'+esc(v.label)+'</span></div>';
+  }
+  if(v.type==='stack'){
+    return '<div class="viz-row"><span class="viz-seg">'+v.segs.map(function(s){return '<span>'+esc(s)+'</span>';}).join('')
+      + '</span><span>'+esc(v.label)+'</span></div>';
+  }
+  return '';
+}
+function thumbHTML(t){
+  return '<div class="thumb"><div class="frame'+(t.dark?' dark':'')+'">'
+    + '<img src="'+t.src+'" alt="" loading="lazy"></div>'
+    + '<div class="cap">&#9492; '+esc(t.cap)+'</div></div>';
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const PX_PER_DAY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--px-per-day')) || 9;
+const MIN_GAP = 16, MAX_GAP = 200;
+const LANES = ['product','business','customers'];
+const STATSYM = { shipped:'● SHIPPED', iterated:'● ITERATED', friction:'● FRICTION', open:'○ OPEN' };
+
+function fmtDate(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1];
+  return mon + ' ' + d;
+}
+function daysBetween(a,b){
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function nodeHTML(nd){
+  const lane = LANES.indexOf(nd.lane) + 2; // grid columns: date=1, product=2, business=3, customers=4
+  const viz = VIZ[nd.id], thumb = THUMB[nd.id];
+  let detail = '<div class="node__beat">' + esc(nd.beat) + '</div>';
+  if(nd.friction) detail += '<div class="node__friction"><span class="lbl">FRICTION</span>' + esc(nd.friction) + '</div>';
+  if(thumb) detail += thumbHTML(thumb);
+  if(nd.art) detail += '<div class="node__art">&#9492; ' + esc(nd.art) + '</div>';
+  if(nd.link) detail += '<a class="node__link" href="' + nd.link + '" target="_blank" rel="noopener">' + esc(nd.linkLabel || 'Open') + ' ↗</a>';
+  return ''
+    + '<button class="node node--' + nd.status + ' lane--' + nd.lane + '" aria-expanded="false" style="grid-column:' + lane + '">'
+    +   '<span class="node__meta" data-lane="' + nd.lane.toUpperCase() + '">'
+    +     '<span class="mono">' + esc(nd.id) + '</span>'
+    +     '<span class="node__stat mono">' + STATSYM[nd.status] + '</span>'
+    +     '<span class="node__chev">▾</span>'
+    +   '</span>'
+    +   '<span class="node__title">' + esc(nd.title) + '</span>'
+    +   '<span class="node__one">' + esc(nd.one) + '</span>'
+    +   (viz ? '<div class="node__viz">' + vizHTML(viz) + '</div>' : '')
+    +   '<div class="node__detail">' + detail + '</div>'
+    + '</button>';
+}
+
+function render(){
+  const root = document.getElementById('timeline');
+  // swim-lane separator overlay (full-height reflection lines behind all phases)
+  let html = '<div class="lanesep" aria-hidden="true"><div class="wrap"><div class="sepgrid">'
+           + '<i><span class="refline axis"></span></i>'                                       /* date col: line centred on bullets */
+           + '<i></i>'                                                                          /* product: framed by axis + first gutter */
+           + '<i><span class="refline gutL"></span></i>'                                        /* business: left-gutter divider */
+           + '<i><span class="refline gutL"></span><span class="refline edgeR"></span></i>'     /* customers: left divider + right close-off */
+           + '</div></div></div>';
+  let prevDate = null;
+
+  PHASES.forEach(ph => {
+    const phNodes = NODES.filter(n => n.p === ph.id);
+    if(!phNodes.length && ph.id !== 'p4') return;
+
+    html += '<section class="phase ' + ph.id + '">';
+    html += '<div class="phasehead"><div class="wrap">'
+          + '<span class="pn">' + ph.n + '</span>'
+          + '<h2>' + ph.title + '</h2>'
+          + '<span class="dates">' + ph.dates + '</span>'
+          + '<span class="goal">' + ph.goal + '</span>'
+          + '</div></div>';
+
+    // group this phase's nodes by date
+    const byDate = {};
+    phNodes.forEach(n => { (byDate[n.date] = byDate[n.date] || []).push(n); });
+    const dates = Object.keys(byDate).sort();
+
+    html += '<div class="wrap"><div class="rows">';
+    dates.forEach((dt, i) => {
+      let gap;
+      if(prevDate === null){ gap = 8; }
+      else { gap = Math.max(MIN_GAP, Math.min(MAX_GAP, daysBetween(prevDate, dt) * PX_PER_DAY)); }
+      prevDate = dt;
+      html += '<div class="daterow" style="margin-top:' + gap + 'px">';
+      html += '<div class="datecell mono">' + fmtDate(dt) + '</div>';
+      // one lanecell per lane so columns stay aligned
+      LANES.forEach((ln, ci) => {
+        const items = byDate[dt].filter(n => n.lane === ln);
+        html += '<div class="lanecell" style="grid-column:' + (ci+2) + '">';
+        items.forEach(n => { html += nodeHTML(n); });
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // milestone band at end of phase
+    html += '<div class="milestone"><div class="wrap">'
+          + '<span class="m mono">' + ph.n.replace('PHASE','MILESTONE') + '</span>'
+          + '<span class="t">' + ph.milestone + '</span>'
+          + '</div></div>';
+    html += '</div></section>';
+  });
+
+  root.innerHTML = html;
+
+  // expand / collapse
+  root.querySelectorAll('.node').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!open));
+      reportHeight();
+    });
+  });
+}
+
+function renderOpen(){
+  const g = document.getElementById('openGrid');
+  g.innerHTML = OPEN_NODES.map(n =>
+    '<div class="node node--open lane--' + n.lane + '" style="cursor:default">'
+    + '<span class="node__meta"><span class="mono">' + esc(n.id) + '</span><span class="node__stat mono">○ OPEN</span></span>'
+    + '<span class="node__title">' + esc(n.title) + '</span>'
+    + '<span class="node__one">' + esc(n.text) + '</span>'
+    + '</div>'
+  ).join('');
+}
+
+/* iframe auto-resize for billwhite.me embed */
+function reportHeight(){
+  const h = document.documentElement.scrollHeight;
+  if(window.parent && window.parent !== window){
+    window.parent.postMessage({ type:'ll-process-height', height:h }, '*');
+  }
+}
+
+render();
+renderOpen();
+// images load async and change document height -> re-report as each settles
+document.querySelectorAll('img').forEach(function(img){ img.addEventListener('load', reportHeight); });
+window.addEventListener('load', reportHeight);
+window.addEventListener('resize', reportHeight);
+setTimeout(reportHeight, 400); // after webfonts settle
+</script>
+</body>
+</html>

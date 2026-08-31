@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 1320" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" role="img" aria-labelledby="wireframe-title wireframe-desc">
+  <title id="wireframe-title">Layered Logic Mirror — Home/Controls screen wireframe</title>
+  <desc id="wireframe-desc">Lo-fi wireframe of the React Native Home/Controls screen in the Layered Logic Mirror app. Shows the resting state (Power button, full-width color wheel with corner preview and hex code display, 4 discrete brightness step buttons at 25/50/75/100, and a 7-pattern preset grid) with 6 numbered callouts pairing each UI decision to its source rationale. A 4-thumbnail strip below documents power-off, mid-color-drag, brightness-selected, and disconnected alternate states. Phone proportions match Pixel 9 (360x800 dp, 9:20 ratio). Brand indigo (#3214FF) marks active state and primary affordances.</desc>
+
+  <defs>
+    <radialGradient id="wheel-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+    <style>
+      .phone-frame { fill: #FAFAFA; stroke: #2A2A2A; stroke-width: 1.5; }
+      .screen-bg { fill: #FFFFFF; }
+      .notch { fill: #1A1A1A; }
+      .section-title { font-size: 15px; font-weight: 700; fill: #1A1A1A; }
+      .subsection-title { font-size: 13px; font-weight: 700; fill: #1A1A1A; }
+      .body { font-size: 11px; fill: #1A1A1A; }
+      .muted { font-size: 10px; fill: #6B6B6B; }
+      .label { font-size: 10px; font-weight: 600; fill: #1A1A1A; letter-spacing: 0.3px; }
+      .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; fill: #1A1A1A; }
+      .btn-primary-fill { fill: #3214FF; }
+      .btn-secondary-fill { fill: #FFFFFF; stroke: #3214FF; stroke-width: 1; }
+      .btn-text-primary { font-size: 13px; font-weight: 600; fill: #FFFFFF; }
+      .btn-text-secondary { font-size: 11px; font-weight: 600; fill: #3214FF; }
+      .btn-text-step { font-size: 12px; font-weight: 600; fill: #1A1A1A; }
+      .btn-text-step-active { font-size: 12px; font-weight: 700; fill: #FFFFFF; }
+      .divider { stroke: #E5E5E7; stroke-width: 0.5; }
+      .home-indicator { fill: #1A1A1A; }
+      .settings-link { font-size: 11px; fill: #3214FF; font-weight: 500; }
+      .callout-circle { fill: #3214FF; }
+      .callout-num { font-size: 11px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; dominant-baseline: middle; }
+      .callout-line { stroke: #3214FF; stroke-width: 0.6; stroke-dasharray: 3,2; fill: none; }
+      .callout-title { font-size: 12px; font-weight: 700; fill: #1A1A1A; }
+      .callout-body { font-size: 11px; fill: #4A4A4A; }
+      .callout-source { font-size: 9px; font-style: italic; fill: #6B6B6B; }
+
+      /* Title block */
+      .doc-title { font-size: 20px; font-weight: 700; fill: #1A1A1A; }
+      .doc-subtitle { font-size: 12px; fill: #4A4A4A; }
+      .doc-meta { font-size: 10px; fill: #6B6B6B; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      /* Alternate states */
+      .alt-section-title { font-size: 14px; font-weight: 700; fill: #1A1A1A; }
+      .alt-frame { fill: #FAFAFA; stroke: #C8C8CE; stroke-width: 0.8; }
+      .alt-state-label { font-size: 10px; font-weight: 700; fill: #3214FF; letter-spacing: 0.6px; }
+      .alt-caption { font-size: 10px; fill: #4A4A4A; }
+      .alt-banner { fill: #FFE5E5; stroke: #C44; stroke-width: 0.8; }
+      .alt-banner-text { font-size: 9px; fill: #8B1A1A; }
+      .alt-muted { font-size: 10px; fill: #999999; }
+    </style>
+  </defs>
+
+  <!-- ==================== Title block ==================== -->
+  <text x="440" y="68" class="doc-title">Home — Controls</text>
+  <text x="440" y="88" class="doc-subtitle">Layered Logic Mirror · App/v1 · Mobile (React Native, Pixel 9)</text>
+  <text x="440" y="104" class="doc-meta">Version 1.0 · 2026-05-14 · Resting state + 4 alternate states</text>
+  <line x1="440" y1="118" x2="960" y2="118" class="divider" />
+
+  <!-- ==================== Phone frame (360 x 800 = Pixel 9 ratio) ==================== -->
+  <rect class="phone-frame" x="40" y="40" width="360" height="800" rx="36" />
+  <rect class="screen-bg" x="54" y="54" width="332" height="772" rx="26" />
+
+  <!-- Notch (centered at phone center x=220) -->
+  <rect class="notch" x="175" y="60" width="90" height="14" rx="7" />
+
+  <!-- Header bar (centered title) -->
+  <text x="220" y="105" text-anchor="middle" class="section-title">Layered Logic</text>
+  <text x="370" y="105" text-anchor="end" class="settings-link">Settings ›</text>
+  <line x1="64" y1="118" x2="376" y2="118" class="divider" />
+
+  <!-- ==================== Power section ==================== -->
+  <text x="70" y="142" class="subsection-title">Power</text>
+  <!-- Full-width button (300 wide, content area; 38h to dial back prominence) -->
+  <rect class="btn-primary-fill" x="70" y="152" width="300" height="38" rx="6" />
+  <text x="220" y="177" text-anchor="middle" class="btn-text-primary">On</text>
+
+  <line x1="64" y1="214" x2="376" y2="214" class="divider" />
+
+  <!-- ==================== Color section ==================== -->
+  <text x="70" y="244" class="subsection-title">Color</text>
+
+  <!-- Color wheel centered at phone center x=220 -->
+  <g transform="translate(220,358)">
+    <path d="M 0,-95 A 95,95 0 0,1 47.5,-82.27 L 30,-52 A 60,60 0 0,0 0,-60 Z" fill="#FF1A1A" />
+    <path d="M 47.5,-82.27 A 95,95 0 0,1 82.27,-47.5 L 52,-30 A 60,60 0 0,0 30,-52 Z" fill="#FF8A00" />
+    <path d="M 82.27,-47.5 A 95,95 0 0,1 95,0 L 60,0 A 60,60 0 0,0 52,-30 Z" fill="#FFD300" />
+    <path d="M 95,0 A 95,95 0 0,1 82.27,47.5 L 52,30 A 60,60 0 0,0 60,0 Z" fill="#A8E000" />
+    <path d="M 82.27,47.5 A 95,95 0 0,1 47.5,82.27 L 30,52 A 60,60 0 0,0 52,30 Z" fill="#00C24C" />
+    <path d="M 47.5,82.27 A 95,95 0 0,1 0,95 L 0,60 A 60,60 0 0,0 30,52 Z" fill="#00B8C6" />
+    <path d="M 0,95 A 95,95 0 0,1 -47.5,82.27 L -30,52 A 60,60 0 0,0 0,60 Z" fill="#0080FF" />
+    <path d="M -47.5,82.27 A 95,95 0 0,1 -82.27,47.5 L -52,30 A 60,60 0 0,0 -30,52 Z" fill="#3214FF" />
+    <path d="M -82.27,47.5 A 95,95 0 0,1 -95,0 L -60,0 A 60,60 0 0,0 -52,30 Z" fill="#7A14FF" />
+    <path d="M -95,0 A 95,95 0 0,1 -82.27,-47.5 L -52,-30 A 60,60 0 0,0 -60,0 Z" fill="#C414FF" />
+    <path d="M -82.27,-47.5 A 95,95 0 0,1 -47.5,-82.27 L -30,-52 A 60,60 0 0,0 -52,-30 Z" fill="#FF14C4" />
+    <path d="M -47.5,-82.27 A 95,95 0 0,1 0,-95 L 0,-60 A 60,60 0 0,0 -30,-52 Z" fill="#FF1A66" />
+    <circle cx="0" cy="0" r="60" fill="url(#wheel-grad)" />
+    <circle cx="0" cy="0" r="60" fill="#FFFFFF" opacity="0.45" />
+    <circle cx="0" cy="0" r="95" fill="none" stroke="#2A2A2A" stroke-width="0.8" />
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#2A2A2A" stroke-width="0.4" />
+  </g>
+
+  <!-- Corner preview (top-right of wheel area, in negative space) -->
+  <rect x="298" y="270" width="32" height="32" rx="6" fill="#3214FF" stroke="#2A2A2A" stroke-width="0.6" />
+
+  <!-- Hex display (centered) -->
+  <text x="220" y="476" text-anchor="middle" class="mono">#3214FF</text>
+
+  <line x1="64" y1="496" x2="376" y2="496" class="divider" />
+
+  <!-- ==================== Brightness section ==================== -->
+  <text x="70" y="518" class="subsection-title">Brightness</text>
+
+  <!-- 4 step buttons centered: 65 wide × 4 + 13 gap × 3 = 260+39 = 299 (≈ 300 content width) -->
+  <!-- Start at x=70.5 to end at x=370.5; using 70,150,230,310 with width 64 + gap 16 = 60+16=80 step? -->
+  <!-- Re-spec: 64w buttons, 14gap → 64*4 + 14*3 = 256+42 = 298. x=70, 148, 226, 304 -->
+  <g>
+    <rect class="btn-secondary-fill" x="70" y="530" width="64" height="36" rx="6" />
+    <text x="102" y="554" text-anchor="middle" class="btn-text-step">25</text>
+
+    <rect class="btn-primary-fill" x="148" y="530" width="64" height="36" rx="6" />
+    <text x="180" y="554" text-anchor="middle" class="btn-text-step-active">50</text>
+
+    <rect class="btn-secondary-fill" x="226" y="530" width="64" height="36" rx="6" />
+    <text x="258" y="554" text-anchor="middle" class="btn-text-step">75</text>
+
+    <rect class="btn-secondary-fill" x="304" y="530" width="64" height="36" rx="6" />
+    <text x="336" y="554" text-anchor="middle" class="btn-text-step">100</text>
+  </g>
+
+  <line x1="64" y1="588" x2="376" y2="588" class="divider" />
+
+  <!-- ==================== Pattern section ==================== -->
+  <text x="70" y="610" class="subsection-title">Pattern</text>
+
+  <!-- 7 pattern buttons in a 3-col grid: 92w × 3 + 12gap × 2 = 276+24 = 300. x=70, 174, 278 -->
+  <g>
+    <!-- Row 1 -->
+    <rect class="btn-primary-fill" x="70" y="622" width="92" height="36" rx="6" />
+    <text x="116" y="646" text-anchor="middle" class="btn-text-step-active">solid</text>
+
+    <rect class="btn-secondary-fill" x="174" y="622" width="92" height="36" rx="6" />
+    <text x="220" y="646" text-anchor="middle" class="btn-text-secondary">rainbow</text>
+
+    <rect class="btn-secondary-fill" x="278" y="622" width="92" height="36" rx="6" />
+    <text x="324" y="646" text-anchor="middle" class="btn-text-secondary">scanner</text>
+
+    <!-- Row 2 -->
+    <rect class="btn-secondary-fill" x="70" y="668" width="92" height="36" rx="6" />
+    <text x="116" y="692" text-anchor="middle" class="btn-text-secondary">spinner</text>
+
+    <rect class="btn-secondary-fill" x="174" y="668" width="92" height="36" rx="6" />
+    <text x="220" y="692" text-anchor="middle" class="btn-text-secondary">random</text>
+
+    <rect class="btn-secondary-fill" x="278" y="668" width="92" height="36" rx="6" />
+    <text x="324" y="692" text-anchor="middle" class="btn-text-secondary">breathing</text>
+
+    <!-- Row 3 -->
+    <rect class="btn-secondary-fill" x="70" y="714" width="92" height="36" rx="6" />
+    <text x="116" y="738" text-anchor="middle" class="btn-text-secondary">twinkle</text>
+  </g>
+
+  <!-- Home indicator -->
+  <rect class="home-indicator" x="175" y="810" width="90" height="4" rx="2" />
+
+  <!-- ==================== Callouts ==================== -->
+
+  <!-- ① Power -->
+  <line class="callout-line" x1="370" y1="175" x2="540" y2="200" />
+  <circle class="callout-circle" cx="550" cy="200" r="11" />
+  <text class="callout-num" x="550" y="200">1</text>
+  <text x="568" y="192" class="callout-title">Power: explicit button, not derived</text>
+  <text x="568" y="208" class="callout-body">Mirrors the physical button's power gesture. Passive stakeholders</text>
+  <text x="568" y="221" class="callout-body">(housemates, guests) can find "off" without learning brightness</text>
+  <text x="568" y="234" class="callout-body">gestures. Tapping a color or pattern while off implicitly turns it</text>
+  <text x="568" y="247" class="callout-body">on (post-mini-sprint #3 fix) — wire state on/brightness coupled.</text>
+  <text x="568" y="262" class="callout-source">button-design-rationale.md · post-mini-sprint-bugs.md #3</text>
+
+  <!-- ② Wheel + magnifier -->
+  <line class="callout-line" x1="315" y1="358" x2="540" y2="320" />
+  <circle class="callout-circle" cx="550" cy="320" r="11" />
+  <text class="callout-num" x="550" y="320">2</text>
+  <text x="568" y="312" class="callout-title">Full-width wheel + touch-follow magnifier</text>
+  <text x="568" y="328" class="callout-body">512×512 HSV polar wheel beats hex inputs or fixed swatches for</text>
+  <text x="568" y="341" class="callout-body">visual color picking. Magnifier bubble lifts above the finger so</text>
+  <text x="568" y="354" class="callout-body">the target color isn't covered. Scroll-locked during drag so the</text>
+  <text x="568" y="367" class="callout-body">page doesn't jitter while picking.</text>
+  <text x="568" y="382" class="callout-source">LL-073 · App.tsx:743-810</text>
+
+  <!-- ③ Corner preview -->
+  <line class="callout-line" x1="330" y1="286" x2="540" y2="420" />
+  <circle class="callout-circle" cx="550" cy="420" r="11" />
+  <text class="callout-num" x="550" y="420">3</text>
+  <text x="568" y="412" class="callout-title">Corner preview uses the wheel's negative space</text>
+  <text x="568" y="428" class="callout-body">Color preview sits at 45° from the wheel center, in the empty</text>
+  <text x="568" y="441" class="callout-body">corner outside the inscribed circle so it doesn't cover any</text>
+  <text x="568" y="454" class="callout-body">colors. Persistent during drag — pair with the magnifier for a</text>
+  <text x="568" y="467" class="callout-body">two-point read: where the finger is + what got committed.</text>
+  <text x="568" y="482" class="callout-source">LL-073 · App.tsx wheelPreview style</text>
+
+  <!-- ④ Discrete brightness -->
+  <line class="callout-line" x1="270" y1="548" x2="540" y2="560" />
+  <circle class="callout-circle" cx="550" cy="560" r="11" />
+  <text class="callout-num" x="550" y="560">4</text>
+  <text x="568" y="552" class="callout-title">Brightness: discrete steps, not a slider</text>
+  <text x="568" y="568" class="callout-body">4 buttons at 25/50/75/100 mirror the physical button's 4-step</text>
+  <text x="568" y="581" class="callout-body">brightness modality — unifies the mental model across hardware</text>
+  <text x="568" y="594" class="callout-body">and app. Also dodges the slider-flood failure (live-during-drag</text>
+  <text x="568" y="607" class="callout-body">10 msg/sec was the original surface of post-mini-sprint #1).</text>
+  <text x="568" y="622" class="callout-source">button-interface.md · post-mini-sprint-bugs.md #1</text>
+
+  <!-- ⑤ Pattern grid -->
+  <line class="callout-line" x1="370" y1="640" x2="540" y2="680" />
+  <circle class="callout-circle" cx="550" cy="680" r="11" />
+  <text class="callout-num" x="550" y="680">5</text>
+  <text x="568" y="672" class="callout-title">Patterns: ship-with preset grid (editor is V2)</text>
+  <text x="568" y="688" class="callout-body">7 patterns ship in firmware (solid, rainbow, scanner, spinner,</text>
+  <text x="568" y="701" class="callout-body">random, breathing, twinkle). Pattern editor — letting users define</text>
+  <text x="568" y="714" class="callout-body">new patterns from the app — is deferred to V2. V1 ships with what</text>
+  <text x="568" y="727" class="callout-body">the firmware supports; app maps 1:1 to firmware pattern_id.</text>
+  <text x="568" y="742" class="callout-source">project_app_stack memory · App.tsx PATTERNS const</text>
+
+  <!-- ⑥ Haptics + optimistic UI -->
+  <line class="callout-line" x1="155" y1="735" x2="540" y2="790" />
+  <circle class="callout-circle" cx="550" cy="790" r="11" />
+  <text class="callout-num" x="550" y="790">6</text>
+  <text x="568" y="782" class="callout-title">Content-encoded haptics + optimistic UI</text>
+  <text x="568" y="798" class="callout-body">Each pattern has its own buzz signature; brightness taps encode</text>
+  <text x="568" y="811" class="callout-body">the chosen value into the haptic intensity. Every action calls</text>
+  <text x="568" y="824" class="callout-body">haptic() + apply() on tap — no wait for state broadcast. The</text>
+  <text x="568" y="837" class="callout-body">authoritative broadcast settles the UI; haptic confirms the gesture.</text>
+  <text x="568" y="852" class="callout-source">LL-073 · App/v1/src/haptic.ts · post-mini-sprint bugfix UX polish</text>
+
+  <!-- ==================== Alternate states ==================== -->
+  <line x1="30" y1="900" x2="970" y2="900" class="divider" />
+  <text x="30" y="930" class="alt-section-title">Alternate states</text>
+  <text x="30" y="948" class="callout-body">Power-off behavior, mid-interaction feedback, and connection-loss states the resting wireframe doesn't show.</text>
+
+  <!-- 4 thumbnails: 215 wide, 20 gap, starts at x=30 → 30, 265, 500, 735 -->
+
+  <!-- ===== Alt state 1: Power off ===== -->
+  <text x="30" y="978" class="alt-state-label">① POWER OFF</text>
+  <rect class="alt-frame" x="30" y="988" width="215" height="240" rx="6" />
+  <text x="137.5" y="1008" text-anchor="middle" class="subsection-title">Power</text>
+  <rect x="50" y="1016" width="175" height="40" rx="5" fill="#FFFFFF" stroke="#2A2A2A" stroke-width="0.6" />
+  <text x="137.5" y="1041" text-anchor="middle" font-size="13" font-weight="600" fill="#1A1A1A">Off</text>
+  <text x="137.5" y="1080" text-anchor="middle" class="subsection-title">Color</text>
+  <circle cx="137.5" cy="1130" r="32" fill="#E5E5E7" stroke="#2A2A2A" stroke-width="0.5" />
+  <text x="137.5" y="1135" text-anchor="middle" class="alt-muted">(dim)</text>
+  <text x="137.5" y="1185" text-anchor="middle" class="subsection-title">Brightness</text>
+  <text x="137.5" y="1208" text-anchor="middle" class="alt-muted">— — — —</text>
+  <text x="30" y="1247" class="alt-caption">Power button reads "Off"; LEDs dark.</text>
+  <text x="30" y="1259" class="alt-caption">Controls remain tappable — selecting a</text>
+  <text x="30" y="1271" class="alt-caption">color/pattern implicitly turns on (apply</text>
+  <text x="30" y="1283" class="alt-caption">sends {on:true,...}, per p-m-s #3 fix).</text>
+
+  <!-- ===== Alt state 2: Color picking ===== -->
+  <text x="265" y="978" class="alt-state-label">② COLOR PICKING</text>
+  <rect class="alt-frame" x="265" y="988" width="215" height="240" rx="6" />
+  <text x="372.5" y="1008" text-anchor="middle" class="subsection-title">Color</text>
+  <!-- mini wheel centered -->
+  <g transform="translate(372.5,1095)">
+    <circle cx="0" cy="0" r="58" fill="#3214FF" />
+    <circle cx="0" cy="0" r="58" fill="url(#wheel-grad)" />
+    <circle cx="0" cy="0" r="58" fill="none" stroke="#2A2A2A" stroke-width="0.6" />
+    <!-- Touch point indicator -->
+    <circle cx="22" cy="-32" r="6" fill="none" stroke="#1A1A1A" stroke-width="1" />
+    <!-- Magnifier bubble above touch -->
+    <circle cx="22" cy="-60" r="14" fill="#FF8A00" stroke="#2A2A2A" stroke-width="0.6" />
+  </g>
+  <!-- Corner preview -->
+  <rect x="438" y="1014" width="26" height="26" rx="5" fill="#FF8A00" stroke="#2A2A2A" stroke-width="0.5" />
+  <text x="372.5" y="1185" text-anchor="middle" class="mono">#FF8A00</text>
+  <text x="265" y="1247" class="alt-caption">Magnifier bubble floats above the finger</text>
+  <text x="265" y="1259" class="alt-caption">showing the color at the touch point.</text>
+  <text x="265" y="1271" class="alt-caption">Corner preview updates live; hex code</text>
+  <text x="265" y="1283" class="alt-caption">commits on touch release.</text>
+
+  <!-- ===== Alt state 3: Brightness 100 ===== -->
+  <text x="500" y="978" class="alt-state-label">③ BRIGHTNESS 100</text>
+  <rect class="alt-frame" x="500" y="988" width="215" height="240" rx="6" />
+  <text x="607.5" y="1008" text-anchor="middle" class="subsection-title">Brightness</text>
+
+  <!-- 4 step buttons centered (size 38 wide × 4 + gap 12 × 3 = 188; x range 510..698 = 188) -->
+  <rect class="btn-secondary-fill" x="513" y="1018" width="44" height="32" rx="5" />
+  <text x="535" y="1039" text-anchor="middle" class="btn-text-step">25</text>
+  <rect class="btn-secondary-fill" x="561" y="1018" width="44" height="32" rx="5" />
+  <text x="583" y="1039" text-anchor="middle" class="btn-text-step">50</text>
+  <rect class="btn-secondary-fill" x="609" y="1018" width="44" height="32" rx="5" />
+  <text x="631" y="1039" text-anchor="middle" class="btn-text-step">75</text>
+  <rect class="btn-primary-fill" x="657" y="1018" width="50" height="32" rx="5" />
+  <text x="682" y="1039" text-anchor="middle" class="btn-text-step-active">100</text>
+
+  <text x="607.5" y="1080" text-anchor="middle" class="muted">Tap → 60ms haptic encoding</text>
+  <text x="607.5" y="1093" text-anchor="middle" class="muted">brightness as buzz intensity.</text>
+  <text x="607.5" y="1106" text-anchor="middle" class="muted">apply() sent optimistically;</text>
+  <text x="607.5" y="1119" text-anchor="middle" class="muted">broadcast settles via re-render.</text>
+
+  <text x="607.5" y="1150" text-anchor="middle" class="label">HAPTIC ENCODING</text>
+  <line x1="513" y1="1165" x2="700" y2="1165" stroke="#3214FF" stroke-width="0.5" />
+  <rect x="525" y="1166" width="4" height="6" fill="#3214FF" />
+  <rect x="571" y="1166" width="6" height="8" fill="#3214FF" />
+  <rect x="619" y="1166" width="8" height="10" fill="#3214FF" />
+  <rect x="668" y="1166" width="10" height="12" fill="#3214FF" />
+  <text x="527" y="1188" text-anchor="middle" class="muted" font-size="8">25</text>
+  <text x="574" y="1188" text-anchor="middle" class="muted" font-size="8">50</text>
+  <text x="623" y="1188" text-anchor="middle" class="muted" font-size="8">75</text>
+  <text x="673" y="1188" text-anchor="middle" class="muted" font-size="8">100</text>
+
+  <text x="500" y="1247" class="alt-caption">Active step button = brand-indigo fill.</text>
+  <text x="500" y="1259" class="alt-caption">Haptic intensity scales with the step:</text>
+  <text x="500" y="1271" class="alt-caption">25 = soft, 100 = firm. Same encoding</text>
+  <text x="500" y="1283" class="alt-caption">used by patterns (per-pattern signature).</text>
+
+  <!-- ===== Alt state 4: Disconnected ===== -->
+  <text x="735" y="978" class="alt-state-label">④ DISCONNECTED</text>
+  <rect class="alt-frame" x="735" y="988" width="215" height="240" rx="6" />
+  <rect class="alt-banner" x="753" y="1000" width="179" height="34" rx="4" />
+  <text x="842.5" y="1014" text-anchor="middle" class="alt-banner-text" font-weight="700">Lost connection to mirror</text>
+  <text x="842.5" y="1026" text-anchor="middle" class="alt-banner-text">Find mirror in Settings to reconnect.</text>
+
+  <text x="842.5" y="1066" text-anchor="middle" class="subsection-title" opacity="0.4">Power</text>
+  <rect x="755" y="1076" width="175" height="34" rx="5" fill="#F0F0F0" stroke="#D0D0D0" stroke-width="0.5" />
+  <text x="842.5" y="1098" text-anchor="middle" font-size="12" font-weight="600" fill="#999999">On</text>
+
+  <text x="842.5" y="1138" text-anchor="middle" class="subsection-title" opacity="0.4">Color</text>
+  <circle cx="842.5" cy="1180" r="24" fill="#F0F0F0" stroke="#D0D0D0" stroke-width="0.5" />
+
+  <text x="735" y="1247" class="alt-caption">Banner explains the failure + recovery</text>
+  <text x="735" y="1259" class="alt-caption">path. Controls remain visible but greyed.</text>
+  <text x="735" y="1271" class="alt-caption">Last-known state shown so the user can</text>
+  <text x="735" y="1283" class="alt-caption">see what was set when the link dropped.</text>
+
+</svg>
